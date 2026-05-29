@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isTutor, getTutorId, isSuperAdmin, isAdmin } from "@/lib/auth-helpers"
+import { requireAuth, isTutor, getTutorId, isSuperAdmin, isAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
 import { GRADE_LABELS, TENURE_LABELS, STATUS_COLORS } from "@/lib/constants"
 import { CityFilter } from "@/components/city-filter"
 import { DeleteHourButton } from "@/components/delete-hour-button"
@@ -13,6 +13,8 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
 
   const { city: cityParam } = await props.searchParams
   const selectedCity = cityParam || "all"
+  const cityAdminId = isCityAdmin(session.user.role) ? await getActiveCityId(session.user.role, session.user.id) : null
+  const effectiveCityId = cityAdminId || (superAdmin && selectedCity !== "all" ? selectedCity : null)
 
   let tutorId: string | null = null
 
@@ -24,8 +26,8 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
     prisma.hourLog.findMany({
       where: tutor && tutorId
         ? { tutorId }
-        : superAdmin && selectedCity !== "all"
-          ? { project: { cityId: selectedCity } }
+        : effectiveCityId
+          ? { project: { cityId: effectiveCityId } }
           : {},
       include: {
         tutor: { include: { user: { select: { name: true } } } },
@@ -37,8 +39,8 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
     prisma.project.findMany({
       where: tutor && tutorId
         ? { projectTutors: { some: { tutorId } } }
-        : superAdmin && selectedCity !== "all"
-          ? { cityId: selectedCity }
+        : effectiveCityId
+          ? { cityId: effectiveCityId }
           : {},
       include: {
         client: { select: { user: { select: { name: true } } } },
@@ -54,7 +56,7 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
           : Promise.resolve([])
         )
       : prisma.tutor.findMany({
-          where: { isActive: true, ...(superAdmin && selectedCity !== "all" ? { user: { cityId: selectedCity } } : {}) },
+          where: { isActive: true, ...(effectiveCityId ? { user: { cityId: effectiveCityId } } : {}) },
           include: { user: { select: { name: true } } },
         }),
     prisma.billingRate.findMany(),
@@ -242,7 +244,6 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
           var projectSelect = document.getElementById('projectSelect');
           var tutorSelect = document.getElementById('tutorSelect');
           var modeSelect = document.getElementById('modeSelect');
-          var billingDisplay = document.getElementById('billingRateDisplay');
           var payDisplay = document.getElementById('payRateDisplay');
           var typeSelect = document.getElementById('projectTypeSelect');
 
@@ -272,7 +273,6 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
             var ptype = projectSelect && projectSelect.value ? (projectSelect.querySelector('option[value="' + projectSelect.value.replace(/"/g, '\\\\"') + '"]') || {}).dataset.type : null;
 
             if (!grade || !mode) {
-              if (billingDisplay) billingDisplay.textContent = '--';
               if (payDisplay) payDisplay.textContent = '--';
               return;
             }
@@ -288,7 +288,6 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
               }
             }
 
-            if (billingDisplay) billingDisplay.textContent = billing != null ? '$' + billing.toFixed(2) + '/hr' : '--';
             if (payDisplay) payDisplay.textContent = pay != null ? '$' + pay.toFixed(2) + '/hr' : '--';
 
             var billingInput = document.getElementById('billingRateInput');

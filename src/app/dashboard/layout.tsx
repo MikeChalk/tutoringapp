@@ -85,7 +85,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 key={link.href}
                 href={link.href}
                 className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                  pathname === link.href || (link.href !== "/dashboard" && pathname.startsWith(link.href))
+                  pathname === link.href || (link.href !== "/dashboard" && pathname.startsWith(link.href + "/"))
                     ? "bg-zinc-100 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100"
                     : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700/50"
                 }`}
@@ -117,6 +117,11 @@ function AdminNav({ pathname }: { pathname: string }) {
     for (const s of adminSections) initial[s.label] = true
     return initial
   })
+
+  function isActive(href: string) {
+    if (pathname === href) return true
+    return href !== "/dashboard" && pathname.startsWith(href + "/")
+  }
 
   return (
     <>
@@ -151,7 +156,7 @@ function AdminNav({ pathname }: { pathname: string }) {
                       key={link.href}
                       href={link.href}
                       className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${
-                        pathname === link.href || (link.href !== "/dashboard" && pathname.startsWith(link.href))
+                        isActive(link.href)
                           ? "bg-zinc-100 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 font-medium"
                           : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700/50"
                       }`}

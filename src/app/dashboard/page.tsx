@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin, isTutor, getTutorId, isClient, getClientId, isSuperAdmin } from "@/lib/auth-helpers"
+import { requireAuth, isAdmin, isTutor, getTutorId, isClient, getClientId, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
 import { CONTRACT_TYPE_LABELS, TENURE_LABELS } from "@/lib/constants"
 import { CityFilter } from "@/components/city-filter"
 import Link from "next/link"
@@ -14,8 +14,10 @@ export default async function DashboardPage(props: { searchParams: Promise<{ cit
 
   const { city: cityParam } = await props.searchParams
   const selectedCity = cityParam || "all"
+  const cityAdminId = isCityAdmin(role) ? await getActiveCityId(role, session.user.id) : null
+  const effectiveCityId = cityAdminId || (superAdmin && selectedCity !== "all" ? selectedCity : null)
 
-  const cityFilter = superAdmin && selectedCity !== "all" ? { cityId: selectedCity } : {}
+  const cityFilter = effectiveCityId ? { cityId: effectiveCityId } : {}
 
   let tutorCount = 0
   let clientCount = 0
@@ -50,10 +52,10 @@ export default async function DashboardPage(props: { searchParams: Promise<{ cit
   } else if (admin) {
     [tutorCount, clientCount, projectCount, pendingInvoices, newRequests] =
       await Promise.all([
-        prisma.tutor.count({ where: superAdmin && selectedCity !== "all" ? { user: { cityId: selectedCity } } : {} }),
-        prisma.client.count({ where: superAdmin && selectedCity !== "all" ? { user: { cityId: selectedCity } } : {} }),
+        prisma.tutor.count({ where: effectiveCityId ? { user: { cityId: effectiveCityId } } : {} }),
+        prisma.client.count({ where: effectiveCityId ? { user: { cityId: effectiveCityId } } : {} }),
         prisma.project.count({ where: cityFilter }),
-        prisma.invoice.count({ where: { status: "DRAFT", ...(superAdmin && selectedCity !== "all" ? { client: { user: { cityId: selectedCity } } } : {}) } }),
+        prisma.invoice.count({ where: { status: "DRAFT", ...(effectiveCityId ? { client: { user: { cityId: effectiveCityId } } } : {}) } }),
         prisma.tutoringRequest.count({ where: { status: "NEW" } }),
       ])
     const logs = await prisma.hourLog.findMany({ select: { hours: true } })

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin, isTutor, getTutorId, isSuperAdmin } from "@/lib/auth-helpers"
+import { requireAuth, isAdmin, isTutor, getTutorId, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
 import { GRADE_LABELS, STATUS_LABELS, STATUS_COLORS } from "@/lib/constants"
 import { CityFilter } from "@/components/city-filter"
 import { CreateProjectForm } from "@/components/create-project-form"
@@ -15,6 +15,8 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
   const projectType = typeFilter || "STUDENT"
   const selectedCity = cityParam || "all"
   const superAdmin = isSuperAdmin(session.user.role)
+  const cityAdminId = isCityAdmin(session.user.role) ? await getActiveCityId(session.user.role, session.user.id) : null
+  const effectiveCityId = cityAdminId || (superAdmin && selectedCity !== "all" ? selectedCity : null)
 
   let whereClause: Record<string, unknown> = { projectType }
   if (tutor) {
@@ -32,6 +34,8 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
 
   if (superAdmin && selectedCity !== "all") {
     whereClause = { ...whereClause, cityId: selectedCity }
+  } else if (cityAdminId) {
+    whereClause = { ...whereClause, cityId: cityAdminId }
   }
 
   const projects = await prisma.project.findMany({
@@ -53,7 +57,7 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
   ]
 
   const clients = admin ? await prisma.client.findMany({
-    where: superAdmin && selectedCity !== "all" ? { user: { cityId: selectedCity } } : {},
+    where: effectiveCityId ? { user: { cityId: effectiveCityId } } : {},
     include: { user: { select: { name: true } } },
     orderBy: { user: { name: "asc" } },
   }) : []

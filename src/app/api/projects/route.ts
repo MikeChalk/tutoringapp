@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
-import { isAdmin, isSuperAdmin, getActiveCityId } from "@/lib/auth-helpers"
+import { isAdmin, getActiveCityId } from "@/lib/auth-helpers"
 
 export async function POST(request: Request) {
   const session = await auth()
