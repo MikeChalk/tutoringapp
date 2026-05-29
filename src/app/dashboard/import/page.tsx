@@ -1,5 +1,7 @@
-import { requireAuth, isAdmin } from "@/lib/auth-helpers"
-import { redirect } from "next/navigation"
+"use client"
+
+import { useState, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 
 const IMPORT_TYPES = [
@@ -9,14 +11,86 @@ const IMPORT_TYPES = [
   { value: "invoices", label: "Invoices" },
 ]
 
-export default async function ImportPage(props: { searchParams: Promise<{ tab?: string; created?: string; skipped?: string; err?: string | string[] }> }) {
-  const session = await requireAuth()
-  if (!isAdmin(session.user.role)) redirect("/dashboard")
+interface PreviewRow {
+  row: number
+  issues: string[]
+  resolved: Record<string, string>
+  canImport: boolean
+}
 
-  const { tab, created, skipped, err } = await props.searchParams
-  const activeTab = tab || "team"
+function ImportContent() {
+  const searchParams = useSearchParams()
+  const tab = searchParams.get("tab") || "team"
+  const created = searchParams.get("created")
+  const skipped = searchParams.get("skipped")
+  const err = searchParams.getAll("err")
+
+  const [file, setFile] = useState<File | null>(null)
+  const [fileContent, setFileContent] = useState("")
+  const [preview, setPreview] = useState<PreviewRow[] | null>(null)
+  const [selected, setSelected] = useState<Set<number>>(new Set())
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0] || null
+    setFile(f)
+    setPreview(null)
+    setError("")
+    if (f) {
+      const reader = new FileReader()
+      reader.onload = () => setFileContent(reader.result as string)
+      reader.readAsText(f)
+    }
+  }
+
+  async function handlePreview() {
+    if (!file) return
+    setLoading(true)
+    setError("")
+    setPreview(null)
+
+    const fd = new FormData()
+    fd.append("file", file)
+    fd.append("type", tab)
+    fd.append("_action", "preview")
+
+    try {
+      const res = await fetch("/api/import", { method: "POST", body: fd })
+      const data = await res.json()
+      if (data.error) { setError(data.error); return }
+      setPreview(data.preview)
+      const importable = new Set<number>()
+      data.preview.forEach((r: PreviewRow) => { if (r.canImport) importable.add(r.row - 1) })
+      setSelected(importable)
+    } catch {
+      setError("Failed to preview file")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function toggleRow(idx: number) {
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (next.has(idx)) next.delete(idx)
+      else next.add(idx)
+      return next
+    })
+  }
+
+  function toggleAll() {
+    if (!preview) return
+    const allImportable = preview.filter(r => r.canImport).map(r => r.row - 1)
+    if (allImportable.every(i => selected.has(i))) {
+      setSelected(new Set())
+    } else {
+      setSelected(new Set(allImportable))
+    }
+  }
+
   const hasResult = created || skipped
-  const errors = err ? (Array.isArray(err) ? err : [err]) : []
+  const errors = err || []
 
   return (
     <div>
@@ -24,7 +98,11 @@ export default async function ImportPage(props: { searchParams: Promise<{ tab?: 
 
       {hasResult && (
         <div className={`mb-6 rounded-xl border p-4 ${errors.length > 0 ? "bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700" : "bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700"}`}>
-          <p className="text-sm font-medium text-green-800 dark:text-green-300">Created: {created || 0} &middot; Skipped: {skipped || 0}</p>
+          <p className="text-sm font-medium">
+            <span className="text-green-800 dark:text-green-300">Created: {created || 0}</span>
+            <span className="text-zinc-500 mx-2">&middot;</span>
+            <span className="text-amber-700 dark:text-amber-400">Skipped: {skipped || 0}</span>
+          </p>
           {errors.length > 0 && (
             <ul className="mt-2 space-y-1">
               {errors.map((e, i) => <li key={i} className="text-xs text-red-600 dark:text-red-400">{e}</li>)}
@@ -34,89 +112,168 @@ export default async function ImportPage(props: { searchParams: Promise<{ tab?: 
       )}
 
       <div className="flex gap-2 mb-6">
-        {IMPORT_TYPES.map((t) => {
-          const params = new URLSearchParams()
-          params.set("tab", t.value)
-          return (
-            <Link key={t.value} href={`/dashboard/import?${params.toString()}`}
-              className={`text-sm px-3 py-1.5 rounded-lg transition-colors ${activeTab === t.value ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900" : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700"}`}>
-              {t.label}
-            </Link>
-          )
-        })}
+        {IMPORT_TYPES.map((t) => (
+          <Link key={t.value} href={`/dashboard/import?tab=${t.value}`}
+            className={`text-sm px-3 py-1.5 rounded-lg transition-colors ${tab === t.value ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900" : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700"}`}>
+            {t.label}
+          </Link>
+        ))}
       </div>
+
+      {error && (
+        <div className="mb-4 rounded-lg border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20 p-3">
+          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Upload CSV</h3>
-          <form action="/api/import" method="POST" encType="multipart/form-data" className="space-y-4">
-            <input type="hidden" name="type" value={activeTab} />
+          <div className="space-y-4">
             <div>
               <label className="block text-xs text-zinc-500 mb-1">CSV File</label>
-              <input type="file" name="file" accept=".csv" required
+              <input type="file" accept=".csv" required
+                onChange={handleFileChange}
                 className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500 file:mr-3 file:rounded file:border-0 file:bg-zinc-100 dark:file:bg-zinc-700 file:px-3 file:py-1 file:text-xs" />
             </div>
-            <button type="submit"
-              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">
-              Import {IMPORT_TYPES.find(t => t.value === activeTab)?.label || ""}
+            <button type="button" onClick={handlePreview} disabled={!file || loading}
+              className="rounded-lg bg-zinc-900 dark:bg-white px-4 py-2 text-sm font-medium text-white dark:text-zinc-900 hover:opacity-90 transition-opacity disabled:opacity-50">
+              {loading ? "Analyzing..." : "Preview"}
             </button>
-          </form>
+          </div>
         </div>
 
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Format</h3>
-          {activeTab === "team" && (
-            <div className="space-y-2 text-sm">
-              <p className="text-zinc-500">CSV columns (header row required):</p>
-              <code className="block bg-zinc-50 dark:bg-zinc-900 rounded p-3 text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">name, email, tenure, subjects, grade_levels, city, onboarded
-Sarah Chen, sarah@email.com, 1ST_YEAR, "Math, Physics", "ELEMENTARY, SEC3", Montreal, true
-David Nguyen, david@email.com, 2ND_YEAR, "English, French", "SEC1_2, SEC4_5", Montreal, false</code>
-              <div className="text-xs text-zinc-400 space-y-1 mt-2">
-                <p><strong>name</strong> — required</p>
-                <p><strong>email</strong> — required, unique</p>
-                <p><strong>tenure</strong> — 1ST_YEAR, 2ND_YEAR, or 3RD_YEAR (default: 1ST_YEAR)</p>
-                <p><strong>subjects</strong> — comma-separated (default: empty)</p>
-                <p><strong>grade_levels</strong> — comma-separated grade codes (default: empty)</p>
-                <p><strong>city</strong> — city name to assign (default: none)</p>
-                <p><strong>onboarded</strong> — true/false, if false goes to waitlist (default: false)</p>
-              </div>
-            </div>
-          )}
-          {activeTab === "clients" && (
-            <div className="space-y-2 text-sm">
-              <p className="text-zinc-500">CSV columns (header row required):</p>
-              <code className="block bg-zinc-50 dark:bg-zinc-900 rounded p-3 text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">name, email, type, company, phone, address, city
-John Smith, john@email.com, PARENT, , 514-555-0100, 123 Main St, Montreal
-Westmount High, admin@wsh.qc.ca, SCHOOL, Westmount High, 514-555-0200, 456 Elm Ave, Montreal</code>
-              <div className="text-xs text-zinc-400 space-y-1 mt-2">
-                <p><strong>name</strong> — required</p>
-                <p><strong>email</strong> — required, unique</p>
-                <p><strong>type</strong> — PARENT or SCHOOL</p>
-                <p><strong>company</strong> — optional</p>
-                <p><strong>phone</strong> — optional</p>
-                <p><strong>address</strong> — optional</p>
-                <p><strong>city</strong> — city name (default: none)</p>
-              </div>
-            </div>
-          )}
-          {activeTab === "expenses" && (
-            <div className="space-y-2 text-sm">
-              <p className="text-zinc-500">CSV columns (header row required):</p>
-              <code className="block bg-zinc-50 dark:bg-zinc-900 rounded p-3 text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">description, amount, category, date, city
-Office supplies, 45.99, SUPPLIES, 2026-05-15, Montreal
-Software subscription, 99.00, SOFTWARE, 2026-05-01, Montreal</code>
-            </div>
-          )}
-          {activeTab === "invoices" && (
-            <div className="space-y-2 text-sm">
-              <p className="text-zinc-500">CSV columns (header row required):</p>
-              <code className="block bg-zinc-50 dark:bg-zinc-900 rounded p-3 text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">client_email, description, hours, rate, amount, status, due_date
-john@email.com, Tutoring May 2026, 4, 45.00, 180.00, SENT, 2026-06-15
-sarah@email.com, Tutoring May 2026, 2, 40.00, 80.00, DRAFT, 2026-06-15</code>
-            </div>
-          )}
+          {tab === "team" && <FormatHelp type="team" />}
+          {tab === "clients" && <FormatHelp type="clients" />}
+          {tab === "expenses" && <FormatHelp type="expenses" />}
+          {tab === "invoices" && <FormatHelp type="invoices" />}
         </div>
       </div>
+
+      {preview && preview.length > 0 && (
+        <div className="mt-6 bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
+          <div className="p-4 border-b border-zinc-200 dark:border-zinc-700 flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+                Preview ({preview.length} rows)
+              </h3>
+              <p className="text-xs text-zinc-500 mt-0.5">
+                {preview.filter(r => r.canImport).length} valid &middot;
+                {selected.size} selected &middot;
+                {preview.filter(r => r.issues.length > 0).length} with issues
+              </p>
+            </div>
+            <form action="/api/import" method="POST" encType="multipart/form-data">
+              <input type="hidden" name="type" value={tab} />
+              <input type="hidden" name="fileContent" value={fileContent} />
+              <input type="hidden" name="rows" value={JSON.stringify([...selected])} />
+              <button type="submit" disabled={selected.size === 0}
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors disabled:opacity-50">
+                Import {selected.size} Rows
+              </button>
+            </form>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900">
+                  <th className="px-3 py-2 text-left">
+                    <input type="checkbox" className="rounded"
+                      checked={preview.filter(r => r.canImport).every(r => selected.has(r.row - 1))}
+                      onChange={toggleAll} />
+                  </th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-zinc-500 uppercase">Row</th>
+                  {Object.keys(preview[0].resolved).map(k => (
+                    <th key={k} className="text-left px-3 py-2 text-xs font-medium text-zinc-500 uppercase">{k}</th>
+                  ))}
+                  <th className="text-left px-3 py-2 text-xs font-medium text-zinc-500 uppercase">Issues</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700/50">
+                {preview.map((r) => {
+                  const idx = r.row - 1
+                  return (
+                    <tr key={r.row} className={`text-sm ${!r.canImport ? "bg-red-50 dark:bg-red-900/10" : ""}`}>
+                      <td className="px-3 py-2">
+                        <input type="checkbox" className="rounded"
+                          checked={selected.has(idx)}
+                          disabled={!r.canImport}
+                          onChange={() => toggleRow(idx)} />
+                      </td>
+                      <td className="px-3 py-2 text-xs text-zinc-500">{r.row}</td>
+                      {Object.entries(r.resolved).map(([k, v]) => (
+                        <td key={k} className="px-3 py-2 text-zinc-900 dark:text-zinc-100 whitespace-nowrap text-xs">
+                          {v || "-"}
+                        </td>
+                      ))}
+                      <td className="px-3 py-2 text-xs text-red-600 dark:text-red-400">
+                        {r.issues.length > 0 ? r.issues.join(", ") : <span className="text-green-600 dark:text-green-400">OK</span>}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
+  )
+}
+
+function FormatHelp({ type }: { type: string }) {
+  if (type === "team") return (
+    <div className="space-y-2 text-sm">
+      <p className="text-zinc-500">CSV columns (header row required):</p>
+      <code className="block bg-zinc-50 dark:bg-zinc-900 rounded p-3 text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">name, email, tenure, subjects, grade_levels, city, onboarded
+Sarah Chen, sarah@email.com, 1ST_YEAR, "Math, Physics", "ELEMENTARY, SEC3", Montreal, true</code>
+      <div className="text-xs text-zinc-400 space-y-1 mt-2">
+        <p><strong>name</strong> — required</p>
+        <p><strong>email</strong> — required, unique</p>
+        <p><strong>tenure</strong> — 1ST_YEAR, 2ND_YEAR, 3RD_YEAR</p>
+        <p><strong>grade_levels</strong> — ELEMENTARY, SEC1_2, SEC3, SEC4_5, CEGEP, UNI</p>
+        <p><strong>city</strong> — city name to assign</p>
+        <p><strong>onboarded</strong> — true = active, false = waitlist</p>
+      </div>
+    </div>
+  )
+  if (type === "clients") return (
+    <div className="space-y-2 text-sm">
+      <p className="text-zinc-500">CSV columns:</p>
+      <code className="block bg-zinc-50 dark:bg-zinc-900 rounded p-3 text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">name, email, type, company, phone, address, city
+Westmount High, admin@wsh.qc.ca, SCHOOL, Westmount High, 514-555-0200, 456 Elm, Montreal</code>
+      <div className="text-xs text-zinc-400 space-y-1 mt-2">
+        <p><strong>type</strong> — PARENT or SCHOOL</p>
+        <p><strong>company</strong> — optional</p>
+      </div>
+    </div>
+  )
+  if (type === "expenses") return (
+    <div className="space-y-2 text-sm">
+      <p className="text-zinc-500">CSV columns:</p>
+      <code className="block bg-zinc-50 dark:bg-zinc-900 rounded p-3 text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">description, amount, category, date, city
+Office supplies, 45.99, SUPPLIES, 2026-05-15, Montreal</code>
+    </div>
+  )
+  if (type === "invoices") return (
+    <div className="space-y-2 text-sm">
+      <p className="text-zinc-500">CSV columns:</p>
+      <code className="block bg-zinc-50 dark:bg-zinc-900 rounded p-3 text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">client_email, description, hours, rate, amount, status, due_date
+john@email.com, Tutoring May 2026, 4, 45, 180, SENT, 2026-06-15</code>
+      <div className="text-xs text-zinc-400 space-y-1 mt-2">
+        <p><strong>client_email</strong> — must match existing client</p>
+      </div>
+    </div>
+  )
+  return null
+}
+
+export default function ImportPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-zinc-500">Loading...</div>}>
+      <ImportContent />
+    </Suspense>
   )
 }
