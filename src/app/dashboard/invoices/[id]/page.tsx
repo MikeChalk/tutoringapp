@@ -53,6 +53,7 @@ export default async function InvoiceDetailPage(props: { params: Promise<{ id: s
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <a href={`/api/invoices/${invoice.id}/pdf`} className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Download</a>
           {client && invoice.status !== "PAID" && <PayNowButton invoiceId={invoice.id} />}
           <span
             className={`inline-flex text-sm font-medium rounded-full px-3 py-1 ${

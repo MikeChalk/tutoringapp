@@ -34,6 +34,7 @@ const adminSections = [
     label: "Finance",
     links: [
       { href: "/dashboard/invoices", label: "Invoices" },
+      { href: "/dashboard/payments-admin", label: "Payouts" },
       { href: "/dashboard/expenses", label: "Finance" },
       { href: "/dashboard/rates", label: "Rates & Cities" },
     ],
