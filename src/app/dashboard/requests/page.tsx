@@ -9,7 +9,7 @@ export default async function RequestsPage() {
   let tutorId: string | null = null
   let requestsWhere = {}
   if (tutor) {
-    tutorId = await getTutorId(session.user.id)
+    tutorId = await getTutorId(session.user.id, session.user.email)
     if (tutorId) {
       requestsWhere = { matchedTutorId: tutorId }
     }

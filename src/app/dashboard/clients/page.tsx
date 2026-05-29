@@ -9,7 +9,7 @@ export default async function ClientsPage() {
 
   let whereClause = {}
   if (tutor) {
-    const tutorId = await getTutorId(session.user.id)
+    const tutorId = await getTutorId(session.user.id, session.user.email)
     if (tutorId) {
       whereClause = { projects: { some: { projectTutors: { some: { tutorId } } } } }
     }

@@ -31,7 +31,7 @@ export default async function HoursPage() {
   let currentTutor: { id: string; tenure: string; user: { name: string } } | null = null
 
   if (tutor) {
-    tutorId = await getTutorId(session.user.id)
+    tutorId = await getTutorId(session.user.id, session.user.email)
     currentTutor = tutorId
       ? await prisma.tutor.findUnique({
           where: { id: tutorId },

@@ -17,7 +17,7 @@ export default async function DashboardPage() {
   let newRequests: number
 
   if (tutor) {
-    const tutorId = await getTutorId(session.user.id)
+    const tutorId = await getTutorId(session.user.id, session.user.email)
 
     if (!tutorId) {
       tutorCount = 0
@@ -52,7 +52,7 @@ export default async function DashboardPage() {
         prisma.tutoringRequest.count({ where: { status: "NEW" } }),
       ])
   } else if (client) {
-    const clientId = await getClientId(session.user.id)
+    const clientId = await getClientId(session.user.id, session.user.email)
     if (!clientId) {
       tutorCount = 0; clientCount = 0; projectCount = 0
       pendingHours = 0; pendingInvoices = 0; newRequests = 0
@@ -89,7 +89,7 @@ export default async function DashboardPage() {
         {!tutor && (
           <StatCard label="Draft Invoices" value={pendingInvoices} href="/dashboard/invoices" highlight />
         )}
-        <StatCard label="New Requests" value={newRequests} href="/dashboard/requests" highlight />
+        <StatCard label={tutor ? "Offers" : "New Requests"} value={newRequests} href="/dashboard/requests" highlight />
       </div>
     </div>
   )

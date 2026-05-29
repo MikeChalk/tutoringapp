@@ -6,7 +6,7 @@ export default async function PaymentsPage() {
   const session = await requireAuth()
   if (!isTutor(session.user.role)) redirect("/dashboard")
 
-  const tutorId = await getTutorId(session.user.id)
+  const tutorId = await getTutorId(session.user.id, session.user.email)
   if (!tutorId) redirect("/dashboard")
 
   const hourLogs = await prisma.hourLog.findMany({

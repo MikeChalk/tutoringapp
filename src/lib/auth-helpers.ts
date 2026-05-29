@@ -8,13 +8,21 @@ export async function requireAuth() {
   return session
 }
 
-export async function getTutorId(userId: string) {
-  const tutor = await prisma.tutor.findUnique({ where: { userId } })
+export async function getTutorId(userId: string, email: string) {
+  const byId = await prisma.tutor.findUnique({ where: { userId } })
+  if (byId) return byId.id
+  const user = await prisma.user.findUnique({ where: { email } })
+  if (!user) return null
+  const tutor = await prisma.tutor.findUnique({ where: { userId: user.id } })
   return tutor?.id ?? null
 }
 
-export async function getClientId(userId: string) {
-  const client = await prisma.client.findUnique({ where: { userId } })
+export async function getClientId(userId: string, email: string) {
+  const byId = await prisma.client.findUnique({ where: { userId } })
+  if (byId) return byId.id
+  const user = await prisma.user.findUnique({ where: { email } })
+  if (!user) return null
+  const client = await prisma.client.findUnique({ where: { userId: user.id } })
   return client?.id ?? null
 }
 

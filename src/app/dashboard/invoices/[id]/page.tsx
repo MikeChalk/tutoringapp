@@ -26,7 +26,7 @@ export default async function InvoiceDetailPage(props: { params: Promise<{ id: s
   if (!invoice) notFound()
 
   if (client) {
-    const clientId = await getClientId(session.user.id)
+    const clientId = await getClientId(session.user.id, session.user.email)
     if (!clientId || invoice.clientId !== clientId) notFound()
   }
 

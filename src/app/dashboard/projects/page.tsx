@@ -28,7 +28,7 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ show
 
   let whereClause: Record<string, unknown> = {}
   if (tutor) {
-    const tutorId = await getTutorId(session.user.id)
+    const tutorId = await getTutorId(session.user.id, session.user.email)
     if (tutorId) {
       whereClause = { projectTutors: { some: { tutorId } } }
     }

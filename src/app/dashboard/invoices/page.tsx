@@ -13,7 +13,7 @@ export default async function InvoicesPage() {
 
   let whereClause = {}
   if (client) {
-    const clientId = await getClientId(session.user.id)
+    const clientId = await getClientId(session.user.id, session.user.email)
     if (clientId) {
       whereClause = { clientId }
     }

@@ -19,7 +19,7 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
 
   let hasAccess = true
   if (tutor) {
-    const tutorId = await getTutorId(session.user.id)
+    const tutorId = await getTutorId(session.user.id, session.user.email)
     if (!tutorId) {
       hasAccess = false
     } else {
