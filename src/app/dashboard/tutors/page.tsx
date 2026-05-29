@@ -9,6 +9,7 @@ export default async function TutorsPage() {
   if (!isAdmin(session.user.role)) redirect("/dashboard")
 
   const tutors = await prisma.tutor.findMany({
+    where: { onboarded: true },
     include: { user: { select: { name: true, email: true } } },
     orderBy: { createdAt: "desc" },
   })
