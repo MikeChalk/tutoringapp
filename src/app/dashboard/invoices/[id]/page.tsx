@@ -1,8 +1,9 @@
 import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin, isTutor, isClient, getClientId } from "@/lib/auth-helpers"
 import { redirect, notFound } from "next/navigation"
+import { PayNowButton } from "@/components/pay-now-button"
 
-export default async function InvoiceDetailPage(props: { params: Promise<{ id: string }> }) {
+export default async function InvoiceDetailPage(props: { params: Promise<{ id: string }>; searchParams: Promise<{ paid?: string }> }) {
   const session = await requireAuth()
   const admin = isAdmin(session.user.role)
   const tutor = isTutor(session.user.role)
@@ -11,6 +12,7 @@ export default async function InvoiceDetailPage(props: { params: Promise<{ id: s
   if (tutor) redirect("/dashboard")
 
   const { id } = await props.params
+  const { paid } = await props.searchParams
 
   const invoice = await prisma.invoice.findUnique({
     where: { id },
@@ -32,6 +34,12 @@ export default async function InvoiceDetailPage(props: { params: Promise<{ id: s
 
   return (
     <div>
+      {paid === "1" && (
+        <div className="bg-green-50 dark:bg-green-900/20 border border-green-300 dark:border-green-700 rounded-xl p-4 mb-6">
+          <p className="text-sm font-medium text-green-800 dark:text-green-300">Payment successful! A receipt has been sent to your email.</p>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
@@ -42,19 +50,22 @@ export default async function InvoiceDetailPage(props: { params: Promise<{ id: s
             {invoice.client.user.city?.name && <span> &middot; {invoice.client.user.city.name}</span>}
           </p>
         </div>
-        <span
-          className={`inline-flex text-sm font-medium rounded-full px-3 py-1 ${
-            invoice.status === "PAID"
-              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-              : invoice.status === "SENT"
-              ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-              : invoice.status === "DRAFT"
-              ? "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"
-              : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-          }`}
-        >
-          {invoice.status}
-        </span>
+        <div className="flex items-center gap-3">
+          {client && invoice.status !== "PAID" && <PayNowButton invoiceId={invoice.id} />}
+          <span
+            className={`inline-flex text-sm font-medium rounded-full px-3 py-1 ${
+              invoice.status === "PAID"
+                ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                : invoice.status === "SENT"
+                ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                : invoice.status === "DRAFT"
+                ? "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"
+                : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+            }`}
+          >
+            {invoice.status}
+          </span>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

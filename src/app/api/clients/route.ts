@@ -2,7 +2,9 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { isAdmin } from "@/lib/auth-helpers"
+import { sendClientInviteEmail } from "@/lib/email"
 import bcrypt from "bcryptjs"
+import crypto from "crypto"
 
 export async function POST(request: Request) {
   const session = await auth()
@@ -44,14 +46,18 @@ export async function POST(request: Request) {
 
   const tempPassword = Math.random().toString(36).slice(2, 10)
   const hashed = await bcrypt.hash(tempPassword, 12)
+  const signupToken = crypto.randomBytes(16).toString("hex")
 
   const user = await prisma.user.create({
-    data: { name, email, password: hashed, role: "CLIENT", cityId },
+    data: { name, email, password: hashed, role: "CLIENT", cityId, signupToken },
   })
 
   await prisma.client.create({
     data: { userId: user.id, type: clientType, company, phone, address },
   })
+
+  const inviteUrl = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/invite/${signupToken}`
+  await sendClientInviteEmail(email, name, inviteUrl)
 
   return NextResponse.redirect(new URL("/dashboard/clients", request.url), 303)
 }

@@ -26,6 +26,16 @@ export async function sendOnboardingEmail(to: string, name: string, message: str
   })
 }
 
+export async function sendClientInviteEmail(to: string, name: string, inviteUrl: string) {
+  if (!resend) { log({ to, subject: "Client invite" }); return }
+  await resend.emails.send({
+    from: "J.A.S.S. Tutors <info@jasstutors.com>",
+    to,
+    subject: "Your J.A.S.S. account — Complete Setup",
+    html: `<p>Hi ${name},</p><p>You've been added as a client of J.A.S.S. Tutoring Services. Please complete your account setup to view and pay invoices.</p><p style="margin:16px 0"><a href="${inviteUrl}" style="background:#18181b;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;font-weight:500">Set Up Your Account</a></p><p>You can also paste this link: ${inviteUrl}</p><p>— J.A.S.S. Tutors</p>`,
+  })
+}
+
 export async function sendParentNotificationEmail(to: string, parentName: string, tutorName: string, message: string) {
   if (!resend) { log({ to, subject: "Tutor match" }); return }
   await resend.emails.send({
