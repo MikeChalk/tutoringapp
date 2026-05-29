@@ -36,7 +36,7 @@ async function main() {
         type: "PROGRAM_SUPERVISOR",
         yearLevel: "1ST_YEAR",
         isDefault: true,
-        rates: JSON.stringify({ in_person_mgmt: 25, online_mgmt: 22, supervision: 20, marketing: 20 }),
+        rates: JSON.stringify({ ELEMENTARY: 22, SEC1_2: 25, SEC3: 28, SEC4_5: 30, CEGEP: 35, UNI: 40, STUDY_HALL: 20, in_person_mgmt: 25, online_mgmt: 22, supervision: 20, marketing: 20 }),
         terms: "This Program Supervisor Agreement is entered into between J.A.S.S. Tutoring Services and the Supervisor.\n\nThe Supervisor agrees to oversee study hall programs at partner schools. Responsibilities include program management, student supervision, marketing, and coordination with school administrators.\n\nCompensation is based on the rates specified for each category. Hours must be logged with the appropriate category selected.\n\nThis agreement is valid for one academic year and may be renewed upon mutual agreement.",
       },
       {
@@ -44,7 +44,7 @@ async function main() {
         type: "PROGRAM_SUPERVISOR",
         yearLevel: "2ND_YEAR",
         isDefault: true,
-        rates: JSON.stringify({ in_person_mgmt: 28, online_mgmt: 25, supervision: 22, marketing: 22 }),
+        rates: JSON.stringify({ ELEMENTARY: 25, SEC1_2: 28, SEC3: 32, SEC4_5: 35, CEGEP: 40, UNI: 45, STUDY_HALL: 22, in_person_mgmt: 28, online_mgmt: 25, supervision: 22, marketing: 22 }),
         terms: "This Program Supervisor Agreement is entered into between J.A.S.S. Tutoring Services and the Supervisor.\n\nThe Supervisor agrees to oversee study hall programs at partner schools. Responsibilities include program management, student supervision, marketing, and coordination with school administrators.\n\nYear 2 supervisors may also assist with matching tutors to study hall shifts.\n\nCompensation is based on the rates specified for each category. Hours must be logged with the appropriate category selected.\n\nThis agreement is valid for one academic year and may be renewed upon mutual agreement.",
       },
       {
@@ -52,7 +52,7 @@ async function main() {
         type: "PROGRAM_SUPERVISOR",
         yearLevel: "3RD_YEAR",
         isDefault: true,
-        rates: JSON.stringify({ in_person_mgmt: 32, online_mgmt: 28, supervision: 25, marketing: 25 }),
+        rates: JSON.stringify({ ELEMENTARY: 28, SEC1_2: 30, SEC3: 35, SEC4_5: 38, CEGEP: 45, UNI: 50, STUDY_HALL: 25, in_person_mgmt: 32, online_mgmt: 28, supervision: 25, marketing: 25 }),
         terms: "This Program Supervisor Agreement is entered into between J.A.S.S. Tutoring Services and the Supervisor.\n\nThe Supervisor agrees to oversee study hall programs at partner schools. Responsibilities include program management, student supervision, marketing, and coordination with school administrators.\n\nYear 3+ supervisors may also manage teams of supervisors and handle client relationships.\n\nCompensation is based on the rates specified for each category. Hours must be logged with the appropriate category selected.\n\nThis agreement is valid for one academic year and may be renewed upon mutual agreement.",
       },
     ],
