@@ -54,6 +54,7 @@ const adminSections = [
     label: "Data",
     links: [
       { href: "/dashboard/import", label: "Import" },
+      { href: "/dashboard/email", label: "Mass Email" },
     ],
   },
   {
