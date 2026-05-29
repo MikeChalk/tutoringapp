@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { signOut, useSession } from "next-auth/react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -60,30 +60,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname()
   const role = session?.user?.role
   const isAdminRole = role === "ADMIN" || role === "CITY_ADMIN"
-  const isSuperAdmin = role === "ADMIN"
-  const [cityId, setCityId] = useState("")
-  const [cities, setCities] = useState<{ id: string; name: string }[]>([])
-
-  useEffect(() => {
-    if (isSuperAdmin) {
-      fetch("/api/city")
-        .then((r) => r.json())
-        .then((d) => {
-          setCityId(d.selected || "all")
-          setCities(d.cities || [])
-        })
-    }
-  }, [isSuperAdmin])
-
-  async function changeCity(city: string) {
-    await fetch("/api/city", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ city }),
-    })
-    setCityId(city)
-    window.location.reload()
-  }
 
   return (
     <div className="flex min-h-screen">
@@ -113,21 +89,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             ))
           )}
         </nav>
-        {isSuperAdmin && (
-          <div className="px-4 pb-2">
-            <label className="text-xs text-zinc-400 uppercase tracking-wider">City</label>
-            <select
-              value={cityId}
-              onChange={(e) => changeCity(e.target.value)}
-              className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1.5 text-xs mt-1"
-            >
-              <option value="all">All Cities</option>
-              {cities.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-          </div>
-        )}
         <div className="p-4 border-t border-zinc-200 dark:border-zinc-700">
           <button
             onClick={() => signOut({ callbackUrl: "/" })}

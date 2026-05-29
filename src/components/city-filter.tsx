@@ -1,0 +1,24 @@
+import { prisma } from "@/lib/db"
+
+export async function CityFilter({ selected = "all", name = "city" }: { selected?: string; name?: string }) {
+  const cities = await prisma.city.findMany({ select: { id: true, name: true } })
+  const formId = `cityFilterForm-${name}`
+  return (
+    <>
+      <form className="flex items-center gap-2" id={formId}>
+        <label className="text-sm text-zinc-500">City:</label>
+        <select
+          name={name}
+          defaultValue={selected}
+          className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-1.5 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="all">All Cities</option>
+          {cities.map((c) => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
+      </form>
+      <script dangerouslySetInnerHTML={{ __html: `document.querySelector('#${formId} select')?.addEventListener('change',function(){this.form.submit()})` }} />
+    </>
+  )
+}
