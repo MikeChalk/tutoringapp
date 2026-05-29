@@ -6,6 +6,11 @@ export default async function OnboardingPage() {
   const session = await requireAuth()
   if (!isAdmin(session.user.role)) redirect("/dashboard")
 
+  const today = new Date()
+  const july1ThisYear = new Date(today.getFullYear(), 6, 1)
+  const nextJuly1 = today < july1ThisYear ? july1ThisYear : new Date(today.getFullYear() + 1, 6, 1)
+  const endDateDefault = nextJuly1.toISOString().split("T")[0]
+
   const pendingTutors = await prisma.tutor.findMany({
     where: { onboarded: false, isActive: true },
     include: { user: { select: { name: true, email: true } } },
@@ -63,7 +68,7 @@ export default async function OnboardingPage() {
                       defaultValue={new Date().toISOString().split("T")[0]}
                       className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500" />
                     <input type="date" name="endDate" required
-                      defaultValue={new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]}
+                      defaultValue={endDateDefault}
                       className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500" />
                     <button type="submit"
                       className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 transition-colors">
