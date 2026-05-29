@@ -1,18 +1,38 @@
 "use client"
 
+import { useState } from "react"
 import { signOut, useSession } from "next-auth/react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
-const adminLinks = [
-  { href: "/dashboard", label: "Overview" },
-  { href: "/dashboard/tutors", label: "Tutors" },
-  { href: "/dashboard/clients", label: "Clients" },
-  { href: "/dashboard/projects", label: "Students" },
-  { href: "/dashboard/hours", label: "Log Hours" },
-  { href: "/dashboard/invoices", label: "Invoices" },
-  { href: "/dashboard/requests", label: "Tutoring Requests" },
-  { href: "/dashboard/onboarding", label: "Tutor Waitlist" },
+const adminSections = [
+  {
+    label: "Overview",
+    links: [{ href: "/dashboard", label: "Dashboard" }],
+  },
+  {
+    label: "HRM",
+    links: [
+      { href: "/dashboard/tutors", label: "Tutors" },
+      { href: "/dashboard/onboarding", label: "Tutor Waitlist" },
+    ],
+  },
+  {
+    label: "CRM",
+    links: [{ href: "/dashboard/clients", label: "Clients" }],
+  },
+  {
+    label: "Productivity",
+    links: [
+      { href: "/dashboard/projects", label: "Students" },
+      { href: "/dashboard/hours", label: "Log Hours" },
+      { href: "/dashboard/requests", label: "Tutoring Requests" },
+    ],
+  },
+  {
+    label: "Finance",
+    links: [{ href: "/dashboard/invoices", label: "Invoices" }],
+  },
 ]
 
 const tutorLinks = [
@@ -31,41 +51,38 @@ const clientLinks = [
   { href: "/dashboard/invoices", label: "Invoices" },
 ]
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession()
   const pathname = usePathname()
   const role = session?.user?.role
-  const links = role === "ADMIN" ? adminLinks : role === "TUTOR" ? tutorLinks : clientLinks
 
   return (
     <div className="flex min-h-screen">
       <aside className="w-64 bg-white dark:bg-zinc-800 border-r border-zinc-200 dark:border-zinc-700 flex flex-col">
         <div className="p-6 border-b border-zinc-200 dark:border-zinc-700">
-          <h1 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
-            Tutoring Manager
-          </h1>
+          <h1 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">Tutoring Manager</h1>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
             {session?.user?.role} &middot; {session?.user?.email}
           </p>
         </div>
-        <nav className="flex-1 p-4 flex flex-col gap-1">
-          {links.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                pathname === link.href || (link.href !== "/dashboard" && pathname.startsWith(link.href))
-                  ? "bg-zinc-100 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100"
-                  : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700/50"
-              }`}
-            >
-              {link.label}
-            </Link>
-          ))}
+        <nav className="flex-1 p-4 flex flex-col gap-1 overflow-auto">
+          {role === "ADMIN" ? (
+            <AdminNav pathname={pathname} />
+          ) : (
+            (role === "TUTOR" ? tutorLinks : clientLinks).map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  pathname === link.href || (link.href !== "/dashboard" && pathname.startsWith(link.href))
+                    ? "bg-zinc-100 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100"
+                    : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700/50"
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))
+          )}
         </nav>
         <div className="p-4 border-t border-zinc-200 dark:border-zinc-700">
           <button
@@ -80,5 +97,66 @@ export default function DashboardLayout({
         <div className="p-8">{children}</div>
       </main>
     </div>
+  )
+}
+
+function AdminNav({ pathname }: { pathname: string }) {
+  const [open, setOpen] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {}
+    for (const s of adminSections) initial[s.label] = true
+    return initial
+  })
+
+  return (
+    <>
+      {adminSections.map((section) => (
+        <div key={section.label}>
+          {section.links.length === 1 && section.label === "Overview" ? (
+            <Link
+              href={section.links[0].href}
+              className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors block ${
+                pathname === section.links[0].href
+                  ? "bg-zinc-100 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100"
+                  : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700/50"
+              }`}
+            >
+              {section.links[0].label}
+            </Link>
+          ) : (
+            <>
+              <button
+                onClick={() => setOpen((p) => ({ ...p, [section.label]: !p[section.label] }))}
+                className="w-full flex items-center justify-between rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+              >
+                {section.label}
+                <svg
+                  className={`w-3 h-3 transition-transform ${open[section.label] ? "rotate-90" : ""}`}
+                  fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+              {open[section.label] && (
+                <div className="ml-2 flex flex-col gap-1 mt-1">
+                  {section.links.map((link) => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${
+                        pathname === link.href || (link.href !== "/dashboard" && pathname.startsWith(link.href))
+                          ? "bg-zinc-100 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 font-medium"
+                          : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700/50"
+                      }`}
+                    >
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      ))}
+    </>
   )
 }
