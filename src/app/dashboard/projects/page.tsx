@@ -117,7 +117,7 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
               className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 hover:border-zinc-400 dark:hover:border-zinc-500 transition-colors">
               <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">{project.name}</h3>
               <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">{project.client?.user.name || "Other"}</p>
-              {project.school && <p className="text-xs text-zinc-400 mt-0.5">{project.school}</p>}
+              {project.projectType === "STUDENT" && project.school && <p className="text-xs text-zinc-400 mt-0.5">{project.school}</p>}
               {project.city?.name && <span className="inline-block text-xs font-medium px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400 mt-1">{project.city.name}</span>}
               <p className="text-xs text-zinc-400 mt-0.5">{new Date(project.createdAt).toLocaleDateString()}</p>
               <div className="flex flex-wrap gap-2 mt-2">

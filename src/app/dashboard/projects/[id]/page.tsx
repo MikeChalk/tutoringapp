@@ -66,9 +66,6 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
   return (
     <div>
       <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-1">{project.name}</h2>
-      {project.school && (
-        <p className="text-base font-medium text-zinc-600 dark:text-zinc-300 mb-1">{project.school}</p>
-      )}
       <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-2">
         Client: {project.client?.user.name || "N/A"} &middot; {GRADE_LABELS[project.gradeLevel]} &middot; {project.city?.name || project.client?.user.city?.name || ""} &middot; Started {new Date(project.createdAt).toLocaleDateString()}
       </p>
@@ -99,19 +96,7 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
         </div>
       </div>
 
-      {grades.length > 0 && (
-        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 mb-6">
-          <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-3">Billing Rates ({GRADE_LABELS[project.gradeLevel]})</h3>
-          <div className="flex gap-4">
-            {grades.map((g) => (
-              <div key={g.id} className="flex-1 bg-zinc-50 dark:bg-zinc-900 rounded-lg p-3 text-center">
-                <p className="text-xs text-zinc-500 mb-1">{g.mode === "ONLINE" ? "Online" : "In Person"}</p>
-                <p className="text-xl font-bold text-zinc-900 dark:text-zinc-100">${g.rate}/hr</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {admin && <EditProjectForm project={project} />}
 
       {admin && (
         <details className="mb-6 bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
