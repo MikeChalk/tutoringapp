@@ -42,20 +42,63 @@ export default async function ExpensesPage() {
           <p className="text-xs text-zinc-400 mt-1">All invoiced amounts</p>
         </div>
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
-          <p className="text-xs text-zinc-500 uppercase">Tutor Pay</p>
+          <p className="text-xs text-zinc-500 uppercase">Net Revenue</p>
+          <p className="text-2xl font-bold text-green-600 dark:text-green-400">${totalPaidInvoices.toFixed(2)}</p>
+          <p className="text-xs text-zinc-400 mt-1">Collected invoices</p>
+        </div>
+        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
+          <p className="text-xs text-zinc-500 uppercase">Tutor Cost</p>
           <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">${totalTutorPay.toFixed(2)}</p>
           <p className="text-xs text-zinc-400 mt-1">${totalTutorPaid.toFixed(2)} paid</p>
         </div>
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
-          <p className="text-xs text-zinc-500 uppercase">Other Expenses</p>
-          <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">${totalOtherExpenses.toFixed(2)}</p>
-        </div>
-        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
-          <p className="text-xs text-zinc-500 uppercase">Net</p>
+          <p className="text-xs text-zinc-500 uppercase">Profit</p>
           <p className={`text-2xl font-bold ${totalPaidInvoices - totalTutorPaid - totalOtherExpenses >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
             ${(totalPaidInvoices - totalTutorPaid - totalOtherExpenses).toFixed(2)}
           </p>
-          <p className="text-xs text-zinc-400 mt-1">After all expenses</p>
+          <p className="text-xs text-zinc-400 mt-1">Revenue - all costs</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
+          <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Revenue Breakdown</h3>
+          <div className="space-y-3">
+            <div className="flex justify-between text-sm">
+              <span className="text-zinc-600 dark:text-zinc-400">Total Invoiced</span>
+              <span className="font-medium text-zinc-900 dark:text-zinc-100">${totalBilled.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-zinc-600 dark:text-zinc-400">Total Collected</span>
+              <span className="font-medium text-green-600 dark:text-green-400">${totalPaidInvoices.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-zinc-600 dark:text-zinc-400">Outstanding</span>
+              <span className="font-medium text-amber-600 dark:text-amber-400">${(totalBilled - totalPaidInvoices).toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
+          <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Expense Breakdown</h3>
+          <div className="space-y-3">
+            <div className="flex justify-between text-sm">
+              <span className="text-zinc-600 dark:text-zinc-400">Tutor Pay (All)</span>
+              <span className="font-medium text-amber-600 dark:text-amber-400">${totalTutorPay.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-zinc-600 dark:text-zinc-400">Tutor Pay (Paid)</span>
+              <span className="font-medium text-green-600 dark:text-green-400">${totalTutorPaid.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-zinc-600 dark:text-zinc-400">Other Expenses</span>
+              <span className="font-medium text-red-600 dark:text-red-400">${totalOtherExpenses.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-sm pt-2 border-t border-zinc-200 dark:border-zinc-700">
+              <span className="font-semibold text-zinc-700 dark:text-zinc-300">Total Costs</span>
+              <span className="font-semibold text-zinc-900 dark:text-zinc-100">${(totalTutorPaid + totalOtherExpenses).toFixed(2)}</span>
+            </div>
+          </div>
         </div>
       </div>
 
