@@ -7,7 +7,6 @@ import Link from "next/link"
 const TYPE_FILTERS = [
   { value: "ALL", label: "All" },
   { value: "PRIVATE_TUTORING", label: "Tutors" },
-  { value: "STUDY_HALL", label: "Study Hall" },
   { value: "PROGRAM_SUPERVISOR", label: "Program Supervisors" },
   { value: "CITY_ADMIN", label: "City Admins" },
 ]

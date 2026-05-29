@@ -237,7 +237,7 @@ async function main() {
   await prisma.contract.create({
     data: {
       tutorId: tutor5.id,
-      type: "STUDY_HALL",
+      type: "PRIVATE_TUTORING",
       yearLevel: "1ST_YEAR",
       terms: "Study hall tutor contract. Provides group tutoring and homework support during study hall sessions.",
       startDate: new Date("2025-11-15"),
