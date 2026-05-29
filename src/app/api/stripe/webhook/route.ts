@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     if (invoiceId) {
       await prisma.invoice.update({
         where: { id: invoiceId },
-        data: { status: "PAID", paidAt: new Date() },
+        data: { status: "PAID", paidAt: new Date(), paymentGateway: "stripe" },
       })
     }
   }

@@ -16,7 +16,8 @@ export async function POST(request: Request, props: { params: Promise<{ id: stri
   if (action === "markSent") {
     await prisma.invoice.update({ where: { id }, data: { status: "SENT", sentAt: new Date() } })
   } else if (action === "markPaid") {
-    await prisma.invoice.update({ where: { id }, data: { status: "PAID", paidAt: new Date() } })
+    const gateway = (formData.get("paymentGateway") as string) || "other"
+    await prisma.invoice.update({ where: { id }, data: { status: "PAID", paidAt: new Date(), paymentGateway: gateway } })
   } else if (action === "markOverdue") {
     await prisma.invoice.update({ where: { id }, data: { status: "OVERDUE" } })
   }
