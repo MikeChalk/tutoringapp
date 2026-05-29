@@ -62,6 +62,7 @@ model Tutor {
   userId         String    @unique
   bio            String?
   subjects       String    @default("")
+  gradeLevels    String    @default("")
   tenure         String    @default("1ST_YEAR")
   onboardingStep Int       @default(0)
   isActive       Boolean   @default(true)
