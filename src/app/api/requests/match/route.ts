@@ -25,29 +25,36 @@ export async function POST(request: Request) {
 
   const waitlistTutors = await prisma.tutor.findMany({
     where: { onboarded: false, isActive: true },
-    include: { user: { select: { name: true, email: true } } },
+    include: { user: { select: { id: true, name: true } } },
   })
 
   if (waitlistTutors.length === 0) {
     return NextResponse.json({ recommendations: [], message: "No tutors on waitlist" })
   }
 
-  const tutorProfiles = waitlistTutors.map((t) =>
-    `${t.user.name} (${t.tenure.replace("_", " ")}): ${t.subjects || "general"} - ${t.bio || "No bio"}`
-  ).join("\n")
+  // Map to anonymous IDs — no real names or PII sent to OpenAI
+  const idMap = new Map<string, string>()
+  const anonymousProfiles = waitlistTutors.map((t, i) => {
+    const label = `Candidate ${i + 1}`
+    idMap.set(label, t.user.name)
+    const tenure = t.tenure.replace(/_/g, " ").toLowerCase()
+    return `${label} (${tenure}): ${t.subjects || "general"}, grades: ${t.gradeLevels || "any"}`
+  }).join("\n")
 
-  const prompt = `You are matching tutors to a tutoring request. Analyze the request below and rank the top 3 best-fit tutors from the waitlist.
+  const prompt = `Rank the top 3 best-fit candidates for this tutoring request. Only consider subject match and grade level alignment.
 
 REQUEST:
 Subject: ${tutoringRequest.subject}
-Description: ${tutoringRequest.description || "N/A"}
-Schedule: ${tutoringRequest.preferredSchedule || "N/A"}
+Schedule: ${tutoringRequest.preferredSchedule || "flexible"}
 
-WAITLIST TUTORS:
-${tutorProfiles}
+CANDIDATES:
+${anonymousProfiles}
 
-Return ONLY a JSON array of objects with tutor name (exact match from list), score (0-100), and reason (one sentence). Example:
-[{"name":"Sarah Chen","score":95,"reason":"Expert in subject with matching availability"}]`
+Return ONLY a JSON array: [{"name":"Candidate N","score":0-100,"reason":"one sentence"}]`
+
+  if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === "sk-your-key-here") {
+    return fallback(waitlistTutors)
+  }
 
   try {
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
@@ -59,21 +66,28 @@ Return ONLY a JSON array of objects with tutor name (exact match from list), sco
 
     const text = completion.choices[0]?.message?.content || "[]"
     const jsonMatch = text.match(/\[[\s\S]*\]/)
-    if (!jsonMatch) {
-      const fallback = waitlistTutors.slice(0, 3).map((t) => ({ name: t.user.name, score: 50, reason: "Fallback recommendation" }))
-      return NextResponse.json({ recommendations: fallback })
-    }
+    if (!jsonMatch) return fallback(waitlistTutors)
 
     const recommendations = JSON.parse(jsonMatch[0])
-    return NextResponse.json({ recommendations })
-  } catch (error) {
-    const fallback = waitlistTutors.slice(0, 3).map((t) => ({
+    const mapped = recommendations.map((r: { name: string; score: number; reason: string }) => ({
+      ...r,
+      name: idMap.get(r.name) || r.name,
+    }))
+
+    return NextResponse.json({ recommendations: mapped })
+  } catch {
+    return fallback(waitlistTutors)
+  }
+}
+
+function fallback(tutors: Array<{ user: { name: string; id: string } }>) {
+  return NextResponse.json({
+    recommendations: tutors.slice(0, 3).map((t) => ({
       name: t.user.name,
       score: 50,
-      reason: "Unable to reach AI, showing waitlist",
-    }))
-    return NextResponse.json({ recommendations: fallback })
-  }
+      reason: "Basic ranking (no AI key configured)",
+    })),
+  })
 }
 
 export async function PATCH(request: Request) {
