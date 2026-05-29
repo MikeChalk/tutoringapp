@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
 import { CONTRACT_TYPE_LABELS, TENURE_LABELS, GRADE_LABELS } from "@/lib/constants"
+import { ContractTemplateForm } from "@/components/contract-template-form"
 import { CityFilter } from "@/components/city-filter"
 import { redirect } from "next/navigation"
 import Link from "next/link"
@@ -228,73 +229,13 @@ function ContractsTab({ contracts, tutors }: {
 
 function TemplatesTab({ templates, editingTemplate }: { templates: Array<{
   id: string; name: string; type: string; yearLevel: string;
-  terms: string; gradeLevels: string; isDefault: boolean;
+  startDate: Date | null; endDate: Date | null;
+  terms: string; gradeLevels: string; rate: number; isDefault: boolean;
 }>; editingTemplate: typeof templates[number] | null }) {
-  const isEdit = !!editingTemplate
 
   return (
     <div className="space-y-6">
-      <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
-        <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">
-          {isEdit ? "Edit Template" : "Create Template"}
-        </h3>
-        <form action={isEdit ? `/api/contract-templates/${editingTemplate.id}` : "/api/contract-templates"} method="POST" className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
-          {isEdit && <input type="hidden" name="_method" value="PUT" />}
-          <div>
-            <label className="block text-xs text-zinc-500 mb-1">Template Name</label>
-            <input type="text" name="name" required placeholder="e.g. Private Tutoring Standard"
-              defaultValue={editingTemplate?.name || ""}
-              className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-          <div>
-            <label className="block text-xs text-zinc-500 mb-1">Contract Type</label>
-            <select name="type" required
-              defaultValue={editingTemplate?.type || "PRIVATE_TUTORING"}
-              className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="PRIVATE_TUTORING">Private Tutoring</option>
-              <option value="STUDY_HALL">Study Hall</option>
-              <option value="PROGRAM_SUPERVISOR">Program Supervisor</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs text-zinc-500 mb-1">Year Level</label>
-            <select name="yearLevel" required
-              defaultValue={editingTemplate?.yearLevel || "1ST_YEAR"}
-              className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="1ST_YEAR">Year 1</option>
-              <option value="2ND_YEAR">Year 2</option>
-              <option value="3RD_YEAR">Year 3</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs text-zinc-500 mb-1">Grade Levels (comma separated)</label>
-            <input type="text" name="gradeLevels" placeholder="ELEMENTARY, SEC1_2, SEC3, SEC4_5, CEGEP, UNI"
-              defaultValue={editingTemplate?.gradeLevels || ""}
-              className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-          <div className="sm:col-span-2">
-            <label className="block text-xs text-zinc-500 mb-1">Contract Terms</label>
-            <textarea name="terms" rows={3} placeholder="Contract terms and conditions..."
-              defaultValue={editingTemplate?.terms || ""}
-              className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-          <div className="flex items-center gap-2">
-            <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-              <input type="checkbox" name="isDefault" className="rounded" defaultChecked={editingTemplate?.isDefault || false} /> Set as default
-            </label>
-            <button type="submit"
-              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">
-              {isEdit ? "Update Template" : "Create Template"}
-            </button>
-            {isEdit && (
-              <a href="/dashboard/contracts?tab=templates"
-                className="rounded-lg px-4 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
-                Cancel
-              </a>
-            )}
-          </div>
-        </form>
-      </div>
+      <ContractTemplateForm editing={editingTemplate} onCancel="/dashboard/contracts?tab=templates" />
 
       {templates.length === 0 ? (
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-8 text-center">
@@ -309,6 +250,7 @@ function TemplatesTab({ templates, editingTemplate }: { templates: Array<{
                 <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Type</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Year</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Grades</th>
+                <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Rate</th>
                 <th className="text-center px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Default</th>
                 <th className="text-center px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Actions</th>
               </tr>
@@ -325,6 +267,9 @@ function TemplatesTab({ templates, editingTemplate }: { templates: Array<{
                   </td>
                   <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
                     {t.gradeLevels ? t.gradeLevels.split(",").map(g => GRADE_LABELS[g.trim()] || g.trim()).join(", ") : "-"}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-right text-zinc-600 dark:text-zinc-400">
+                    {t.rate > 0 ? `$${t.rate.toFixed(2)}/hr` : "-"}
                   </td>
                   <td className="px-4 py-3 text-center">
                     {t.isDefault && (

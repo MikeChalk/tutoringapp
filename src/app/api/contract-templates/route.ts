@@ -28,6 +28,9 @@ export async function POST(request: Request) {
   const yearLevel = (formData.get("yearLevel") as string) || "1ST_YEAR"
   const terms = (formData.get("terms") as string) || ""
   const gradeLevels = (formData.get("gradeLevels") as string) || ""
+  const startDate = (formData.get("startDate") as string) || null
+  const endDate = (formData.get("endDate") as string) || null
+  const rate = parseFloat((formData.get("rate") as string) || "0")
   const isDefault = formData.get("isDefault") === "on"
 
   if (!name) {
@@ -42,8 +45,13 @@ export async function POST(request: Request) {
   }
 
   const template = await prisma.contractTemplate.create({
-    data: { name, type, yearLevel, terms, gradeLevels, isDefault },
+    data: {
+      name, type, yearLevel, terms, gradeLevels, rate,
+      startDate: startDate ? new Date(startDate) : null,
+      endDate: endDate ? new Date(endDate) : null,
+      isDefault,
+    },
   })
 
-  return NextResponse.redirect(new URL("/dashboard/contracts", request.url), 303)
+  return NextResponse.redirect(new URL("/dashboard/contracts?tab=templates", request.url), 303)
 }

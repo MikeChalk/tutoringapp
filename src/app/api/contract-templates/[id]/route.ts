@@ -23,6 +23,12 @@ export async function PUT(request: Request, props: { params: Promise<{ id: strin
   if (terms !== null) data.terms = terms
   const gradeLevels = formData.get("gradeLevels")
   if (gradeLevels !== null) data.gradeLevels = gradeLevels
+  const startDate = formData.get("startDate") as string
+  if (startDate !== undefined && startDate !== null) data.startDate = startDate ? new Date(startDate) : null
+  const endDate = formData.get("endDate") as string
+  if (endDate !== undefined && endDate !== null) data.endDate = endDate ? new Date(endDate) : null
+  const rate = formData.get("rate")
+  if (rate !== null) data.rate = parseFloat(rate as string) || 0
   if (formData.get("isDefault") === "on") data.isDefault = true
   else if (formData.has("isDefault")) data.isDefault = false
 
@@ -38,7 +44,7 @@ export async function PUT(request: Request, props: { params: Promise<{ id: strin
 
   await prisma.contractTemplate.update({ where: { id }, data })
 
-  return NextResponse.redirect(new URL("/dashboard/contracts", request.url), 303)
+  return NextResponse.redirect(new URL("/dashboard/contracts?tab=templates", request.url), 303)
 }
 
 export async function POST(request: Request, props: { params: Promise<{ id: string }> }) {
@@ -68,5 +74,5 @@ export async function DELETE(request: Request, props: { params: Promise<{ id: st
   const { id } = await props.params
   await prisma.contractTemplate.delete({ where: { id } })
 
-  return NextResponse.redirect(new URL("/dashboard/contracts", request.url), 303)
+  return NextResponse.redirect(new URL("/dashboard/contracts?tab=templates", request.url), 303)
 }
