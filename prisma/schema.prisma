@@ -1,0 +1,199 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("CLIENT")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tutor    Tutor?
+  client   Client?
+  accounts Account[]
+  sessions Session[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model Tutor {
+  id          String    @id @default(cuid())
+  userId      String    @unique
+  bio         String?
+  subjects    String    @default("")
+  hourlyRate  Float     @default(0)
+  isActive    Boolean   @default(true)
+  onboarded   Boolean   @default(false)
+  onboardedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hourLogs         HourLog[]
+  projectTutors    ProjectTutor[]
+  tutoringRequests TutoringRequest[] @relation("MatchedTutor")
+
+  @@map("tutors")
+}
+
+model Client {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  company   String?
+  phone     String?
+  address   String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projects         Project[]
+  invoices         Invoice[]
+  tutoringRequests TutoringRequest[] @relation("RequestClient")
+
+  @@map("clients")
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  status      String   @default("ACTIVE")
+  hourlyRate  Float    @default(0)
+  clientId    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  client        Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  projectTutors ProjectTutor[]
+  hourLogs      HourLog[]
+  invoices      Invoice[]
+
+  @@map("projects")
+}
+
+model ProjectTutor {
+  id         String   @id @default(cuid())
+  projectId  String
+  tutorId    String
+  assignedAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tutor   Tutor   @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, tutorId])
+  @@map("project_tutors")
+}
+
+model HourLog {
+  id          String   @id @default(cuid())
+  tutorId     String
+  projectId   String
+  date        DateTime
+  hours       Float
+  description String?
+  status      String   @default("PENDING")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tutor        Tutor         @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+  project      Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  invoiceItems InvoiceItem[]
+
+  @@map("hour_logs")
+}
+
+model Invoice {
+  id          String    @id @default(cuid())
+  number      String    @unique
+  clientId    String
+  projectId   String?
+  status      String    @default("DRAFT")
+  totalAmount Float     @default(0)
+  dueDate     DateTime
+  notes       String?
+  sentAt      DateTime?
+  paidAt      DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  client  Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  project Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  items   InvoiceItem[]
+
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id          String  @id @default(cuid())
+  invoiceId   String
+  hourLogId   String?
+  description String
+  hours       Float   @default(0)
+  rate        Float   @default(0)
+  amount      Float   @default(0)
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  hourLog HourLog? @relation(fields: [hourLogId], references: [id], onDelete: SetNull)
+
+  @@map("invoice_items")
+}
+
+model TutoringRequest {
+  id                String    @id @default(cuid())
+  name              String
+  email             String
+  phone             String?
+  subject           String
+  description       String?
+  preferredSchedule String?
+  status            String    @default("NEW")
+  matchedTutorId    String?
+  clientId          String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  matchedTutor Tutor?  @relation("MatchedTutor", fields: [matchedTutorId], references: [id], onDelete: SetNull)
+  client       Client? @relation("RequestClient", fields: [clientId], references: [id], onDelete: SetNull)
+
+  @@map("tutoring_requests")
+}
