@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
 import { CityFilter } from "@/components/city-filter"
+import { GRADE_LABELS } from "@/lib/constants"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 
@@ -41,6 +42,12 @@ export default async function OnboardingPage(props: { searchParams: Promise<{ cr
 
   const templates = await prisma.contractTemplate.findMany({
     orderBy: [{ type: "asc" }, { yearLevel: "asc" }],
+  })
+
+  const clients = await prisma.client.findMany({
+    where: effectiveCityId ? { user: { cityId: effectiveCityId } } : {},
+    include: { user: { select: { name: true } } },
+    orderBy: { user: { name: "asc" } },
   })
 
   return (
@@ -169,7 +176,7 @@ export default async function OnboardingPage(props: { searchParams: Promise<{ cr
                         <p className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
                           {step === 0 ? "Send welcome email to tutor" :
                            step === 2 ? "Notify parent of tutor match" :
-                           step === 3 ? "Project has been created" :
+                           step === 3 ? "Create project for this tutor" :
                            "Tutor has been assigned to project"}
                         </p>
                         <form action="/api/onboarding" method="POST" className="space-y-2">
@@ -189,9 +196,23 @@ export default async function OnboardingPage(props: { searchParams: Promise<{ cr
                                 defaultValue={`We've matched you with ${tutor.user.name}. They will be reaching out to you shortly to arrange the first session.`} />
                             </>
                           )}
+                          {step === 3 && (
+                            <>
+                              <input type="text" name="projectName" required placeholder="Project name (e.g. Emma — Math)" className="w-full rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                              <select name="projectClientId" className="w-full rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                <option value="">No client</option>
+                                {clients.map(c => (<option key={c.id} value={c.id}>{c.user.name}</option>))}
+                              </select>
+                              <select name="projectGradeLevel" className="w-full rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                {Object.entries(GRADE_LABELS).filter(([k]) => !["STUDY_HALL","PROGRAM_SUPERVISOR"].includes(k)).map(([k, v]) => (<option key={k} value={k}>{v}</option>))}
+                              </select>
+                              <input type="text" name="projectSubjects" placeholder="Subjects" className="w-full rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                            </>
+                          )}
                           <button type="submit" className="w-full rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 transition-colors">
                             {step === 0 ? "Send Email & Advance" :
                              step === 2 ? "Send Parent Email & Advance" :
+                             step === 3 ? "Create Project & Advance" :
                              `Advance to "${ONBOARDING_STEPS[step + 1]}"`}
                           </button>
                         </form>

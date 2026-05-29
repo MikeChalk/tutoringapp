@@ -40,6 +40,25 @@ export async function POST(request: Request) {
       }
     }
 
+    // Step 3 → 4: Create project
+    if (currentStep === 3) {
+      const projectName = (formData.get("projectName") as string)?.trim()
+      const clientId = formData.get("projectClientId") as string
+      const gradeLevel = (formData.get("projectGradeLevel") as string) || "ELEMENTARY"
+      const subjects = formData.get("projectSubjects") as string
+      if (projectName) {
+        await prisma.project.create({
+          data: {
+            name: projectName,
+            clientId: clientId || null,
+            gradeLevel,
+            subjects: subjects || "",
+            projectType: "STUDENT",
+          },
+        })
+      }
+    }
+
     const nextStep = Math.min(currentStep + 1, 6)
     await prisma.tutor.update({
       where: { id: tutorId },

@@ -184,6 +184,16 @@ function RequestsContent() {
                   Start Onboarding
                 </a>
               )}
+              {req.status === "MATCHED" && !isAdmin && (
+                <div className="flex gap-2 mt-2">
+                  <form action={`/api/requests/${req.id}/accept`} method="POST">
+                    <button type="submit" className="text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg px-3 py-1.5 transition-colors">Accept</button>
+                  </form>
+                  <form action={`/api/requests/${req.id}/reject`} method="POST">
+                    <button type="submit" className="text-xs font-medium text-red-600 border border-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg px-3 py-1.5 transition-colors">Reject</button>
+                  </form>
+                </div>
+              )}
               <p className="text-xs text-zinc-400 mt-2">
                 {new Date(req.createdAt).toLocaleDateString()}
               </p>

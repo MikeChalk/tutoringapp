@@ -35,12 +35,50 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
     orderBy: { createdAt: "desc" },
   })
 
+  const clients = admin ? await prisma.client.findMany({
+    where: effectiveCityId ? { user: { cityId: effectiveCityId } } : {},
+    include: { user: { select: { name: true } } },
+    orderBy: { user: { name: "asc" } },
+  }) : []
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Invoices</h2>
         {isSuperAdmin(session.user.role) && <CityFilter selected={selectedCity} />}
       </div>
+
+      {admin && (
+        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 mb-6">
+          <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Create Invoice</h3>
+          <form action="/api/invoices" method="POST" className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+            <div>
+              <label className="block text-xs text-zinc-500 mb-1">Client</label>
+              <select name="clientId" required className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Select client</option>
+                {clients.map(c => (<option key={c.id} value={c.id}>{c.user.name}</option>))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-zinc-500 mb-1">Description</label>
+              <input type="text" name="description" required placeholder="e.g. Tutoring — May 2026" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label className="block text-xs text-zinc-500 mb-1">Hours (optional)</label>
+              <input type="number" name="hours" min="0" step="0.25" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label className="block text-xs text-zinc-500 mb-1">Rate ($/hr)</label>
+              <input type="number" name="rate" min="0" step="0.01" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label className="block text-xs text-zinc-500 mb-1">Amount ($)</label>
+              <input type="number" name="amount" min="0" step="0.01" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">Create Invoice</button>
+          </form>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <StatCard

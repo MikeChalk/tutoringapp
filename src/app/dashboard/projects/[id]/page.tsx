@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin, isTutor, getTutorId } from "@/lib/auth-helpers"
 import { GRADE_LABELS, STATUS_LABELS, STATUS_COLORS } from "@/lib/constants"
 import { notFound } from "next/navigation"
+import { EditProjectForm } from "@/components/edit-project-form"
 
 export default async function ProjectDetailPage(props: { params: Promise<{ id: string }> }) {
   const session = await requireAuth()
@@ -110,6 +111,13 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
             ))}
           </div>
         </div>
+      )}
+
+      {admin && (
+        <details className="mb-6 bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
+          <summary className="px-4 py-3 cursor-pointer text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 select-none">Edit Project</summary>
+          <EditProjectForm project={project} />
+        </details>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
