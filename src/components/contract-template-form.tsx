@@ -48,17 +48,13 @@ export function ContractTemplateForm({ editing, onCancel }: {
   const [customCategories, setCustomCategories] = useState<Array<{ label: string; rate: number }>>(existingCustom)
 
   const rateKeys = isProgramSupervisor
-    ? Object.keys(PROGRAM_CATEGORIES)
+    ? [...Object.keys(STUDENT_GRADE_OPTIONS), "STUDY_HALL", ...Object.keys(PROGRAM_CATEGORIES)]
     : [...Object.keys(STUDENT_GRADE_OPTIONS), "STUDY_HALL"]
 
   const rateLabels: Record<string, string> = {
     ...STUDENT_GRADE_OPTIONS,
-    STUDY_HALL: "Study Hall",
-  }
-
-  function updateRate(key: string, value: string) {
-    const input = document.getElementById(`rate_${key}`) as HTMLInputElement
-    if (input) input.value = value
+    STUDY_HALL: "Study Hall Tutor",
+    ...PROGRAM_CATEGORIES,
   }
 
   function serializeRates(): string {
@@ -143,13 +139,13 @@ export function ContractTemplateForm({ editing, onCancel }: {
 
         <div>
           <label className="block text-xs text-zinc-500 mb-2">
-            {isProgramSupervisor ? "Rates by Category ($/hr)" : "Rates by Grade Level ($/hr)"}
+            Rates by Category ($/hr)
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {rateKeys.map((key) => (
               <div key={key}>
                 <label className="block text-xs text-zinc-500 mb-0.5">
-                  {isProgramSupervisor ? PROGRAM_CATEGORIES[key] : rateLabels[key]}
+                  {rateLabels[key] || key}
                 </label>
                 <input type="number" id={`rate_${key}`} min="0" step="0.01" placeholder="0.00"
                   defaultValue={existingRates[key] || ""}
