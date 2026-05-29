@@ -202,10 +202,16 @@ export default async function HoursPage() {
           const billingDisplay = document.getElementById('billingRateDisplay');
           const payDisplay = document.getElementById('payRateDisplay');
 
+          function getOptionData(select, attr) {
+            if (!select || !select.value) return null;
+            const opt = select.querySelector('option[value="' + select.value + '"]');
+            return opt ? opt.dataset[attr] : null;
+          }
+
           async function updateRates() {
-            const grade = projectSelect?.selectedOptions[0]?.dataset.grade;
+            const grade = getOptionData(projectSelect, 'grade');
             const mode = modeSelect?.value;
-            const tenure = tutorSelect?.selectedOptions[0]?.dataset.tenure;
+            const tenure = getOptionData(tutorSelect, 'tenure');
 
             if (!grade || !mode) {
               if (billingDisplay) billingDisplay.textContent = '--';
@@ -226,8 +232,8 @@ export default async function HoursPage() {
                 payDisplay.textContent = data.payRate != null ? '$' + data.payRate.toFixed(2) + '/hr' : '--';
               }
             } catch(e) {
-              if (billingDisplay) billingDisplay.textContent = '--';
-              if (payDisplay) payDisplay.textContent = '--';
+              if (billingDisplay) billingDisplay.textContent = 'Error';
+              if (payDisplay) payDisplay.textContent = 'Error';
             }
           }
 
