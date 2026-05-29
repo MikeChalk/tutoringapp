@@ -9,7 +9,8 @@ export async function sendCareerApplicationEmail(to: string, name: string) {
   }
 
   await resend.emails.send({
-    from: "J.A.S.S. Tutors <info@jasstutors.com>",
+    from: "J.A.S.S. Tutors <onboarding@resend.dev>",
+    replyTo: "info@jasstutors.com",
     to,
     subject: "Thank you for your application — Next Steps",
     html: `
