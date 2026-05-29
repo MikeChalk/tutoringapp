@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin, isSuperAdmin } from "@/lib/auth-helpers"
+import { requireAuth, isAdmin, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
 import { TENURE_LABELS, CONTRACT_TYPE_LABELS } from "@/lib/constants"
 import { CityFilter } from "@/components/city-filter"
 import { redirect } from "next/navigation"
@@ -28,10 +28,12 @@ export default async function TutorsPage(props: { searchParams: Promise<{ type?:
   const filter = type || "ALL"
   const selectedCity = cityParam || "all"
   const superAdmin = isSuperAdmin(session.user.role)
+  const cityAdminId = isCityAdmin(session.user.role) ? await getActiveCityId(session.user.role, session.user.id) : null
+  const effectiveCityId = cityAdminId || (superAdmin && selectedCity !== "all" ? selectedCity : null)
 
   if (filter === "CITY_ADMIN") {
     const cityAdmins = await prisma.user.findMany({
-      where: { role: "CITY_ADMIN", ...(superAdmin && selectedCity !== "all" ? { cityId: selectedCity } : {}) },
+      where: { role: "CITY_ADMIN", ...(effectiveCityId ? { cityId: effectiveCityId } : {}) },
       include: { city: { select: { name: true } } },
       orderBy: { createdAt: "desc" },
     })
@@ -80,8 +82,8 @@ export default async function TutorsPage(props: { searchParams: Promise<{ type?:
 
   const contractFilter = filter !== "ALL" ? { type: filter, status: "ACTIVE" } : undefined
   const baseWhere: Record<string, unknown> = contractFilter ? { contract: contractFilter, onboarded: true } : { onboarded: true }
-  if (superAdmin && selectedCity !== "all") {
-    baseWhere.user = { cityId: selectedCity }
+  if (effectiveCityId) {
+    baseWhere.user = { cityId: effectiveCityId }
   }
 
   const tutors = await prisma.tutor.findMany({

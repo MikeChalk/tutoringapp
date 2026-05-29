@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isSuperAdmin } from "@/lib/auth-helpers"
+import { requireAuth, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
 import { redirect } from "next/navigation"
 import { StatusBadge } from "@/components/ui"
 import { CityFilter } from "@/components/city-filter"
@@ -12,17 +12,19 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
   const { city: cityParam } = await props.searchParams
   const selectedCity = cityParam || "all"
   const superAdmin = isSuperAdmin(role)
+  const cityAdminId = isCityAdmin(role) ? await getActiveCityId(role, session.user.id) : null
+  const effectiveCityId = cityAdminId || (superAdmin && selectedCity !== "all" ? selectedCity : null)
 
   const cities = await prisma.city.findMany({ select: { id: true, name: true } })
 
-  const cityFilter = superAdmin && selectedCity !== "all"
-    ? { project: { cityId: selectedCity } }
+  const cityFilter = effectiveCityId
+    ? { project: { cityId: effectiveCityId } }
     : {}
-  const expenseCityFilter = superAdmin && selectedCity !== "all"
-    ? { cityId: selectedCity }
+  const expenseCityFilter = effectiveCityId
+    ? { cityId: effectiveCityId }
     : {}
-  const invoiceCityFilter = superAdmin && selectedCity !== "all"
-    ? { client: { user: { cityId: selectedCity } } }
+  const invoiceCityFilter = effectiveCityId
+    ? { client: { user: { cityId: effectiveCityId } } }
     : {}
 
   const [hourLogs, expenses, invoices, allInvoices, allExpenses] = await Promise.all([

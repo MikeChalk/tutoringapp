@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin, isSuperAdmin } from "@/lib/auth-helpers"
+import { requireAuth, isAdmin, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { TENURE_LABELS } from "@/lib/constants"
@@ -12,10 +12,12 @@ export default async function WaitlistPage(props: { searchParams: Promise<{ city
   const { city: cityParam } = await props.searchParams
   const selectedCity = cityParam || "all"
   const superAdmin = isSuperAdmin(session.user.role)
+  const cityAdminId = isCityAdmin(session.user.role) ? await getActiveCityId(session.user.role, session.user.id) : null
+  const effectiveCityId = cityAdminId || (superAdmin && selectedCity !== "all" ? selectedCity : null)
 
   const whereClause: Record<string, unknown> = { onboarded: false, isActive: true }
-  if (superAdmin && selectedCity !== "all") {
-    whereClause.user = { cityId: selectedCity }
+  if (effectiveCityId) {
+    whereClause.user = { cityId: effectiveCityId }
   }
 
   const tutors = await prisma.tutor.findMany({

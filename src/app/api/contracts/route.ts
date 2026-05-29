@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { isAdmin } from "@/lib/auth-helpers"
 
 export async function POST(request: Request) {
   const session = await auth()
-  if (!session?.user || session.user.role !== "ADMIN") {
+  if (!session?.user || !isAdmin(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
@@ -20,28 +21,26 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 })
   }
 
-  // Deactivate existing contract
   await prisma.contract.updateMany({
     where: { tutorId, status: "ACTIVE" },
     data: { status: "EXPIRED" },
   })
 
-  const contract = await prisma.contract.create({
+  await prisma.contract.create({
     data: {
       tutorId,
       type,
       yearLevel,
-      terms: terms || "",
+      terms: terms || `${type.replace(/_/g, " ")} contract — Year ${yearLevel === "1ST_YEAR" ? "1" : yearLevel === "2ND_YEAR" ? "2" : "3"}`,
       startDate: new Date(startDate),
       endDate: new Date(endDate),
     },
   })
 
-  // Update tutor's tenure
   await prisma.tutor.update({
     where: { id: tutorId },
     data: { tenure: yearLevel },
   })
 
-  return NextResponse.redirect(new URL(`/dashboard/tutors/${tutorId}`, request.url), 303)
+  return NextResponse.redirect(new URL("/dashboard/contracts", request.url), 303)
 }

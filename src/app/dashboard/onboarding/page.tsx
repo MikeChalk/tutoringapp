@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin, isSuperAdmin } from "@/lib/auth-helpers"
+import { requireAuth, isAdmin, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
 import { CityFilter } from "@/components/city-filter"
 import { redirect } from "next/navigation"
 
@@ -17,6 +17,8 @@ export default async function OnboardingPage(props: { searchParams: Promise<{ cr
   const { created, pw, city: cityParam } = await props.searchParams
   const selectedCity = cityParam || "all"
   const superAdmin = isSuperAdmin(session.user.role)
+  const cityAdminId = isCityAdmin(session.user.role) ? await getActiveCityId(session.user.role, session.user.id) : null
+  const effectiveCityId = cityAdminId || (superAdmin && selectedCity !== "all" ? selectedCity : null)
 
   const today = new Date()
   const july1ThisYear = new Date(today.getFullYear(), 6, 1)
@@ -24,7 +26,7 @@ export default async function OnboardingPage(props: { searchParams: Promise<{ cr
   const endDateDefault = nextJuly1.toISOString().split("T")[0]
 
   const pendingTutors = await prisma.tutor.findMany({
-    where: { onboarded: false, isActive: true, ...(superAdmin && selectedCity !== "all" ? { user: { cityId: selectedCity } } : {}) },
+    where: { onboarded: false, isActive: true, ...(effectiveCityId ? { user: { cityId: effectiveCityId } } : {}) },
     include: { user: { select: { name: true, email: true } } },
     orderBy: { createdAt: "asc" },
   })

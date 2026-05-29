@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { isAdmin } from "@/lib/auth-helpers"
 import OpenAI from "openai"
 
 export async function POST(request: Request) {
   const session = await auth()
-  if (!session?.user || session.user.role !== "ADMIN") {
+  if (!session?.user || !isAdmin(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
@@ -77,7 +78,7 @@ Return ONLY a JSON array of objects with tutor name (exact match from list), sco
 
 export async function PATCH(request: Request) {
   const session = await auth()
-  if (!session?.user || session.user.role !== "ADMIN") {
+  if (!session?.user || !isAdmin(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin, isTutor, getTutorId, isSuperAdmin } from "@/lib/auth-helpers"
+import { requireAuth, isAdmin, isTutor, getTutorId, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
 import { GRADE_LABELS, STATUS_LABELS, STATUS_COLORS } from "@/lib/constants"
 import { CityFilter } from "@/components/city-filter"
 import Link from "next/link"
@@ -13,6 +13,8 @@ export default async function OtherProjectsPage(props: { searchParams: Promise<{
   const { status: statusFilter, city: cityParam } = await props.searchParams
   const selectedCity = cityParam || "all"
   const superAdmin = isSuperAdmin(session.user.role)
+  const cityAdminId = isCityAdmin(session.user.role) ? await getActiveCityId(session.user.role, session.user.id) : null
+  const effectiveCityId = cityAdminId || (superAdmin && selectedCity !== "all" ? selectedCity : null)
 
   let whereClause: Record<string, unknown> = { projectType: "STUDY_HALL" }
   if (tutor) {
@@ -28,8 +30,8 @@ export default async function OtherProjectsPage(props: { searchParams: Promise<{
     }
   }
 
-  if (superAdmin && selectedCity !== "all") {
-    whereClause = { ...whereClause, cityId: selectedCity }
+  if (effectiveCityId) {
+    whereClause = { ...whereClause, cityId: effectiveCityId }
   }
 
   const projects = await prisma.project.findMany({

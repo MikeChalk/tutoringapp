@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin, isSuperAdmin } from "@/lib/auth-helpers"
+import { requireAuth, isAdmin, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
 import { CONTRACT_TYPE_LABELS, TENURE_LABELS } from "@/lib/constants"
 import { CityFilter } from "@/components/city-filter"
 import { redirect } from "next/navigation"
@@ -12,10 +12,12 @@ export default async function ContractsPage(props: { searchParams: Promise<{ cit
   const { city: cityParam } = await props.searchParams
   const selectedCity = cityParam || "all"
   const superAdmin = isSuperAdmin(session.user.role)
+  const cityAdminId = isCityAdmin(session.user.role) ? await getActiveCityId(session.user.role, session.user.id) : null
+  const effectiveCityId = cityAdminId || (superAdmin && selectedCity !== "all" ? selectedCity : null)
 
   const where: Record<string, unknown> = {}
-  if (superAdmin && selectedCity !== "all") {
-    where.tutor = { user: { cityId: selectedCity } }
+  if (effectiveCityId) {
+    where.tutor = { user: { cityId: effectiveCityId } }
   }
 
   const contracts = await prisma.contract.findMany({
