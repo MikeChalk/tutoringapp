@@ -31,8 +31,11 @@ export default async function TutorDetailPage(props: { params: Promise<{ id: str
 
   const payScales = await prisma.payScale.findMany({
     where: { tenure: tutor.tenure },
-    orderBy: [{ gradeLevel: "asc" }, { mode: "asc" }],
+    orderBy: [{ gradeLevel: "asc" }, { mode: "asc" }, { projectType: "asc" }],
   })
+
+  const studentPayScales = payScales.filter(p => p.projectType === "STUDENT")
+  const studyHallPayScales = payScales.filter(p => p.projectType === "STUDY_HALL")
 
   return (
     <div>
@@ -77,27 +80,52 @@ export default async function TutorDetailPage(props: { params: Promise<{ id: str
           </dl>
         </div>
 
-        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
+        <div className="lg:col-span-2 bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Pay Scale ({TENURE_LABELS[tutor.tenure]})</h3>
-          {payScales.length === 0 ? (
-            <p className="text-sm text-zinc-500">No pay scales configured.</p>
-          ) : (
-            <div className="space-y-2">
-              {["ELEMENTARY", "SEC1_2", "SEC3", "SEC4_5", "CEGEP", "UNI"].map((grade) => {
-                const onlineRate = payScales.find((p) => p.gradeLevel === grade && p.mode === "ONLINE")
-                const inPersonRate = payScales.find((p) => p.gradeLevel === grade && p.mode === "IN_PERSON")
-                return (
-                  <div key={grade} className="flex justify-between items-center text-sm py-1.5 border-b border-zinc-100 dark:border-zinc-700/50 last:border-0">
-                    <span className="text-zinc-600 dark:text-zinc-400">{GRADE_LABELS[grade]}</span>
-                    <div className="flex gap-3">
-                      <span className="text-purple-600 dark:text-purple-400">Online ${onlineRate?.rate?.toFixed(0) || "-"}</span>
-                      <span className="text-cyan-600 dark:text-cyan-400">In-person ${inPersonRate?.rate?.toFixed(0) || "-"}</span>
-                    </div>
-                  </div>
-                )
-              })}
+
+          <div className="space-y-6">
+            <div>
+              <h4 className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Private Tutoring</h4>
+              {studentPayScales.length === 0 ? (
+                <p className="text-sm text-zinc-500">No private tutoring rates configured.</p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+                  {["ELEMENTARY", "SEC1_2", "SEC3", "SEC4_5", "CEGEP", "UNI"].map((grade) => {
+                    const onlineRate = studentPayScales.find((p) => p.gradeLevel === grade && p.mode === "ONLINE")
+                    const inPersonRate = studentPayScales.find((p) => p.gradeLevel === grade && p.mode === "IN_PERSON")
+                    return (
+                      <div key={grade} className="bg-zinc-50 dark:bg-zinc-900 rounded-lg p-2 text-center">
+                        <p className="text-xs text-zinc-500 mb-1">{GRADE_LABELS[grade]}</p>
+                        <p className="text-xs text-purple-600 dark:text-purple-400">Online ${onlineRate?.rate?.toFixed(0) || "-"}</p>
+                        <p className="text-xs text-cyan-600 dark:text-cyan-400">In-person ${inPersonRate?.rate?.toFixed(0) || "-"}</p>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
-          )}
+
+            <div>
+              <h4 className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Study Hall</h4>
+              {studyHallPayScales.length === 0 ? (
+                <p className="text-sm text-zinc-500">No study hall rates configured.</p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+                  {["ELEMENTARY", "SEC1_2", "SEC3", "SEC4_5", "CEGEP", "UNI"].map((grade) => {
+                    const onlineRate = studyHallPayScales.find((p) => p.gradeLevel === grade && p.mode === "ONLINE")
+                    const inPersonRate = studyHallPayScales.find((p) => p.gradeLevel === grade && p.mode === "IN_PERSON")
+                    return (
+                      <div key={grade} className="bg-zinc-50 dark:bg-zinc-900 rounded-lg p-2 text-center">
+                        <p className="text-xs text-zinc-500 mb-1">{GRADE_LABELS[grade]}</p>
+                        <p className="text-xs text-purple-600 dark:text-purple-400">Online ${onlineRate?.rate?.toFixed(0) || "-"}</p>
+                        <p className="text-xs text-cyan-600 dark:text-cyan-400">In-person ${inPersonRate?.rate?.toFixed(0) || "-"}</p>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
