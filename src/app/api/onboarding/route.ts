@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
-import bcrypt from "bcryptjs"
-
 import { isAdmin } from "@/lib/auth-helpers"
+import bcrypt from "bcryptjs"
 
 export async function POST(request: Request) {
   const session = await auth()
@@ -12,14 +11,32 @@ export async function POST(request: Request) {
   }
 
   const formData = await request.formData()
+  const action = formData.get("_action") as string
   const tutorId = formData.get("tutorId") as string
+
+  if (action === "advance" && tutorId) {
+    const tutor = await prisma.tutor.findUnique({ where: { id: tutorId } })
+    if (!tutor) return NextResponse.json({ error: "Tutor not found" }, { status: 404 })
+
+    const nextStep = Math.min(tutor.onboardingStep + 1, 6)
+    await prisma.tutor.update({
+      where: { id: tutorId },
+      data: {
+        onboardingStep: nextStep,
+        onboarded: nextStep >= 6,
+        onboardedAt: nextStep >= 6 ? new Date() : tutor.onboardedAt,
+      },
+    })
+
+    return NextResponse.redirect(new URL("/dashboard/onboarding", request.url), 303)
+  }
+
   const contractType = formData.get("contractType") as string
   const yearLevel = formData.get("yearLevel") as string
   const startDate = formData.get("startDate") as string
   const endDate = formData.get("endDate") as string
   const name = formData.get("name") as string
   const email = formData.get("email") as string
-  const password = formData.get("password") as string
   const gradeLevels = formData.get("gradeLevels") as string
   const templateId = formData.get("templateId") as string
 
@@ -50,7 +67,7 @@ export async function POST(request: Request) {
       data: { name, email, password: hashed, role: "TUTOR" },
     })
     const tutor = await prisma.tutor.create({
-      data: { userId: user.id, tenure: yearLevel, gradeLevels: gradeLevels || templateGradeLevels, onboardingStep: 1 },
+      data: { userId: user.id, tenure: yearLevel, gradeLevels: gradeLevels || templateGradeLevels, onboardingStep: 0 },
     })
     finalTutorId = tutor.id
     return NextResponse.redirect(
@@ -65,7 +82,11 @@ export async function POST(request: Request) {
 
   await prisma.tutor.update({
     where: { id: finalTutorId },
-    data: { onboarded: true, onboardedAt: new Date(), tenure: yearLevel, ...(gradeLevels || templateGradeLevels ? { gradeLevels: gradeLevels || templateGradeLevels } : {}) },
+    data: {
+      onboardingStep: 1,
+      tenure: yearLevel,
+      ...(gradeLevels || templateGradeLevels ? { gradeLevels: gradeLevels || templateGradeLevels } : {}),
+    },
   })
 
   await prisma.contract.updateMany({

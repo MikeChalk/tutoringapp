@@ -55,6 +55,8 @@ export default async function ClientsPage(props: { searchParams: Promise<{ type?
     orderBy: { createdAt: "desc" },
   })
 
+  const cities = admin ? await prisma.city.findMany({ select: { id: true, name: true } }) : []
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
@@ -70,6 +72,47 @@ export default async function ClientsPage(props: { searchParams: Promise<{ type?
           </Link>
         ))}
       </div>
+
+      {admin && (
+        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 mb-6">
+          <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Add Client</h3>
+          <form action="/api/clients" method="POST" className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+            <div>
+              <label className="block text-xs text-zinc-500 mb-1">Name *</label>
+              <input type="text" name="name" required className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label className="block text-xs text-zinc-500 mb-1">Email *</label>
+              <input type="email" name="email" required className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label className="block text-xs text-zinc-500 mb-1">Type</label>
+              <select name="clientType" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="PARENT">Parent</option>
+                <option value="SCHOOL">School</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-zinc-500 mb-1">Company</label>
+              <input type="text" name="company" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label className="block text-xs text-zinc-500 mb-1">Phone</label>
+              <input type="text" name="phone" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label className="block text-xs text-zinc-500 mb-1">City</label>
+              <select name="cityId" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">None</option>
+                {cities.map(c => (<option key={c.id} value={c.id}>{c.name}</option>))}
+              </select>
+            </div>
+            <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">
+              Add Client
+            </button>
+          </form>
+        </div>
+      )}
 
       <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
         <table className="w-full">

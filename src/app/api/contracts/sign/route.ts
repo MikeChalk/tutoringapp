@@ -33,5 +33,12 @@ export async function POST(request: Request) {
     data: { signed: true, signedAt: new Date() },
   })
 
+  if (tutor.onboardingStep === 1) {
+    await prisma.tutor.update({
+      where: { id: tutor.id },
+      data: { onboardingStep: 2 },
+    })
+  }
+
   return NextResponse.redirect(new URL("/dashboard/contract", request.url), 303)
 }
