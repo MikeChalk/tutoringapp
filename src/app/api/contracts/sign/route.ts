@@ -1,0 +1,37 @@
+import { NextResponse } from "next/server"
+import { auth } from "@/lib/auth"
+import { prisma } from "@/lib/db"
+
+export async function POST(request: Request) {
+  const session = await auth()
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  const tutor = await prisma.tutor.findUnique({
+    where: { userId: session.user.id },
+  })
+
+  if (!tutor) {
+    return NextResponse.json({ error: "Tutor not found" }, { status: 404 })
+  }
+
+  const contract = await prisma.contract.findFirst({
+    where: { tutorId: tutor.id, status: "ACTIVE" },
+  })
+
+  if (!contract) {
+    return NextResponse.json({ error: "No active contract" }, { status: 404 })
+  }
+
+  if (contract.signed) {
+    return NextResponse.json({ error: "Already signed" }, { status: 400 })
+  }
+
+  await prisma.contract.update({
+    where: { id: contract.id },
+    data: { signed: true, signedAt: new Date() },
+  })
+
+  return NextResponse.redirect(new URL("/dashboard/contract", request.url), 303)
+}

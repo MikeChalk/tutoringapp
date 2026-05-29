@@ -68,6 +68,7 @@ model Tutor {
   updatedAt   DateTime  @updatedAt
 
   user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contract         Contract?
   hourLogs         HourLog[]
   projectTutors    ProjectTutor[]
   tutoringRequests TutoringRequest[] @relation("MatchedTutor")
@@ -222,4 +223,23 @@ model PayScale {
 
   @@unique([tenure, gradeLevel, mode])
   @@map("pay_scales")
+}
+
+model Contract {
+  id        String    @id @default(cuid())
+  tutorId   String    @unique
+  type      String    @default("PRIVATE_TUTORING")
+  yearLevel String    @default("1ST_YEAR")
+  terms     String    @default("")
+  startDate DateTime
+  endDate   DateTime
+  signed    Boolean   @default(false)
+  signedAt  DateTime?
+  status    String    @default("ACTIVE")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  tutor Tutor @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+
+  @@map("contracts")
 }

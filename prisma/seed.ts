@@ -146,6 +146,33 @@ async function main() {
     },
   })
 
+  // Contracts for onboarded tutors
+  await prisma.contract.create({
+    data: {
+      tutorId: tutor1.id,
+      type: "PRIVATE_TUTORING",
+      yearLevel: "3RD_YEAR",
+      terms: "Private tutoring contract. Tutor agrees to provide one-on-one tutoring sessions as assigned. Payment processed bi-weekly based on submitted and approved hours. All tutoring materials provided by the company.",
+      startDate: new Date("2025-09-01"),
+      endDate: new Date("2026-08-31"),
+      signed: true,
+      signedAt: new Date("2025-08-25"),
+    },
+  })
+
+  await prisma.contract.create({
+    data: {
+      tutorId: tutor2.id,
+      type: "PRIVATE_TUTORING",
+      yearLevel: "2ND_YEAR",
+      terms: "Private tutoring contract. Tutor agrees to provide one-on-one tutoring sessions as assigned. Payment processed bi-weekly based on submitted and approved hours.",
+      startDate: new Date("2025-10-01"),
+      endDate: new Date("2026-09-30"),
+      signed: true,
+      signedAt: new Date("2025-09-28"),
+    },
+  })
+
   // Clients
   const c1User = await prisma.user.create({
     data: { name: "Robert Dupont", email: "robert@email.com", password: hash, role: "CLIENT" },

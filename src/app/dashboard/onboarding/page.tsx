@@ -45,13 +45,29 @@ export default async function OnboardingPage() {
                       Joined {new Date(tutor.createdAt).toLocaleDateString()}
                     </p>
                   </div>
-                  <form action="/api/onboarding" method="POST">
+                  <form action="/api/onboarding" method="POST" className="flex flex-wrap items-end gap-2">
                     <input type="hidden" name="tutorId" value={tutor.id} />
-                    <button
-                      type="submit"
-                      className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 transition-colors"
-                    >
-                      Complete Onboarding
+                    <select name="contractType" required
+                      className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                      <option value="PRIVATE_TUTORING">Private Tutoring</option>
+                      <option value="STUDY_HALL">Study Hall</option>
+                      <option value="PROGRAM_SUPERVISOR">Program Supervisor</option>
+                    </select>
+                    <select name="yearLevel" required
+                      className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                      <option value="1ST_YEAR">Year 1</option>
+                      <option value="2ND_YEAR">Year 2</option>
+                      <option value="3RD_YEAR">Year 3</option>
+                    </select>
+                    <input type="date" name="startDate" required
+                      defaultValue={new Date().toISOString().split("T")[0]}
+                      className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                    <input type="date" name="endDate" required
+                      defaultValue={new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]}
+                      className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                    <button type="submit"
+                      className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 transition-colors">
+                      Onboard
                     </button>
                   </form>
                 </div>

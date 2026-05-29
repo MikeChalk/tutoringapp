@@ -22,6 +22,7 @@ const tutorLinks = [
   { href: "/dashboard/hours", label: "Log Hours" },
   { href: "/dashboard/requests", label: "Offers" },
   { href: "/dashboard/payments", label: "My Payments" },
+  { href: "/dashboard/contract", label: "My Contract" },
 ]
 
 const clientLinks = [
