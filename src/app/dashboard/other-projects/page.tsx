@@ -78,8 +78,7 @@ export default async function OtherProjectsPage(props: { searchParams: Promise<{
             <Link key={project.id} href={`/dashboard/projects/${project.id}`}
               className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 hover:border-zinc-400 dark:hover:border-zinc-500 transition-colors">
               <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">{project.name}</h3>
-              {project.city && <p className="text-xs text-zinc-400 mt-0.5">{project.city.name}</p>}
-              {project.school && <p className="text-xs text-zinc-400 mt-0.5">{project.school}</p>}
+              {project.city?.name && <p className="text-xs text-zinc-400 mt-0.5">{project.city.name}</p>}
               <p className="text-xs text-zinc-400 mt-0.5">{new Date(project.createdAt).toLocaleDateString()}</p>
               <div className="flex flex-wrap gap-2 mt-2">
                 <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">

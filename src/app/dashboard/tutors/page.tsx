@@ -42,7 +42,11 @@ export default async function TutorsPage(props: { searchParams: Promise<{ type?:
       <div>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Team</h2>
-          <div className="flex items-center gap-4">{superAdmin && <CityFilter selected={selectedCity} />}<Link href="/signup" className="rounded-lg bg-zinc-900 dark:bg-white px-4 py-2 text-sm font-medium text-white dark:text-zinc-900 hover:opacity-90">Add Tutor</Link></div>
+        <div className="flex items-center gap-4">
+          <a href="/api/export?type=tutors" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Export CSV</a>
+          {superAdmin && <CityFilter selected={selectedCity} />}
+          <Link href="/signup" className="rounded-lg bg-zinc-900 dark:bg-white px-4 py-2 text-sm font-medium text-white dark:text-zinc-900 hover:opacity-90">Add Tutor</Link>
+        </div>
         </div>
 
         <div className="flex gap-2 mb-6">

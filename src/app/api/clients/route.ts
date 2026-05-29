@@ -20,8 +20,14 @@ export async function POST(request: Request) {
     if (id) {
       const client = await prisma.client.findUnique({ where: { id }, select: { userId: true } })
       if (client) {
-        await prisma.client.delete({ where: { id } })
-        await prisma.user.delete({ where: { id: client.userId } })
+        await prisma.$transaction([
+          prisma.invoiceItem.deleteMany({ where: { invoice: { clientId: id } } }),
+          prisma.invoice.deleteMany({ where: { clientId: id } }),
+          prisma.tutoringRequest.updateMany({ where: { clientId: id }, data: { clientId: null } }),
+          prisma.project.updateMany({ where: { clientId: id }, data: { clientId: null } }),
+          prisma.client.delete({ where: { id } }),
+          prisma.user.delete({ where: { id: client.userId } }),
+        ])
       }
     }
     return NextResponse.redirect(new URL("/dashboard/clients", request.url), 303)

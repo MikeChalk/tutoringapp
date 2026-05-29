@@ -82,7 +82,10 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
     <div>
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Log Hours</h2>
-        {superAdmin && <CityFilter selected={selectedCity} />}
+        <div className="flex items-center gap-3">
+          <a href="/api/export?type=hours" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Export CSV</a>
+          {superAdmin && <CityFilter selected={selectedCity} />}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

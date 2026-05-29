@@ -86,14 +86,29 @@ export default async function ContractPage() {
           {step === 6 && (
             <div className="border border-green-200 dark:border-green-800 rounded-lg p-4 bg-green-50/50 dark:bg-green-900/10">
               <p className="text-sm font-medium text-green-700 dark:text-green-300 mb-1">Complete Platform Onboarding</p>
-              <p className="text-xs text-green-600 dark:text-green-400 mb-3">
-                Watch the onboarding video below to learn how to use the platform. Once you've watched it, mark this step complete.
+              <p className="text-xs text-green-600 dark:text-green-400 mb-2">
+                Watch the onboarding video and connect your bank account to receive payments via Stripe.
               </p>
+
+              {!tutor.stripeConnectId && process.env.STRIPE_SECRET_KEY && (
+                <div className="mb-3 p-3 bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700">
+                  <p className="text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">Connect Your Bank Account</p>
+                  <p className="text-xs text-zinc-500 mb-2">Required to receive payments. You'll be redirected to Stripe to complete this.</p>
+                  <form action="/api/stripe/connect" method="POST">
+                    <button type="submit" className="rounded bg-purple-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-purple-700 transition-colors">
+                      Connect Bank Account
+                    </button>
+                  </form>
+                </div>
+              )}
+              {tutor.stripeConnectId && (
+                <p className="text-xs text-green-600 dark:text-green-400 mb-3">Bank account connected. Ready to receive payments.</p>
+              )}
+
               <div className="aspect-video bg-zinc-900 rounded-lg mb-3 flex items-center justify-center" id="onboardingVideo">
                 <div className="text-center">
                   <svg className="w-12 h-12 mx-auto mb-2 text-zinc-600" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                   <p className="text-sm text-zinc-400">Onboarding Video</p>
-                  <p className="text-xs text-zinc-500 mt-1">Replace with your video embed URL</p>
                 </div>
               </div>
               <Script id="videoScript" strategy="afterInteractive">{`

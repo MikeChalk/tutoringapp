@@ -46,7 +46,10 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
     <div>
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Invoices</h2>
-        {isSuperAdmin(session.user.role) && <CityFilter selected={selectedCity} />}
+        <div className="flex items-center gap-3">
+          <a href="/api/export?type=invoices" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Export CSV</a>
+          {isSuperAdmin(session.user.role) && <CityFilter selected={selectedCity} />}
+        </div>
       </div>
 
       {admin && <CreateInvoiceForm clients={clients} />}
@@ -66,7 +69,8 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
               (i) =>
                 i.status === "PAID" &&
                 i.paidAt &&
-                new Date(i.paidAt).getMonth() === new Date().getMonth()
+                new Date(i.paidAt).getMonth() === new Date().getMonth() &&
+                new Date(i.paidAt).getFullYear() === new Date().getFullYear()
             )
             .reduce((sum, i) => sum + i.totalAmount, 0)
             .toFixed(2)}`}
