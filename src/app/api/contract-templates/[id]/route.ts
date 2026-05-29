@@ -27,8 +27,8 @@ export async function PUT(request: Request, props: { params: Promise<{ id: strin
   if (startDate !== undefined && startDate !== null) data.startDate = startDate ? new Date(startDate) : null
   const endDate = formData.get("endDate") as string
   if (endDate !== undefined && endDate !== null) data.endDate = endDate ? new Date(endDate) : null
-  const rate = formData.get("rate")
-  if (rate !== null) data.rate = parseFloat(rate as string) || 0
+  const rates = formData.get("rates")
+  if (rates !== null) data.rates = rates
   if (formData.get("isDefault") === "on") data.isDefault = true
   else if (formData.has("isDefault")) data.isDefault = false
 

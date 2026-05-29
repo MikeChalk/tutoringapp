@@ -6,7 +6,20 @@ import { STUDENT_GRADE_OPTIONS } from "@/lib/constants"
 interface Template {
   id: string; name: string; type: string; yearLevel: string
   startDate: Date | string | null; endDate: Date | string | null
-  terms: string; gradeLevels: string; rate: number; isDefault: boolean
+  terms: string; gradeLevels: string; rates: string; isDefault: boolean
+}
+
+const PROGRAM_CATEGORIES: Record<string, string> = {
+  in_person_mgmt: "In-Person Program Management",
+  online_mgmt: "Online Program Management",
+  supervision: "Supervision",
+  marketing: "Marketing",
+}
+
+function fmtDate(d: Date | string | null | undefined): string {
+  if (!d) return ""
+  if (typeof d === "string") return d
+  return d.toISOString().split("T")[0]
 }
 
 export function ContractTemplateForm({ editing, onCancel }: {
@@ -14,18 +27,54 @@ export function ContractTemplateForm({ editing, onCancel }: {
   onCancel?: string
 }) {
   const isEdit = !!editing
-  const [selectedGrades, setSelectedGrades] = useState<string[]>(
-    editing?.gradeLevels ? editing.gradeLevels.split(",").map(s => s.trim()).filter(Boolean) : []
-  )
+  const contractType = editing?.type || "PRIVATE_TUTORING"
+  const isProgramSupervisor = contractType === "PROGRAM_SUPERVISOR"
 
-  function toggleGrade(g: string) {
-    setSelectedGrades(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g])
+  const existingRates: Record<string, number> = {}
+  const existingCustom: Array<{ label: string; rate: number }> = []
+  if (editing?.rates) {
+    try {
+      const parsed = JSON.parse(editing.rates)
+      for (const [k, v] of Object.entries(parsed)) {
+        if (k === "custom") {
+          if (Array.isArray(v)) existingCustom.push(...v)
+        } else {
+          existingRates[k] = v as number
+        }
+      }
+    } catch {}
   }
 
-  function fmtDate(d: Date | string | null | undefined): string {
-    if (!d) return ""
-    if (typeof d === "string") return d
-    return d.toISOString().split("T")[0]
+  const [customCategories, setCustomCategories] = useState<Array<{ label: string; rate: number }>>(existingCustom)
+
+  const rateKeys = isProgramSupervisor
+    ? Object.keys(PROGRAM_CATEGORIES)
+    : Object.keys(STUDENT_GRADE_OPTIONS)
+
+  function updateRate(key: string, value: string) {
+    const input = document.getElementById(`rate_${key}`) as HTMLInputElement
+    if (input) input.value = value
+  }
+
+  function serializeRates(): string {
+    const obj: Record<string, unknown> = {}
+    for (const k of rateKeys) {
+      const input = document.getElementById(`rate_${k}`) as HTMLInputElement
+      const val = input ? parseFloat(input.value) : existingRates[k] || 0
+      if (val > 0) obj[k] = val
+    }
+    if (customCategories.length > 0) {
+      obj.custom = customCategories.filter(c => c.label && c.rate > 0)
+    }
+    return JSON.stringify(obj)
+  }
+
+  function addCustom() {
+    setCustomCategories(prev => [...prev, { label: "", rate: 0 }])
+  }
+
+  function removeCustom(idx: number) {
+    setCustomCategories(prev => prev.filter((_, i) => i !== idx))
   }
 
   return (
@@ -33,7 +82,15 @@ export function ContractTemplateForm({ editing, onCancel }: {
       <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">
         {isEdit ? "Edit Template" : "Create Template"}
       </h3>
-      <form action={isEdit ? `/api/contract-templates/${editing!.id}` : "/api/contract-templates"} method="POST" className="space-y-4">
+      <form action={isEdit ? `/api/contract-templates/${editing!.id}` : "/api/contract-templates"} method="POST"
+        onSubmit={(e) => {
+          const input = document.createElement("input")
+          input.type = "hidden"
+          input.name = "rates"
+          input.value = serializeRates()
+          ;(e.target as HTMLFormElement).appendChild(input)
+        }}
+        className="space-y-5">
         {isEdit && <input type="hidden" name="_method" value="PUT" />}
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -46,10 +103,9 @@ export function ContractTemplateForm({ editing, onCancel }: {
           <div>
             <label className="block text-xs text-zinc-500 mb-1">Contract Type</label>
             <select name="type" required
-              defaultValue={editing?.type || "PRIVATE_TUTORING"}
+              defaultValue={contractType}
               className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="PRIVATE_TUTORING">Private Tutoring</option>
-              <option value="STUDY_HALL">Study Hall</option>
               <option value="PROGRAM_SUPERVISOR">Program Supervisor</option>
             </select>
           </div>
@@ -65,7 +121,7 @@ export function ContractTemplateForm({ editing, onCancel }: {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs text-zinc-500 mb-1">Start Date</label>
             <input type="date" name="startDate"
@@ -78,30 +134,50 @@ export function ContractTemplateForm({ editing, onCancel }: {
               defaultValue={fmtDate(editing?.endDate)}
               className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
-          <div>
-            <label className="block text-xs text-zinc-500 mb-1">Default Rate ($/hr)</label>
-            <input type="number" name="rate" min="0" step="0.01"
-              defaultValue={editing?.rate || 0}
-              className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+
+        <div>
+          <label className="block text-xs text-zinc-500 mb-2">
+            {isProgramSupervisor ? "Rates by Category ($/hr)" : "Rates by Grade Level ($/hr)"}
+          </label>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {rateKeys.map((key) => (
+              <div key={key}>
+                <label className="block text-xs text-zinc-500 mb-0.5">
+                  {isProgramSupervisor ? PROGRAM_CATEGORIES[key] : STUDENT_GRADE_OPTIONS[key]}
+                </label>
+                <input type="number" id={`rate_${key}`} min="0" step="0.01" placeholder="0.00"
+                  defaultValue={existingRates[key] || ""}
+                  className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1.5 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+            ))}
           </div>
         </div>
 
         <div>
-          <label className="block text-xs text-zinc-500 mb-2">Grade Levels</label>
-          <input type="hidden" name="gradeLevels" value={selectedGrades.join(", ")} />
-          <div className="flex flex-wrap gap-2">
-            {Object.entries(STUDENT_GRADE_OPTIONS).map(([key, label]) => {
-              const active = selectedGrades.includes(key)
-              return (
-                <button key={key} type="button" onClick={() => toggleGrade(key)}
-                  className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                    active ? "bg-zinc-900 text-white border-zinc-900 dark:bg-white dark:text-zinc-900 dark:border-white" : "border-zinc-300 text-zinc-600 hover:border-zinc-900 dark:border-zinc-600 dark:text-zinc-400 dark:hover:border-zinc-400"
-                  }`}>
-                  {label}
-                </button>
-              )
-            })}
-          </div>
+          <label className="block text-xs text-zinc-500 mb-2">Custom Categories</label>
+          {customCategories.map((cat, idx) => (
+            <div key={idx} className="flex items-center gap-2 mb-2">
+              <input type="text" placeholder="Category name"
+                defaultValue={cat.label}
+                onChange={e => {
+                  setCustomCategories(prev => prev.map((c, i) => i === idx ? { ...c, label: e.target.value } : c))
+                }}
+                className="flex-1 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1.5 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input type="number" placeholder="$/hr" min="0" step="0.01"
+                defaultValue={cat.rate || ""}
+                onChange={e => {
+                  setCustomCategories(prev => prev.map((c, i) => i === idx ? { ...c, rate: parseFloat(e.target.value) || 0 } : c))
+                }}
+                className="w-24 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1.5 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <button type="button" onClick={() => removeCustom(idx)}
+                className="text-xs text-red-600 dark:text-red-400 hover:underline shrink-0">Remove</button>
+            </div>
+          ))}
+          <button type="button" onClick={addCustom}
+            className="text-xs text-blue-600 dark:text-blue-400 hover:underline">
+            + Add custom category
+          </button>
         </div>
 
         <div>

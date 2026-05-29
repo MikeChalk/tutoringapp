@@ -73,7 +73,6 @@ export default async function OnboardingPage(props: { searchParams: Promise<{ cr
             <select name="contractType" required
               className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="PRIVATE_TUTORING">Private Tutoring</option>
-              <option value="STUDY_HALL">Study Hall</option>
               <option value="PROGRAM_SUPERVISOR">Program Supervisor</option>
             </select>
           </div>
@@ -130,7 +129,6 @@ export default async function OnboardingPage(props: { searchParams: Promise<{ cr
                   <select name="contractType" required
                     className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500">
                     <option value="PRIVATE_TUTORING">Private Tutoring</option>
-                    <option value="STUDY_HALL">Study Hall</option>
                     <option value="PROGRAM_SUPERVISOR">Program Supervisor</option>
                   </select>
                   <select name="yearLevel" required

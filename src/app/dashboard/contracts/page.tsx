@@ -116,10 +116,9 @@ function ContractsTab({ contracts, tutors }: {
             <label className="block text-xs text-zinc-500 mb-1">Contract Type</label>
             <select name="type" required
               className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="PRIVATE_TUTORING">Private Tutoring</option>
-              <option value="STUDY_HALL">Study Hall</option>
-              <option value="PROGRAM_SUPERVISOR">Program Supervisor</option>
-            </select>
+            <option value="PRIVATE_TUTORING">Private Tutoring</option>
+            <option value="PROGRAM_SUPERVISOR">Program Supervisor</option>
+          </select>
           </div>
           <div>
             <label className="block text-xs text-zinc-500 mb-1">Year Level</label>
@@ -230,7 +229,7 @@ function ContractsTab({ contracts, tutors }: {
 function TemplatesTab({ templates, editingTemplate }: { templates: Array<{
   id: string; name: string; type: string; yearLevel: string;
   startDate: Date | null; endDate: Date | null;
-  terms: string; gradeLevels: string; rate: number; isDefault: boolean;
+  terms: string; gradeLevels: string; rates: string; isDefault: boolean;
 }>; editingTemplate: typeof templates[number] | null }) {
 
   return (
@@ -269,7 +268,15 @@ function TemplatesTab({ templates, editingTemplate }: { templates: Array<{
                     {t.gradeLevels ? t.gradeLevels.split(",").map(g => GRADE_LABELS[g.trim()] || g.trim()).join(", ") : "-"}
                   </td>
                   <td className="px-4 py-3 text-sm text-right text-zinc-600 dark:text-zinc-400">
-                    {t.rate > 0 ? `$${t.rate.toFixed(2)}/hr` : "-"}
+                    {(() => {
+                      try {
+                        const r = JSON.parse(t.rates)
+                        const count = Object.keys(r).filter(k => k !== "custom").length
+                        const custom = (r.custom as Array<{ label: string }>)?.length || 0
+                        const total = count + custom
+                        return total > 0 ? `${total} categories` : "-"
+                      } catch { return "-" }
+                    })()}
                   </td>
                   <td className="px-4 py-3 text-center">
                     {t.isDefault && (

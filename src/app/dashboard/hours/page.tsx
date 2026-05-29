@@ -43,7 +43,7 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
           ? { cityId: effectiveCityId }
           : {},
       include: {
-        client: { select: { user: { select: { name: true } } } },
+        client: { select: { user: { select: { name: true } }, type: true } },
         projectTutors: { include: { tutor: { include: { user: { select: { name: true, id: true } } } } } },
       },
     }),
@@ -177,6 +177,7 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
                 <option value="">Select project</option>
                 {projects.map((p) => (
                   <option key={p.id} value={p.id} data-grade={p.gradeLevel} data-type={p.projectType || "STUDENT"}
+                    data-client-type={p.client?.type || ""}
                     data-tutors={p.projectTutors.map(pt => pt.tutorId).join(",")}>
                     {p.name} — {p.client?.user.name || "Other"} ({GRADE_LABELS[p.gradeLevel] || p.gradeLevel})
                   </option>
@@ -189,6 +190,17 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
                 className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="IN_PERSON">In Person</option>
                 <option value="ONLINE">Online</option>
+              </select>
+            </div>
+            <div id="categoryGroup" className="hidden">
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Category</label>
+              <select name="category" id="categorySelect"
+                className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">--</option>
+                <option value="in_person_mgmt">In-Person Program Management</option>
+                <option value="online_mgmt">Online Program Management</option>
+                <option value="supervision">Supervision</option>
+                <option value="marketing">Marketing</option>
               </select>
             </div>
             <div className="bg-zinc-50 dark:bg-zinc-900 rounded-lg p-3 border border-zinc-200 dark:border-zinc-700">
@@ -248,6 +260,8 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
           var modeSelect = document.getElementById('modeSelect');
           var payDisplay = document.getElementById('payRateDisplay');
           var typeSelect = document.getElementById('projectTypeSelect');
+          var categoryGroup = document.getElementById('categoryGroup');
+          var categorySelect = document.getElementById('categorySelect');
 
           function filterProjects() {
             var type = typeSelect && typeSelect.value;
@@ -273,6 +287,19 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
             var mode = modeSelect && modeSelect.value;
             var tenure = tutorSelect && tutorSelect.value ? (tutorSelect.querySelector('option[value="' + tutorSelect.value.replace(/"/g, '\\\\"') + '"]') || {}).dataset.tenure : null;
             var ptype = projectSelect && projectSelect.value ? (projectSelect.querySelector('option[value="' + projectSelect.value.replace(/"/g, '\\\\"') + '"]') || {}).dataset.type : null;
+            var clientType = projectSelect && projectSelect.value ? (projectSelect.querySelector('option[value="' + projectSelect.value.replace(/"/g, '\\\\"') + '"]') || {}).dataset.clientType : '';
+
+            var isStudyHall = ptype === 'STUDY_HALL';
+            var isSchool = clientType === 'SCHOOL';
+
+            if (categoryGroup) {
+              if (isStudyHall && isSchool) {
+                categoryGroup.classList.remove('hidden');
+              } else {
+                categoryGroup.classList.add('hidden');
+                if (categorySelect) categorySelect.value = '';
+              }
+            }
 
             if (!grade || !mode) {
               if (payDisplay) payDisplay.textContent = '--';
@@ -281,18 +308,20 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
 
             var lookupGrade = grade;
             var stdGrades = ['ELEMENTARY','SEC1_2','SEC3','SEC4_5','CEGEP','UNI'];
-            if (ptype === 'STUDY_HALL' && stdGrades.indexOf(grade) !== -1) {
+            var lookupPtype = ptype;
+            if (ptype === 'STUDY_HALL') {
               lookupGrade = 'STUDY_HALL';
+              lookupPtype = 'STUDY_HALL';
             }
 
             var billing = null;
             var pay = null;
             for (var i = 0; i < RATES.billing.length; i++) {
-              if (RATES.billing[i].g === lookupGrade && RATES.billing[i].m === mode && RATES.billing[i].p === ptype) { billing = RATES.billing[i].r; break; }
+              if (RATES.billing[i].g === lookupGrade && RATES.billing[i].m === mode && RATES.billing[i].p === lookupPtype) { billing = RATES.billing[i].r; break; }
             }
             if (tenure) {
               for (var j = 0; j < RATES.pay.length; j++) {
-                if (RATES.pay[j].t === tenure && RATES.pay[j].g === lookupGrade && RATES.pay[j].m === mode && RATES.pay[j].p === ptype) { pay = RATES.pay[j].r; break; }
+                if (RATES.pay[j].t === tenure && RATES.pay[j].g === lookupGrade && RATES.pay[j].m === mode && RATES.pay[j].p === lookupPtype) { pay = RATES.pay[j].r; break; }
               }
             }
 

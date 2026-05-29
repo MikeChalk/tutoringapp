@@ -18,6 +18,7 @@ export async function POST(request: Request) {
   const description = formData.get("description") as string
   const manualBilling = formData.get("billingRate") as string
   const manualPay = formData.get("tutorPayRate") as string
+  const category = formData.get("category") as string
 
   if (!projectId || !tutorId || !date || !hours) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 })
@@ -81,6 +82,7 @@ export async function POST(request: Request) {
       billingRate,
       tutorPayRate,
       description: description || null,
+      category: category || null,
     },
   })
 
