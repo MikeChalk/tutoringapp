@@ -39,7 +39,7 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Students / Projects</h2>
+        <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Student Projects</h2>
         {admin && (
           <form id="statusForm">
             <select
@@ -70,7 +70,7 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
             >
               <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">{project.name}</h3>
               <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-                {project.client.user.name}
+                {project.client?.user.name || "Other Project"}
               </p>
               {project.school && (
                 <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">{project.school}</p>

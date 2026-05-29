@@ -32,7 +32,7 @@ export default async function ExpensesPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Expenses</h2>
+        <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Finance</h2>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

@@ -59,7 +59,7 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
         <p className="text-base font-medium text-zinc-600 dark:text-zinc-300 mb-1">{project.school}</p>
       )}
       <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-2">
-        Client: {project.client.user.name} &middot; {GRADE_LABELS[project.gradeLevel]} &middot; Started {new Date(project.createdAt).toLocaleDateString()}
+        Client: {project.client?.user.name || "N/A"} &middot; {GRADE_LABELS[project.gradeLevel]} &middot; Started {new Date(project.createdAt).toLocaleDateString()}
       </p>
 
       <div className="flex flex-wrap gap-2 mb-6">

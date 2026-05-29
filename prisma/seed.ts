@@ -11,11 +11,18 @@ async function main() {
   await prisma.projectTutor.deleteMany()
   await prisma.project.deleteMany()
   await prisma.tutoringRequest.deleteMany()
+  await prisma.contract.deleteMany()
   await prisma.tutor.deleteMany()
   await prisma.client.deleteMany()
+  await prisma.expense.deleteMany()
   await prisma.user.deleteMany()
   await prisma.billingRate.deleteMany()
   await prisma.payScale.deleteMany()
+  await prisma.city.deleteMany()
+
+  const montreal = await prisma.city.create({
+    data: { name: "Montreal", slug: "montreal" },
+  })
 
   // Billing rates: what the client pays (from jasstutors.com)
   const billingRates = [
@@ -96,12 +103,13 @@ async function main() {
       email: "admin@tutoring.com",
       password: hash,
       role: "ADMIN",
+      cityId: montreal.id,
     },
   })
 
   // Tutor 1 — 3rd year, experienced
   const t1User = await prisma.user.create({
-    data: { name: "Sarah Chen", email: "sarah@tutoring.com", password: hash, role: "TUTOR" },
+    data: { name: "Sarah Chen", email: "sarah@tutoring.com", password: hash, role: "TUTOR", cityId: montreal.id },
   })
   const tutor1 = await prisma.tutor.create({
     data: {
@@ -117,7 +125,7 @@ async function main() {
 
   // Tutor 2 — 2nd year
   const t2User = await prisma.user.create({
-    data: { name: "David Nguyen", email: "david@tutoring.com", password: hash, role: "TUTOR" },
+    data: { name: "David Nguyen", email: "david@tutoring.com", password: hash, role: "TUTOR", cityId: montreal.id },
   })
   const tutor2 = await prisma.tutor.create({
     data: {
@@ -133,7 +141,7 @@ async function main() {
 
   // Tutor 3 — 1st year, still onboarding
   const t3User = await prisma.user.create({
-    data: { name: "Emma Tremblay", email: "emma@tutoring.com", password: hash, role: "TUTOR" },
+    data: { name: "Emma Tremblay", email: "emma@tutoring.com", password: hash, role: "TUTOR", cityId: montreal.id },
   })
   const tutor3 = await prisma.tutor.create({
     data: {
@@ -175,7 +183,7 @@ async function main() {
 
   // Clients
   const c1User = await prisma.user.create({
-    data: { name: "Robert Dupont", email: "robert@email.com", password: hash, role: "CLIENT" },
+    data: { name: "Robert Dupont", email: "robert@email.com", password: hash, role: "CLIENT", cityId: montreal.id },
   })
   const client1 = await prisma.client.create({
     data: {
@@ -187,7 +195,7 @@ async function main() {
   })
 
   const c2User = await prisma.user.create({
-    data: { name: "Marie Lambert", email: "marie@email.com", password: hash, role: "CLIENT" },
+    data: { name: "Marie Lambert", email: "marie@email.com", password: hash, role: "CLIENT", cityId: montreal.id },
   })
   const client2 = await prisma.client.create({
     data: {
@@ -198,7 +206,7 @@ async function main() {
   })
 
   const c3User = await prisma.user.create({
-    data: { name: "Jean-Paul Tremblay", email: "jp@email.com", password: hash, role: "CLIENT" },
+    data: { name: "Jean-Paul Tremblay", email: "jp@email.com", password: hash, role: "CLIENT", cityId: montreal.id },
   })
   const client3 = await prisma.client.create({
     data: {
@@ -218,7 +226,9 @@ async function main() {
       subjects: "Math, Study Skills",
       school: "École Secondaire St-Luc",
       gradeLevel: "SEC3",
+      projectType: "STUDENT",
       clientId: client1.id,
+      cityId: montreal.id,
     },
   })
   await prisma.projectTutor.create({ data: { projectId: p1.id, tutorId: tutor1.id } })
@@ -230,7 +240,9 @@ async function main() {
       subjects: "Science, Reading",
       school: "École Primaire Soleil",
       gradeLevel: "ELEMENTARY",
+      projectType: "STUDENT",
       clientId: client1.id,
+      cityId: montreal.id,
     },
   })
   await prisma.projectTutor.create({ data: { projectId: p2.id, tutorId: tutor1.id } })
@@ -242,7 +254,9 @@ async function main() {
       subjects: "Math, Executive Functioning",
       school: "Collège Jean-de-Brébeuf",
       gradeLevel: "SEC4_5",
+      projectType: "STUDENT",
       clientId: client2.id,
+      cityId: montreal.id,
     },
   })
   await prisma.projectTutor.create({ data: { projectId: p3.id, tutorId: tutor2.id } })
@@ -254,7 +268,9 @@ async function main() {
       subjects: "Physics, Mechanics",
       school: "Dawson College",
       gradeLevel: "CEGEP",
+      projectType: "STUDENT",
       clientId: client3.id,
+      cityId: montreal.id,
     },
   })
   await prisma.projectTutor.create({ data: { projectId: p4.id, tutorId: tutor1.id } })
@@ -266,7 +282,9 @@ async function main() {
       subjects: "English, Writing",
       school: "Royal West Academy",
       gradeLevel: "SEC1_2",
+      projectType: "STUDENT",
       clientId: client2.id,
+      cityId: montreal.id,
     },
   })
   await prisma.projectTutor.create({ data: { projectId: p5.id, tutorId: tutor2.id } })
@@ -278,7 +296,9 @@ async function main() {
       subjects: "Chemistry, Chemistry 1",
       school: "McGill University",
       gradeLevel: "UNI",
+      projectType: "STUDENT",
       clientId: client3.id,
+      cityId: montreal.id,
     },
   })
   await prisma.projectTutor.create({ data: { projectId: p6.id, tutorId: tutor3.id } })
@@ -356,7 +376,7 @@ async function main() {
   })
 
   console.log("Seed complete!")
-  console.log(`Created: admin, 3 tutors, 3 clients, 6 projects, 4 hour logs`)
+  console.log(`Created: admin, 3 tutors, 3 clients, 6 projects, 5 hour logs`)
   console.log("All passwords: password123")
 }
 

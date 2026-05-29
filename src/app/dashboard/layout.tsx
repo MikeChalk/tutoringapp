@@ -25,7 +25,7 @@ const adminSections = [
   {
     label: "Productivity",
     links: [
-      { href: "/dashboard/projects", label: "Students" },
+      { href: "/dashboard/projects", label: "Student Projects" },
       { href: "/dashboard/hours", label: "Log Hours" },
       { href: "/dashboard/requests", label: "Tutoring Requests" },
     ],

@@ -90,7 +90,7 @@ export default async function HoursPage() {
                           {log.project.status}
                         </span>
                       </td>
-                      <td className="px-2 py-2 text-zinc-600 dark:text-zinc-400">{log.project.client.user.name}</td>
+                      <td className="px-2 py-2 text-zinc-600 dark:text-zinc-400">{log.project.client?.user.name || "Other"}</td>
                       <td className="px-2 py-2">
                         <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
                           log.mode === "ONLINE" ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" : "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400"
@@ -120,7 +120,7 @@ export default async function HoursPage() {
                 <option value="">Select student</option>
                 {projects.map((p) => (
                   <option key={p.id} value={p.id} data-grade={p.gradeLevel}>
-                    {p.name} — {p.client.user.name} ({GRADE_LABELS[p.gradeLevel] || p.gradeLevel})
+                    {p.name} — {p.client?.user.name || "Other"} ({GRADE_LABELS[p.gradeLevel] || p.gradeLevel})
                   </option>
                 ))}
               </select>
