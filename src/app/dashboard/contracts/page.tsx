@@ -5,11 +5,11 @@ import { CityFilter } from "@/components/city-filter"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 
-export default async function ContractsPage(props: { searchParams: Promise<{ tab?: string; city?: string }> }) {
+export default async function ContractsPage(props: { searchParams: Promise<{ tab?: string; city?: string; edit?: string }> }) {
   const session = await requireAuth()
   if (!isAdmin(session.user.role)) redirect("/dashboard")
 
-  const { tab, city: cityParam } = await props.searchParams
+  const { tab, city: cityParam, edit: editId } = await props.searchParams
   const activeTab = tab || "contracts"
   const selectedCity = cityParam || "all"
   const superAdmin = isSuperAdmin(session.user.role)
@@ -32,6 +32,10 @@ export default async function ContractsPage(props: { searchParams: Promise<{ tab
   const templates = await prisma.contractTemplate.findMany({
     orderBy: [{ type: "asc" }, { name: "asc" }],
   })
+
+  const editingTemplate = editId
+    ? templates.find(t => t.id === editId) || null
+    : null
 
   const tutors = await prisma.tutor.findMany({
     where: { onboarded: true, ...(effectiveCityId ? { user: { cityId: effectiveCityId } } : {}) },
@@ -70,7 +74,7 @@ export default async function ContractsPage(props: { searchParams: Promise<{ tab
       </div>
 
       {activeTab === "templates" ? (
-        <TemplatesTab templates={templates} />
+        <TemplatesTab templates={templates} editingTemplate={editingTemplate} />
       ) : (
         <ContractsTab contracts={contracts} tutors={tutors} />
       )}
@@ -222,23 +226,30 @@ function ContractsTab({ contracts, tutors }: {
   )
 }
 
-function TemplatesTab({ templates }: { templates: Array<{
+function TemplatesTab({ templates, editingTemplate }: { templates: Array<{
   id: string; name: string; type: string; yearLevel: string;
   terms: string; gradeLevels: string; isDefault: boolean;
-}> }) {
+}>; editingTemplate: typeof templates[number] | null }) {
+  const isEdit = !!editingTemplate
+
   return (
     <div className="space-y-6">
       <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
-        <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Create Template</h3>
-        <form action="/api/contract-templates" method="POST" className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+        <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">
+          {isEdit ? "Edit Template" : "Create Template"}
+        </h3>
+        <form action={isEdit ? `/api/contract-templates/${editingTemplate.id}` : "/api/contract-templates"} method="POST" className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+          {isEdit && <input type="hidden" name="_method" value="PUT" />}
           <div>
             <label className="block text-xs text-zinc-500 mb-1">Template Name</label>
             <input type="text" name="name" required placeholder="e.g. Private Tutoring Standard"
+              defaultValue={editingTemplate?.name || ""}
               className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div>
             <label className="block text-xs text-zinc-500 mb-1">Contract Type</label>
             <select name="type" required
+              defaultValue={editingTemplate?.type || "PRIVATE_TUTORING"}
               className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="PRIVATE_TUTORING">Private Tutoring</option>
               <option value="STUDY_HALL">Study Hall</option>
@@ -248,6 +259,7 @@ function TemplatesTab({ templates }: { templates: Array<{
           <div>
             <label className="block text-xs text-zinc-500 mb-1">Year Level</label>
             <select name="yearLevel" required
+              defaultValue={editingTemplate?.yearLevel || "1ST_YEAR"}
               className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="1ST_YEAR">Year 1</option>
               <option value="2ND_YEAR">Year 2</option>
@@ -257,21 +269,29 @@ function TemplatesTab({ templates }: { templates: Array<{
           <div>
             <label className="block text-xs text-zinc-500 mb-1">Grade Levels (comma separated)</label>
             <input type="text" name="gradeLevels" placeholder="ELEMENTARY, SEC1_2, SEC3, SEC4_5, CEGEP, UNI"
+              defaultValue={editingTemplate?.gradeLevels || ""}
               className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div className="sm:col-span-2">
             <label className="block text-xs text-zinc-500 mb-1">Contract Terms</label>
             <textarea name="terms" rows={3} placeholder="Contract terms and conditions..."
+              defaultValue={editingTemplate?.terms || ""}
               className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div className="flex items-center gap-2">
             <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-              <input type="checkbox" name="isDefault" className="rounded" /> Set as default
+              <input type="checkbox" name="isDefault" className="rounded" defaultChecked={editingTemplate?.isDefault || false} /> Set as default
             </label>
             <button type="submit"
               className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">
-              Create Template
+              {isEdit ? "Update Template" : "Create Template"}
             </button>
+            {isEdit && (
+              <a href="/dashboard/contracts?tab=templates"
+                className="rounded-lg px-4 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+                Cancel
+              </a>
+            )}
           </div>
         </form>
       </div>
@@ -314,10 +334,16 @@ function TemplatesTab({ templates }: { templates: Array<{
                     )}
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <form action={`/api/contract-templates/${t.id}`} method="POST">
-                      <input type="hidden" name="_method" value="DELETE" />
-                      <button type="submit" className="text-xs text-red-600 dark:text-red-400 hover:underline">Delete</button>
-                    </form>
+                    <div className="flex items-center justify-center gap-3">
+                      <Link href={`/dashboard/contracts?tab=templates&edit=${t.id}`}
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline">
+                        Edit
+                      </Link>
+                      <form action={`/api/contract-templates/${t.id}`} method="POST">
+                        <input type="hidden" name="_method" value="DELETE" />
+                        <button type="submit" className="text-xs text-red-600 dark:text-red-400 hover:underline">Delete</button>
+                      </form>
+                    </div>
                   </td>
                 </tr>
               ))}
