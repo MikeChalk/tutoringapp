@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
 import { CityFilter } from "@/components/city-filter"
-import { GRADE_LABELS } from "@/lib/constants"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 
@@ -65,14 +64,8 @@ export default async function OnboardingPage(props: { searchParams: Promise<{ cr
       <div id="quickAddSection" className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 mb-6">
         <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Add Team Member Directly</h3>
         <form action="/api/onboarding" method="POST" className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
-          <div>
-            <label className="block text-xs text-zinc-500 mb-1">Name</label>
-            <input type="text" name="name" required className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-          <div>
-            <label className="block text-xs text-zinc-500 mb-1">Email</label>
-            <input type="email" name="email" required className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
+          <div><label className="block text-xs text-zinc-500 mb-1">Name</label><input type="text" name="name" required className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
+          <div><label className="block text-xs text-zinc-500 mb-1">Email</label><input type="email" name="email" required className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
           <div>
             <label className="block text-xs text-zinc-500 mb-1">Contract Type</label>
             <select name="contractType" required className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -83,9 +76,7 @@ export default async function OnboardingPage(props: { searchParams: Promise<{ cr
           <div>
             <label className="block text-xs text-zinc-500 mb-1">Year Level</label>
             <select name="yearLevel" required className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="1ST_YEAR">Year 1</option>
-              <option value="2ND_YEAR">Year 2</option>
-              <option value="3RD_YEAR">Year 3</option>
+              <option value="1ST_YEAR">Year 1</option><option value="2ND_YEAR">Year 2</option><option value="3RD_YEAR">Year 3</option>
             </select>
           </div>
           {templates.length > 0 && (
@@ -97,13 +88,10 @@ export default async function OnboardingPage(props: { searchParams: Promise<{ cr
               </select>
             </div>
           )}
-          <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">
-            Create & Start Onboarding
-          </button>
+          <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">Create & Start Onboarding</button>
           <div className="col-span-full">
             <label className="block text-xs text-zinc-500 mb-1">Grade Levels</label>
-            <input type="text" name="gradeLevels" placeholder="ELEMENTARY, SEC1_2, SEC3, SEC4_5, CEGEP, UNI"
-              className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <input type="text" name="gradeLevels" placeholder="ELEMENTARY, SEC1_2, SEC3, SEC4_5, CEGEP, UNI" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
         </form>
       </div>
@@ -117,60 +105,78 @@ export default async function OnboardingPage(props: { searchParams: Promise<{ cr
           {pendingTutors.map((tutor) => {
             const step = tutor.onboardingStep
             const needsContract = step === 0
+            const displayStep = step + 1
 
             return (
               <div key={tutor.id} className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <div className="flex items-center gap-2">
-                      <Link href={`/dashboard/tutors/${tutor.id}`} className="font-medium text-blue-600 dark:text-blue-400 hover:underline">
-                        {tutor.user.name}
-                      </Link>
+                      <Link href={`/dashboard/tutors/${tutor.id}`} className="font-medium text-blue-600 dark:text-blue-400 hover:underline">{tutor.user.name}</Link>
                       <span className={`text-xs px-2 py-0.5 rounded-full ${step >= 1 ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"}`}>
-                        Step {step}/{ONBOARDING_STEPS.length - 1}
+                        Step {displayStep} of {ONBOARDING_STEPS.length}
                       </span>
                     </div>
                     <p className="text-sm text-zinc-500">{tutor.user.email}</p>
                     <p className="text-xs text-zinc-400 mt-1">Joined {new Date(tutor.createdAt).toLocaleDateString()}</p>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-start gap-2">
                     {needsContract ? (
-                      <form action="/api/onboarding" method="POST" className="flex flex-wrap items-end gap-2">
+                      <form action="/api/onboarding" method="POST" className="border border-zinc-200 dark:border-zinc-700 rounded-lg p-3 space-y-2 max-w-md">
                         <input type="hidden" name="tutorId" value={tutor.id} />
-                        <select name="contractType" required className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500">
-                          <option value="PRIVATE_TUTORING">Private Tutoring</option>
-                          <option value="PROGRAM_SUPERVISOR">Program Supervisor</option>
-                        </select>
-                        <select name="yearLevel" required className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500">
-                          <option value="1ST_YEAR">Year 1</option>
-                          <option value="2ND_YEAR">Year 2</option>
-                          <option value="3RD_YEAR">Year 3</option>
-                        </select>
-                        <input type="date" name="startDate" required defaultValue={new Date().toISOString().split("T")[0]}
-                          className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500" />
-                        <input type="date" name="endDate" required defaultValue={endDateDefault}
-                          className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500" />
-                        <input type="text" name="gradeLevels" placeholder="Grade levels" defaultValue={tutor.gradeLevels || ""}
-                          className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                        <div className="flex flex-wrap gap-1.5">
+                          <select name="contractType" required className="rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                            <option value="PRIVATE_TUTORING">Private Tutoring</option>
+                            <option value="PROGRAM_SUPERVISOR">Program Supervisor</option>
+                          </select>
+                          <select name="yearLevel" required className="rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                            <option value="1ST_YEAR">Year 1</option><option value="2ND_YEAR">Year 2</option><option value="3RD_YEAR">Year 3</option>
+                          </select>
+                          <input type="date" name="startDate" required defaultValue={new Date().toISOString().split("T")[0]} className="rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                          <input type="date" name="endDate" required defaultValue={endDateDefault} className="rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                        </div>
+                        <input type="text" name="gradeLevels" placeholder="Grade levels" defaultValue={tutor.gradeLevels || ""} className="w-full rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500" />
                         {templates.length > 0 && (
-                          <select name="templateId" className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                          <select name="templateId" className="w-full rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500">
                             <option value="">No template</option>
                             {templates.map((t) => (<option key={t.id} value={t.id}>{t.name}</option>))}
                           </select>
                         )}
-                        <button type="submit" className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 transition-colors">
-                          Create Contract
-                        </button>
+                        <button type="submit" className="w-full rounded bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 transition-colors">Create Contract & Send Email</button>
                       </form>
                     ) : ADMIN_ADVANCE_STEPS.has(step) ? (
-                      <form action="/api/onboarding" method="POST">
-                        <input type="hidden" name="_action" value="advance" />
-                        <input type="hidden" name="tutorId" value={tutor.id} />
-                        <button type="submit" className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 transition-colors">
-                          Advance to Step {step + 2}
-                        </button>
-                      </form>
+                      <div className="border border-zinc-200 dark:border-zinc-700 rounded-lg p-3 space-y-2 max-w-md">
+                        <p className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                          {step === 0 ? "Send welcome email to tutor" :
+                           step === 2 ? "Notify parent of tutor match" :
+                           step === 3 ? "Project has been created" :
+                           "Tutor has been assigned to project"}
+                        </p>
+                        <form action="/api/onboarding" method="POST" className="space-y-2">
+                          <input type="hidden" name="_action" value="advance" />
+                          <input type="hidden" name="tutorId" value={tutor.id} />
+                          {step === 0 && (
+                            <textarea name="emailMessage" rows={3} placeholder="Custom welcome message for the tutor..."
+                              className="w-full rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              defaultValue={`Welcome to J.A.S.S.! We're excited to have you on the team.\n\nPlease log in to the platform and sign your contract to get started.`} />
+                          )}
+                          {step === 2 && (
+                            <>
+                              <input type="text" name="parentEmail" placeholder="Parent email" className="w-full rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                              <input type="text" name="parentName" placeholder="Parent name" className="w-full rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                              <textarea name="parentMessage" rows={2} placeholder="Custom message for the parent..."
+                                className="w-full rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                defaultValue={`We've matched you with ${tutor.user.name}. They will be reaching out to you shortly to arrange the first session.`} />
+                            </>
+                          )}
+                          <button type="submit" className="w-full rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 transition-colors">
+                            {step === 0 ? "Send Email & Advance" :
+                             step === 2 ? "Send Parent Email & Advance" :
+                             `Advance to "${ONBOARDING_STEPS[step + 1]}"`}
+                          </button>
+                        </form>
+                      </div>
                     ) : (
                       <span className="text-xs text-zinc-400">
                         {step === 1 ? "Waiting for tutor to sign contract" :
@@ -190,9 +196,7 @@ export default async function OnboardingPage(props: { searchParams: Promise<{ cr
                       return (
                         <div key={i} className="flex items-center gap-1.5">
                           <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                            done ? "bg-green-500 text-white"
-                            : current ? "bg-blue-500 text-white"
-                            : "bg-zinc-200 dark:bg-zinc-700 text-zinc-400"
+                            done ? "bg-green-500 text-white" : current ? "bg-blue-500 text-white" : "bg-zinc-200 dark:bg-zinc-700 text-zinc-400"
                           }`}>
                             {done ? "✓" : i + 1}
                           </div>

@@ -2,35 +2,36 @@ import { Resend } from "resend"
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 
-export async function sendCareerApplicationEmail(to: string, name: string, uploadUrl: string) {
-  if (!resend) {
-    console.log(`[EMAIL SKIPPED] Would send career application email to ${to} (${name}) - upload: ${uploadUrl}`)
-    return
-  }
+function log(email: { to: string; subject: string }) {
+  console.log(`[EMAIL SKIPPED] To: ${email.to} — ${email.subject}`)
+}
 
+export async function sendCareerApplicationEmail(to: string, name: string, uploadUrl: string) {
+  if (!resend) { log({ to, subject: "Career application" }); return }
   await resend.emails.send({
     from: "J.A.S.S. Tutors <info@jasstutors.com>",
     to,
     subject: "Thank you for your application — Next Steps",
-    html: `
-      <p>Hi ${name},</p>
-      <p>Thank you for applying to tutor with J.A.S.S.!</p>
-      <p>To complete your application, please upload your documents here:</p>
-      <p style="margin:16px 0">
-        <a href="${uploadUrl}" style="background:#18181b;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;font-weight:500">
-          Upload CV & Transcript
-        </a>
-      </p>
-      <p>Please upload:</p>
-      <ol>
-        <li>Your <strong>CV / Resume</strong></li>
-        <li>Your <strong>transcript</strong> (unofficial is fine)</li>
-      </ol>
-      <p>You can also paste this link in your browser:</p>
-      <p style="color:#6b7280;font-size:14px">${uploadUrl}</p>
-      <p>Once we receive these, we'll review your profile and reach out when a matching client is available.</p>
-      <p>We look forward to working with you!</p>
-      <p>— J.A.S.S. Tutors</p>
-    `,
+    html: `<p>Hi ${name},</p><p>Thank you for applying to tutor with J.A.S.S.!</p><p>To complete your application, please upload your documents here:</p><p style="margin:16px 0"><a href="${uploadUrl}" style="background:#18181b;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;font-weight:500">Upload CV & Transcript</a></p><p>You can also paste this link: ${uploadUrl}</p><p>Once we receive these, we'll review your profile and reach out when a matching client is available.</p><p>— J.A.S.S. Tutors</p>`,
+  })
+}
+
+export async function sendOnboardingEmail(to: string, name: string, message: string) {
+  if (!resend) { log({ to, subject: "Onboarding" }); return }
+  await resend.emails.send({
+    from: "J.A.S.S. Tutors <info@jasstutors.com>",
+    to,
+    subject: "Welcome to J.A.S.S. — Next Steps",
+    html: `<p>Hi ${name},</p>${message}<p style="margin-top:16px">— J.A.S.S. Tutors</p>`,
+  })
+}
+
+export async function sendParentNotificationEmail(to: string, parentName: string, tutorName: string, message: string) {
+  if (!resend) { log({ to, subject: "Tutor match" }); return }
+  await resend.emails.send({
+    from: "J.A.S.S. Tutors <info@jasstutors.com>",
+    to,
+    subject: "Your tutor match from J.A.S.S.",
+    html: `<p>Hi ${parentName},</p>${message || `<p>We've matched you with ${tutorName}. They will be reaching out to you shortly to arrange the first session.</p>`}<p style="margin-top:16px">— J.A.S.S. Tutors</p>`,
   })
 }

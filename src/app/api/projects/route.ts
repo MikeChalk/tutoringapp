@@ -17,6 +17,7 @@ export async function POST(request: Request) {
   const subjects = formData.get("subjects") as string
   const clientId = formData.get("clientId") as string
   const cityId = formData.get("cityId") as string
+  const school = formData.get("school") as string
 
   if (!name) {
     return NextResponse.json({ error: "Name required" }, { status: 400 })
@@ -33,6 +34,7 @@ export async function POST(request: Request) {
       clientId: clientId || null,
       cityId: cityIdFinal,
       projectType,
+      school: school || "",
     },
   })
 

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { isAdmin } from "@/lib/auth-helpers"
+import { sendOnboardingEmail, sendParentNotificationEmail } from "@/lib/email"
 import bcrypt from "bcryptjs"
 
 export async function POST(request: Request) {
@@ -15,10 +16,31 @@ export async function POST(request: Request) {
   const tutorId = formData.get("tutorId") as string
 
   if (action === "advance" && tutorId) {
-    const tutor = await prisma.tutor.findUnique({ where: { id: tutorId } })
+    const tutor = await prisma.tutor.findUnique({
+      where: { id: tutorId },
+      include: { user: { select: { name: true, email: true } } },
+    })
     if (!tutor) return NextResponse.json({ error: "Tutor not found" }, { status: 404 })
 
-    const nextStep = Math.min(tutor.onboardingStep + 1, 6)
+    const currentStep = tutor.onboardingStep
+
+    // Step 0 → 1: Send email to tutor
+    if (currentStep === 0) {
+      const emailMessage = (formData.get("emailMessage") as string) || `<p>Welcome to J.A.S.S.! We're excited to have you on the team.</p><p>Please log in to the platform and sign your contract to get started.</p>`
+      await sendOnboardingEmail(tutor.user.email, tutor.user.name, emailMessage)
+    }
+
+    // Step 2 → 3: Send email to parent
+    if (currentStep === 2) {
+      const parentEmail = (formData.get("parentEmail") as string) || ""
+      const parentName = (formData.get("parentName") as string) || "Parent"
+      const parentMessage = (formData.get("parentMessage") as string) || ""
+      if (parentEmail) {
+        await sendParentNotificationEmail(parentEmail, parentName, tutor.user.name, parentMessage)
+      }
+    }
+
+    const nextStep = Math.min(currentStep + 1, 6)
     await prisma.tutor.update({
       where: { id: tutorId },
       data: {
