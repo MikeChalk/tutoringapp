@@ -8,7 +8,10 @@ import { usePathname } from "next/navigation"
 const adminSections = [
   {
     label: "Overview",
-    links: [{ href: "/dashboard", label: "Dashboard" }],
+    links: [
+      { href: "/dashboard", label: "Dashboard" },
+      { href: "/dashboard/analytics", label: "Analytics" },
+    ],
   },
   {
     label: "HRM",
@@ -20,7 +23,11 @@ const adminSections = [
   },
   {
     label: "CRM",
-    links: [{ href: "/dashboard/clients", label: "Clients" }],
+    links: [
+      { href: "/dashboard/clients", label: "Clients" },
+      { href: "/dashboard/leads", label: "Leads" },
+      { href: "/dashboard/discounts", label: "Discounts" },
+    ],
   },
   {
     label: "Productivity",

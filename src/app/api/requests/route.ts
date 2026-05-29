@@ -34,5 +34,13 @@ export async function POST(request: Request) {
     },
   })
 
+  // Also create a lead
+  const existingLead = await prisma.lead.findFirst({ where: { email: email.toLowerCase() } })
+  if (!existingLead) {
+    await prisma.lead.create({
+      data: { name, email: email.toLowerCase(), phone: phone || null, subject, notes: description || null, status: "NEW" },
+    })
+  }
+
   return NextResponse.redirect(new URL("/dashboard/requests", request.url), 303)
 }
