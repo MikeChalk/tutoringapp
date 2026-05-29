@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
 import { CityFilter } from "@/components/city-filter"
+import { GRADE_LABELS } from "@/lib/constants"
 import { redirect } from "next/navigation"
 
 const ONBOARDING_STEPS = [
@@ -85,6 +86,12 @@ export default async function OnboardingPage(props: { searchParams: Promise<{ cr
             className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">
             Create & Onboard
           </button>
+          <div className="col-span-full">
+            <label className="block text-xs text-zinc-500 mb-1">Grade Levels (comma separated, e.g. ELEMENTARY,SEC1_2)</label>
+            <input type="text" name="gradeLevels" placeholder="ELEMENTARY, SEC1_2, SEC3, SEC4_5, CEGEP, UNI"
+              className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <p className="text-xs text-zinc-400 mt-1">Options: {Object.entries(GRADE_LABELS).filter(([k]) => !["STUDY_HALL","PROGRAM_SUPERVISOR"].includes(k)).map(([,v]) => v).join(", ")}</p>
+          </div>
         </form>
       </div>
 
@@ -121,6 +128,9 @@ export default async function OnboardingPage(props: { searchParams: Promise<{ cr
                     className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500" />
                   <input type="date" name="endDate" required
                     defaultValue={endDateDefault}
+                    className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                  <input type="text" name="gradeLevels" placeholder="Grade levels (e.g. ELEMENTARY,SEC1_2)"
+                    defaultValue={tutor.gradeLevels || ""}
                     className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500" />
                   <button type="submit"
                     className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 transition-colors">

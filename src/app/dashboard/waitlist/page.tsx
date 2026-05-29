@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
 import { redirect } from "next/navigation"
 import Link from "next/link"
-import { TENURE_LABELS } from "@/lib/constants"
+import { TENURE_LABELS, GRADE_LABELS } from "@/lib/constants"
 import { CityFilter } from "@/components/city-filter"
 
 export default async function WaitlistPage(props: { searchParams: Promise<{ city?: string }> }) {
@@ -22,7 +22,7 @@ export default async function WaitlistPage(props: { searchParams: Promise<{ city
 
   const tutors = await prisma.tutor.findMany({
     where: whereClause,
-    include: { user: { select: { name: true, email: true } } },
+    include: { user: { select: { name: true, email: true, city: { select: { name: true } } } } },
     orderBy: { createdAt: "asc" },
   })
 
@@ -44,7 +44,9 @@ export default async function WaitlistPage(props: { searchParams: Promise<{ city
               <tr className="border-b border-zinc-200 dark:border-zinc-700">
                 <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Name</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Email</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">City</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Year</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Grades</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Subjects</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Joined</th>
               </tr>
@@ -58,7 +60,9 @@ export default async function WaitlistPage(props: { searchParams: Promise<{ city
                     </Link>
                   </td>
                   <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{tutor.user.email}</td>
+                  <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{tutor.user.city?.name || "-"}</td>
                   <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{TENURE_LABELS[tutor.tenure] || tutor.tenure}</td>
+                  <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{tutor.gradeLevels ? tutor.gradeLevels.split(",").map(g => GRADE_LABELS[g] || g).join(", ") : "-"}</td>
                   <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{tutor.subjects || "-"}</td>
                   <td className="px-4 py-3 text-sm text-zinc-500">{new Date(tutor.createdAt).toLocaleDateString()}</td>
                 </tr>

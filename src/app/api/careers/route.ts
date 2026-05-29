@@ -16,6 +16,7 @@ export async function POST(request: Request) {
   const currentStudies = (formData.get("currentStudies") as string)?.trim()
   const highSchool = (formData.get("highSchool") as string)?.trim()
   const subjects = (formData.get("subjects") as string)?.trim()
+  const gradeLevels = (formData.get("gradeLevels") as string)?.trim()
   const formatOnline = formData.get("formatOnline") === "on"
   const formatInPerson = formData.get("formatInPerson") === "on"
   const workExperience = (formData.get("workExperience") as string)?.trim()
@@ -60,6 +61,7 @@ export async function POST(request: Request) {
     data: {
       userId: user.id,
       subjects: subjects || "",
+      gradeLevels: gradeLevels || "",
       bio: bioParts.join("\n") || null,
       isActive: true,
       onboarded: false,

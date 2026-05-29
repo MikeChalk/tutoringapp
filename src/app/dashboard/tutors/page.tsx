@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
-import { TENURE_LABELS, CONTRACT_TYPE_LABELS } from "@/lib/constants"
+import { TENURE_LABELS, CONTRACT_TYPE_LABELS, GRADE_LABELS } from "@/lib/constants"
 import { CityFilter } from "@/components/city-filter"
 import { redirect } from "next/navigation"
 import Link from "next/link"
@@ -89,7 +89,7 @@ export default async function TutorsPage(props: { searchParams: Promise<{ type?:
   const tutors = await prisma.tutor.findMany({
     where: baseWhere,
     include: {
-      user: { select: { name: true, email: true } },
+      user: { select: { name: true, email: true, city: { select: { name: true } } } },
       contract: { select: { type: true } },
     },
     orderBy: { createdAt: "desc" },
@@ -114,24 +114,28 @@ export default async function TutorsPage(props: { searchParams: Promise<{ type?:
       <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-zinc-200 dark:border-zinc-700">
-              <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Name</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Email</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Tenure</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Type</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Subjects</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700/50">
-            {tutors.map((tutor) => (
-              <tr key={tutor.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-700/50">
-                <td className="px-4 py-3">
-                  <Link href={`/dashboard/tutors/${tutor.id}`} className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline">{tutor.user.name}</Link>
-                </td>
-                <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{tutor.user.email}</td>
-                <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{TENURE_LABELS[tutor.tenure] || tutor.tenure}</td>
-                <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{CONTRACT_TYPE_LABELS[tutor.contract?.type || ""] || tutor.contract?.type || "—"}</td>
-                <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{tutor.subjects || "-"}</td>
+              <tr className="border-b border-zinc-200 dark:border-zinc-700">
+                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Name</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Email</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">City</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Tenure</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Type</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Grades</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Subjects</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700/50">
+              {tutors.map((tutor) => (
+                <tr key={tutor.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-700/50">
+                  <td className="px-4 py-3">
+                    <Link href={`/dashboard/tutors/${tutor.id}`} className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline">{tutor.user.name}</Link>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{tutor.user.email}</td>
+                  <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{tutor.user.city?.name || "-"}</td>
+                  <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{TENURE_LABELS[tutor.tenure] || tutor.tenure}</td>
+                  <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{CONTRACT_TYPE_LABELS[tutor.contract?.type || ""] || tutor.contract?.type || "—"}</td>
+                  <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{tutor.gradeLevels ? tutor.gradeLevels.split(",").map(g => GRADE_LABELS[g] || g).join(", ") : "-"}</td>
+                  <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{tutor.subjects || "-"}</td>
               </tr>
             ))}
           </tbody>

@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin } from "@/lib/auth-helpers"
-import { TENURE_LABELS, GRADE_LABELS } from "@/lib/constants"
+import { TENURE_LABELS, GRADE_LABELS, STUDENT_GRADE_OPTIONS } from "@/lib/constants"
 import { redirect, notFound } from "next/navigation"
 
 export default async function TutorDetailPage(props: { params: Promise<{ id: string }> }) {
@@ -12,7 +12,7 @@ export default async function TutorDetailPage(props: { params: Promise<{ id: str
   const tutor = await prisma.tutor.findUnique({
     where: { id },
     include: {
-      user: { select: { name: true, email: true } },
+      user: { select: { name: true, email: true, city: { select: { name: true } } } },
       hourLogs: {
         include: { project: { select: { name: true, gradeLevel: true } } },
         orderBy: { date: "desc" },
@@ -58,8 +58,16 @@ export default async function TutorDetailPage(props: { params: Promise<{ id: str
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Profile</h3>
           <dl className="space-y-3 text-sm">
             <div className="flex justify-between">
+              <dt className="text-zinc-500">City</dt>
+              <dd className="text-zinc-900 dark:text-zinc-100 font-medium">{tutor.user.city?.name || "-"}</dd>
+            </div>
+            <div className="flex justify-between">
               <dt className="text-zinc-500">Tenure</dt>
               <dd className="text-zinc-900 dark:text-zinc-100 font-medium">{TENURE_LABELS[tutor.tenure]}</dd>
+            </div>
+            <div className="flex justify-between">
+              <dt className="text-zinc-500">Grades</dt>
+              <dd className="text-zinc-900 dark:text-zinc-100">{tutor.gradeLevels ? tutor.gradeLevels.split(",").map(g => GRADE_LABELS[g] || g).join(", ") : "-"}</dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-zinc-500">Subjects</dt>

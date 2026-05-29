@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
-import { SUBJECT_OPTIONS } from "@/lib/constants"
+import { SUBJECT_OPTIONS, STUDENT_GRADE_OPTIONS } from "@/lib/constants"
 
 interface City {
   id: string; name: string
@@ -13,6 +13,7 @@ function CareersForm() {
   const submitted = searchParams.get("submitted") === "1"
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([])
   const [otherSubject, setOtherSubject] = useState("")
+  const [selectedGrades, setSelectedGrades] = useState<string[]>([])
   const [cities, setCities] = useState<City[]>([])
 
   useEffect(() => {
@@ -23,7 +24,12 @@ function CareersForm() {
     setSelectedSubjects(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s])
   }
 
+  function toggleGrade(g: string) {
+    setSelectedGrades(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g])
+  }
+
   const subjectsValue = [...selectedSubjects, otherSubject.trim()].filter(Boolean).join(", ")
+  const gradesValue = selectedGrades.join(", ")
 
   if (submitted) {
     return (
@@ -113,6 +119,24 @@ function CareersForm() {
             </div>
             <input type="text" placeholder="Other subject..." value={otherSubject} onChange={e => setOtherSubject(e.target.value)}
               className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 mb-2">Grade levels you are available to tutor</label>
+            <input type="hidden" name="gradeLevels" value={gradesValue} />
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(STUDENT_GRADE_OPTIONS).map(([key, label]) => {
+                const active = selectedGrades.includes(key)
+                return (
+                  <button key={key} type="button" onClick={() => toggleGrade(key)}
+                    className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                      active ? "bg-zinc-900 text-white border-zinc-900" : "border-zinc-300 text-zinc-600 hover:border-zinc-900"
+                    }`}>
+                    {label}
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
           <fieldset className="border border-zinc-200 rounded-lg p-3">

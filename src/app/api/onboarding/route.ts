@@ -20,6 +20,7 @@ export async function POST(request: Request) {
   const name = formData.get("name") as string
   const email = formData.get("email") as string
   const password = formData.get("password") as string
+  const gradeLevels = formData.get("gradeLevels") as string
 
   if (!contractType || !yearLevel || !startDate || !endDate) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 })
@@ -38,7 +39,7 @@ export async function POST(request: Request) {
       data: { name, email, password: hashed, role: "TUTOR" },
     })
     const tutor = await prisma.tutor.create({
-      data: { userId: user.id, tenure: yearLevel, onboardingStep: 1 },
+      data: { userId: user.id, tenure: yearLevel, gradeLevels: gradeLevels || "", onboardingStep: 1 },
     })
     finalTutorId = tutor.id
     return NextResponse.redirect(
@@ -53,7 +54,7 @@ export async function POST(request: Request) {
 
   await prisma.tutor.update({
     where: { id: finalTutorId },
-    data: { onboarded: true, onboardedAt: new Date(), tenure: yearLevel },
+    data: { onboarded: true, onboardedAt: new Date(), tenure: yearLevel, ...(gradeLevels ? { gradeLevels } : {}) },
   })
 
   await prisma.contract.updateMany({
