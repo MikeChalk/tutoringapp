@@ -49,7 +49,12 @@ export function ContractTemplateForm({ editing, onCancel }: {
 
   const rateKeys = isProgramSupervisor
     ? Object.keys(PROGRAM_CATEGORIES)
-    : Object.keys(STUDENT_GRADE_OPTIONS)
+    : [...Object.keys(STUDENT_GRADE_OPTIONS), "STUDY_HALL"]
+
+  const rateLabels: Record<string, string> = {
+    ...STUDENT_GRADE_OPTIONS,
+    STUDY_HALL: "Study Hall",
+  }
 
   function updateRate(key: string, value: string) {
     const input = document.getElementById(`rate_${key}`) as HTMLInputElement
@@ -144,7 +149,7 @@ export function ContractTemplateForm({ editing, onCancel }: {
             {rateKeys.map((key) => (
               <div key={key}>
                 <label className="block text-xs text-zinc-500 mb-0.5">
-                  {isProgramSupervisor ? PROGRAM_CATEGORIES[key] : STUDENT_GRADE_OPTIONS[key]}
+                  {isProgramSupervisor ? PROGRAM_CATEGORIES[key] : rateLabels[key]}
                 </label>
                 <input type="number" id={`rate_${key}`} min="0" step="0.01" placeholder="0.00"
                   defaultValue={existingRates[key] || ""}
