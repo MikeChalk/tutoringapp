@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin, isTutor, isClient, getClientId } from "@/lib/auth-helpers"
+import { requireAuth, isAdmin, isTutor, isClient, getClientId, isSuperAdmin } from "@/lib/auth-helpers"
 import { redirect } from "next/navigation"
+import { cookies } from "next/headers"
 import Link from "next/link"
 
 export default async function InvoicesPage() {
@@ -11,11 +12,19 @@ export default async function InvoicesPage() {
 
   if (tutor) redirect("/dashboard")
 
-  let whereClause = {}
+  let whereClause: Record<string, unknown> = {}
   if (client) {
     const clientId = await getClientId(session.user.id, session.user.email)
     if (clientId) {
       whereClause = { clientId }
+    }
+  }
+
+  if (isSuperAdmin(session.user.role)) {
+    const cookieStore = await cookies()
+    const selectedCity = cookieStore.get("selectedCity")?.value
+    if (selectedCity && selectedCity !== "all") {
+      whereClause = { ...whereClause, client: { user: { cityId: selectedCity } } }
     }
   }
 
