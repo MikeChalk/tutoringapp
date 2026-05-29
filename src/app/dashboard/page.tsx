@@ -16,76 +16,90 @@ export default async function DashboardPage(props: { searchParams: Promise<{ cit
   const selectedCity = cityParam || "all"
   const cityAdminId = isCityAdmin(role) ? await getActiveCityId(role, session.user.id) : null
   const effectiveCityId = cityAdminId || (superAdmin && selectedCity !== "all" ? selectedCity : null)
-
   const cityFilter = effectiveCityId ? { cityId: effectiveCityId } : {}
 
-  let tutorCount = 0
-  let clientCount = 0
-  let projectCount = 0
-  let totalHours = 0
-  let pendingInvoices = 0
-  let newRequests = 0
-  let totalEarned = 0
-  let contract: {
-    type: string; yearLevel: string; endDate: Date; signed: boolean
-  } | null = null
+  let stats = { tutorCount: 0, clientCount: 0, projectCount: 0, totalHours: 0, pendingInvoices: 0, newRequests: 0, totalEarned: 0, totalOwed: 0 }
+  let contract: { type: string; yearLevel: string; endDate: Date; signed: boolean } | null = null
+  let recentInvoices: Array<{ id: string; number: string; status: string; totalAmount: number; dueDate: Date }> = []
+  let onboardingStep = 6
 
   if (tutor) {
     const tutorId = await getTutorId(session.user.id, session.user.email)
     if (tutorId) {
-      [tutorCount, clientCount, projectCount, pendingInvoices, newRequests, contract] =
-        await Promise.all([
-          prisma.tutor.count({ where: { id: tutorId } }),
-          prisma.client.count({ where: { projects: { some: { projectTutors: { some: { tutorId } } } } } }),
-          prisma.project.count({ where: { projectTutors: { some: { tutorId } } } }),
-          Promise.resolve(0),
-          prisma.tutoringRequest.count({ where: { matchedTutorId: tutorId, status: "NEW" } }),
-          prisma.contract.findFirst({
-            where: { tutorId, status: "ACTIVE" },
-            select: { type: true, yearLevel: true, endDate: true, signed: true },
-          }),
-        ])
-      const logs = await prisma.hourLog.findMany({ where: { tutorId }, select: { hours: true, tutorPayRate: true } })
-      totalHours = logs.reduce((s, h) => s + h.hours, 0)
-      totalEarned = logs.reduce((s, h) => s + h.hours * h.tutorPayRate, 0)
+      const [tutorData] = await Promise.all([
+        (async () => {
+          const [tc, cc, pc, nc, ct, tt] = await Promise.all([
+            prisma.tutor.count({ where: { id: tutorId } }),
+            prisma.client.count({ where: { projects: { some: { projectTutors: { some: { tutorId } } } } } }),
+            prisma.project.count({ where: { projectTutors: { some: { tutorId } } } }),
+            prisma.tutoringRequest.count({ where: { matchedTutorId: tutorId, status: "MATCHED" } }),
+            prisma.contract.findFirst({ where: { tutorId, status: "ACTIVE" }, select: { type: true, yearLevel: true, endDate: true, signed: true } }),
+            prisma.tutor.findUnique({ where: { id: tutorId }, select: { onboardingStep: true } }),
+          ])
+          const logs = await prisma.hourLog.findMany({ where: { tutorId }, select: { hours: true, tutorPayRate: true, paidAt: true } })
+          return {
+            tc, cc, pc, nc, ct, onboardingStep: tt?.onboardingStep ?? 6,
+            totalHours: logs.reduce((s, h) => s + h.hours, 0),
+            totalEarned: logs.reduce((s, h) => s + h.hours * h.tutorPayRate, 0),
+            totalPaid: logs.filter(h => h.paidAt).reduce((s, h) => s + h.hours * h.tutorPayRate, 0),
+          }
+        })(),
+      ])
+      stats = {
+        tutorCount: tutorData.tc, clientCount: tutorData.cc, projectCount: tutorData.pc,
+        totalHours: tutorData.totalHours, pendingInvoices: 0, newRequests: tutorData.nc,
+        totalEarned: tutorData.totalEarned, totalOwed: tutorData.totalPaid,
+      }
+      contract = tutorData.ct
+      onboardingStep = tutorData.onboardingStep
     }
   } else if (admin) {
-    [tutorCount, clientCount, projectCount, pendingInvoices, newRequests] =
-      await Promise.all([
-        prisma.tutor.count({ where: effectiveCityId ? { user: { cityId: effectiveCityId } } : {} }),
-        prisma.client.count({ where: effectiveCityId ? { user: { cityId: effectiveCityId } } : {} }),
-        prisma.project.count({ where: cityFilter }),
-        prisma.invoice.count({ where: { status: "DRAFT", ...(effectiveCityId ? { client: { user: { cityId: effectiveCityId } } } : {}) } }),
-        prisma.tutoringRequest.count({ where: { status: "NEW" } }),
-      ])
+    const [tc, cc, pc, pi, nr] = await Promise.all([
+      prisma.tutor.count({ where: effectiveCityId ? { user: { cityId: effectiveCityId } } : {} }),
+      prisma.client.count({ where: effectiveCityId ? { user: { cityId: effectiveCityId } } : {} }),
+      prisma.project.count({ where: cityFilter }),
+      prisma.invoice.count({ where: { status: { in: ["SENT", "OVERDUE"] }, ...(effectiveCityId ? { client: { user: { cityId: effectiveCityId } } } : {}) } }),
+      prisma.tutoringRequest.count({ where: { status: "NEW" } }),
+    ])
     const logs = await prisma.hourLog.findMany({ select: { hours: true } })
-    totalHours = logs.reduce((s, h) => s + h.hours, 0)
+    stats = { tutorCount: tc, clientCount: cc, projectCount: pc, pendingInvoices: pi, newRequests: nr, totalHours: logs.reduce((s, h) => s + h.hours, 0), totalEarned: 0, totalOwed: 0 }
   } else if (client) {
     const clientId = await getClientId(session.user.id, session.user.email)
     if (clientId) {
-      [tutorCount, clientCount, projectCount, pendingInvoices, newRequests] =
-        await Promise.all([
-          Promise.resolve(0),
-          prisma.client.count({ where: { id: clientId } }),
-          prisma.project.count({ where: { clientId } }),
-          prisma.invoice.count({ where: { clientId, status: "DRAFT" } }),
-          Promise.resolve(0),
-        ])
+      const [, pc, pi] = await Promise.all([
+        Promise.resolve(0),
+        prisma.project.count({ where: { clientId } }),
+        prisma.invoice.count({ where: { clientId, status: { in: ["SENT", "OVERDUE"] } } }),
+      ])
+      recentInvoices = await prisma.invoice.findMany({
+        where: { clientId },
+        select: { id: true, number: true, status: true, totalAmount: true, dueDate: true },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+      })
+      stats = { tutorCount: 0, clientCount: 0, projectCount: pc, pendingInvoices: pi, totalHours: 0, newRequests: 0, totalEarned: 0, totalOwed: 0 }
     }
   }
 
-  const daysUntilExpiry = contract
-    ? Math.ceil((new Date(contract.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-    : 0
+  const daysUntilExpiry = contract ? Math.ceil((new Date(contract.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 0
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-          Welcome, {session?.user?.name}
-        </h2>
+        <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Welcome, {session?.user?.name}</h2>
         {superAdmin && <CityFilter selected={selectedCity} />}
       </div>
+
+      {tutor && onboardingStep < 6 && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-300 dark:border-blue-700 rounded-xl p-4 mb-6">
+          <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
+            Onboarding in progress — Step {onboardingStep + 1} of 7
+          </p>
+          <Link href="/dashboard/contract" className="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1 inline-block">
+            View onboarding progress →
+          </Link>
+        </div>
+      )}
 
       {tutor && contract && (
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-5 mb-6">
@@ -97,43 +111,52 @@ export default async function DashboardPage(props: { searchParams: Promise<{ cit
               </p>
             </div>
             <div className="flex items-center gap-4 text-sm">
-              <div>
-                <span className="text-zinc-500">Expires: </span>
-                <span className={`font-medium ${daysUntilExpiry < 30 ? "text-red-600 dark:text-red-400" : "text-zinc-700 dark:text-zinc-300"}`}>
-                  {new Date(contract.endDate).toLocaleDateString()}
-                  {daysUntilExpiry < 30 && daysUntilExpiry > 0 && (
-                    <span className="ml-1 text-xs">({daysUntilExpiry}d)</span>
-                  )}
-                </span>
-              </div>
-              <span className={`inline-flex text-xs font-medium rounded-full px-2 py-0.5 ${
-                contract.signed ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-              }`}>
+              <span className="text-zinc-500">Expires: </span>
+              <span className={`font-medium ${daysUntilExpiry < 30 ? "text-red-600 dark:text-red-400" : "text-zinc-700 dark:text-zinc-300"}`}>
+                {new Date(contract.endDate).toLocaleDateString()}
+                {daysUntilExpiry < 30 && daysUntilExpiry > 0 && <span className="ml-1 text-xs">({daysUntilExpiry}d)</span>}
+              </span>
+              <span className={`inline-flex text-xs font-medium rounded-full px-2 py-0.5 ${contract.signed ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"}`}>
                 {contract.signed ? "Signed" : "Unsigned"}
               </span>
             </div>
           </div>
-          {daysUntilExpiry <= 30 && daysUntilExpiry > 0 && (
-            <p className="mt-2 text-xs text-red-500 dark:text-red-400">
-              Your contract expires soon. Contact your admin to renew.
-            </p>
-          )}
-          {daysUntilExpiry <= 0 && (
-            <p className="mt-2 text-xs text-red-500 dark:text-red-400 font-medium">
-              Your contract has expired. Contact your admin to renew.
-            </p>
-          )}
+        </div>
+      )}
+
+      {client && recentInvoices.length > 0 && (
+        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-5 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs text-zinc-500 uppercase tracking-wide">Recent Invoices</p>
+            <Link href="/dashboard/invoices" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">View all →</Link>
+          </div>
+          <div className="space-y-2">
+            {recentInvoices.map(inv => (
+              <Link key={inv.id} href={`/dashboard/invoices/${inv.id}`} className="flex items-center justify-between text-sm py-1 hover:bg-zinc-50 dark:hover:bg-zinc-700/30 rounded px-2 -mx-2">
+                <span className="text-zinc-900 dark:text-zinc-100">{inv.number}</span>
+                <div className="flex items-center gap-3">
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${inv.status === "PAID" ? "bg-green-100 text-green-700" : inv.status === "SENT" ? "bg-blue-100 text-blue-700" : "bg-zinc-100 text-zinc-600"}`}>{inv.status}</span>
+                  <span className="font-medium text-zinc-900 dark:text-zinc-100">${inv.totalAmount.toFixed(2)}</span>
+                  <span className="text-xs text-zinc-400">Due {new Date(inv.dueDate).toLocaleDateString()}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
         </div>
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-        {admin && <StatCard label="Tutors" value={tutorCount} href="/dashboard/tutors" />}
-        <StatCard label="Clients" value={clientCount} href="/dashboard/clients" />
-        <StatCard label="Students" value={projectCount} href="/dashboard/projects" />
-        <StatCard label="Total Hours" value={totalHours} href="/dashboard/hours" />
-        {tutor && <StatCard label="Total Earned" value={`$${totalEarned.toFixed(0)}`} href="/dashboard/payments" green />}
-        {!tutor && <StatCard label="Draft Invoices" value={pendingInvoices} href="/dashboard/invoices" highlight />}
-        <StatCard label={tutor ? "Offers" : "New Requests"} value={newRequests} href="/dashboard/requests" highlight />
+        {admin && <StatCard label="Tutors" value={stats.tutorCount} href="/dashboard/tutors" />}
+        {!admin && !client && <StatCard label="My Students" value={stats.projectCount} href="/dashboard/projects" />}
+        {(admin || tutor) && <StatCard label="Clients" value={stats.clientCount} href="/dashboard/clients" />}
+        {client && <StatCard label="My Students" value={stats.projectCount} href="/dashboard/projects" />}
+        {!client && <StatCard label="Total Hours" value={stats.totalHours} href="/dashboard/hours" />}
+        {tutor && <StatCard label="Total Earned" value={`$${stats.totalEarned.toFixed(0)}`} href="/dashboard/payments" green />}
+        {tutor && <StatCard label="Paid to Date" value={`$${stats.totalOwed.toFixed(0)}`} href="/dashboard/payments" green />}
+        {admin && <StatCard label="Outstanding" value={`$${stats.pendingInvoices}`} href="/dashboard/invoices" highlight />}
+        {client && <StatCard label="Unpaid Invoices" value={stats.pendingInvoices} href="/dashboard/invoices" highlight />}
+        {tutor && <StatCard label="New Offers" value={stats.newRequests} href="/dashboard/requests" highlight />}
+        {admin && <StatCard label="New Requests" value={stats.newRequests} href="/dashboard/requests" highlight />}
       </div>
     </div>
   )

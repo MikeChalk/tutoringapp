@@ -1,16 +1,18 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import { signIn } from "next-auth/react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const justSetup = searchParams.get("setup") === "1"
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -37,9 +39,14 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="bg-white dark:bg-zinc-800 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-700 p-8">
           <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-6 text-center">
-            Sign In
-          </h1>
-          {error && (
+              Sign In
+            </h1>
+            {justSetup && (
+              <div className="bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 text-sm rounded-lg px-4 py-2 mb-4">
+                Account setup complete! Sign in below.
+              </div>
+            )}
+            {error && (
             <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-sm rounded-lg px-4 py-2 mb-4">
               {error}
             </div>
@@ -74,17 +81,28 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full rounded-lg bg-zinc-900 dark:bg-white px-4 py-2.5 text-sm font-medium text-white dark:text-zinc-900 hover:opacity-90 transition-opacity disabled:opacity-50"
             >
-              {loading ? "Signing in..." : "Sign In"}
-            </button>
-          </form>
-          <p className="mt-4 text-center text-sm text-zinc-500 dark:text-zinc-400">
-            Don&apos;t have an account?{" "}
-            <Link href="/signup" className="text-blue-600 dark:text-blue-400 hover:underline">
-              Sign up
-            </Link>
+            {loading ? "Signing in..." : "Sign In"}
+              </button>
+            </form>
+            <p className="mt-4 text-center text-sm text-zinc-500 dark:text-zinc-400">
+              Don&apos;t have an account?{" "}
+              <Link href="/signup" className="text-blue-600 dark:text-blue-400 hover:underline">
+                Sign up
+              </Link>
+            </p>
+          </div>
+          <p className="mt-4 text-center text-xs text-zinc-400 dark:text-zinc-500">
+            Are you a client? <Link href="/login" className="text-blue-600 dark:text-blue-400 hover:underline">Sign in here</Link> to view and pay your invoices.
           </p>
         </div>
       </div>
-    </div>
+    )
+  }
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><p className="text-zinc-400">Loading...</p></div>}>
+      <LoginContent />
+    </Suspense>
   )
 }
