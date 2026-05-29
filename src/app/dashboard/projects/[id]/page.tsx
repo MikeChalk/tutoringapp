@@ -57,6 +57,13 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
     orderBy: { user: { name: "asc" } },
   }) : []
 
+  const allClients = admin ? await prisma.client.findMany({
+    include: { user: { select: { name: true } } },
+    orderBy: { user: { name: "asc" } },
+  }) : []
+
+  const allCities = admin ? await prisma.city.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }) : []
+
   const grades = await prisma.billingRate.findMany({
     where: { gradeLevel: project.gradeLevel },
   })
@@ -96,14 +103,7 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
         </div>
       </div>
 
-      {admin && <EditProjectForm project={project} />}
-
-      {admin && (
-        <details className="mb-6 bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
-          <summary className="px-4 py-3 cursor-pointer text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 select-none">Edit Project</summary>
-          <EditProjectForm project={project} />
-        </details>
-      )}
+      {admin && <EditProjectForm project={project} clients={allClients} cities={allCities} />}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">

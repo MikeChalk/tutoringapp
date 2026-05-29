@@ -146,6 +146,31 @@ export default async function InvoiceDetailPage(props: { params: Promise<{ id: s
               <p className="text-sm text-zinc-700 dark:text-zinc-300">{invoice.notes}</p>
             </div>
           )}
+          {admin && (
+            <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-700">
+              <p className="text-xs text-zinc-500 mb-2">Update Status</p>
+              <div className="flex flex-wrap gap-2">
+                {invoice.status === "DRAFT" && (
+                  <form action={`/api/invoices/${invoice.id}`} method="POST">
+                    <input type="hidden" name="_action" value="markSent" />
+                    <button type="submit" className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 transition-colors">Mark Sent</button>
+                  </form>
+                )}
+                {invoice.status === "SENT" && (
+                  <form action={`/api/invoices/${invoice.id}`} method="POST">
+                    <input type="hidden" name="_action" value="markPaid" />
+                    <button type="submit" className="rounded bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 transition-colors">Mark Paid</button>
+                  </form>
+                )}
+                {(invoice.status === "SENT" || invoice.status === "OVERDUE") && (
+                  <form action={`/api/invoices/${invoice.id}`} method="POST">
+                    <input type="hidden" name="_action" value="markOverdue" />
+                    <button type="submit" className="rounded bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 transition-colors">Mark Overdue</button>
+                  </form>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

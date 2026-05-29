@@ -56,6 +56,13 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
       <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">{client.user.name}</h2>
       <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-1">{client.user.email}</p>
       <p className="text-xs text-zinc-400 dark:text-zinc-500 mb-6">Client since {new Date(client.createdAt).toLocaleDateString()}</p>
+      {admin && (
+        <form action="/api/clients" method="POST" className="mb-6" onSubmit={e => { if (!confirm("Delete this client?")) e.preventDefault() }}>
+          <input type="hidden" name="_action" value="delete" />
+          <input type="hidden" name="id" value={client.id} />
+          <button type="submit" className="text-sm text-red-600 dark:text-red-400 hover:underline">Delete Client</button>
+        </form>
+      )}
       <div className="flex flex-wrap gap-2 mb-6">
         <span className={`inline-flex text-xs font-medium rounded-full px-2 py-0.5 ${
           client.type === "SCHOOL" ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"

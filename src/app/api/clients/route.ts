@@ -11,6 +11,20 @@ export async function POST(request: Request) {
   }
 
   const formData = await request.formData()
+  const action = formData.get("_action") as string
+
+  if (action === "delete") {
+    const id = formData.get("id") as string
+    if (id) {
+      const client = await prisma.client.findUnique({ where: { id }, select: { userId: true } })
+      if (client) {
+        await prisma.client.delete({ where: { id } })
+        await prisma.user.delete({ where: { id: client.userId } })
+      }
+    }
+    return NextResponse.redirect(new URL("/dashboard/clients", request.url), 303)
+  }
+
   const name = (formData.get("name") as string)?.trim()
   const email = (formData.get("email") as string)?.trim().toLowerCase()
   const clientType = (formData.get("clientType") as string) || "PARENT"
