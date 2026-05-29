@@ -214,16 +214,14 @@ export default async function HoursPage() {
             var type = typeSelect && typeSelect.value;
             if (!projectSelect) return;
             var opts = projectSelect.options;
-            var found = false;
+            var hasVisible = false;
             for (var i = 0; i < opts.length; i++) {
-              if (opts[i].value === '') continue;
+              if (opts[i].value === '') { opts[i].hidden = false; continue; }
               var show = !type || (opts[i].dataset.type === type);
-              opts[i].style.display = show ? '' : 'none';
-              if (show && !found) { found = true; }
+              opts[i].hidden = !show;
+              if (show && !hasVisible) { hasVisible = true; opts[i].selected = true; }
             }
-            if (!projectSelect.value || !found) {
-              projectSelect.value = '';
-            }
+            if (!hasVisible) projectSelect.value = '';
             updateRates();
           }
 
