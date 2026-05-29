@@ -1,14 +1,21 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin, isTutor, getTutorId, isClient, getClientId } from "@/lib/auth-helpers"
+import { requireAuth, isAdmin, isTutor, getTutorId, isClient, getClientId, isSuperAdmin } from "@/lib/auth-helpers"
 import { CONTRACT_TYPE_LABELS, TENURE_LABELS } from "@/lib/constants"
+import { CityFilter } from "@/components/city-filter"
 import Link from "next/link"
 
-export default async function DashboardPage() {
+export default async function DashboardPage(props: { searchParams: Promise<{ city?: string }> }) {
   const session = await requireAuth()
   const role = session.user.role
   const admin = isAdmin(role)
   const tutor = isTutor(role)
   const client = isClient(role)
+  const superAdmin = isSuperAdmin(role)
+
+  const { city: cityParam } = await props.searchParams
+  const selectedCity = cityParam || "all"
+
+  const cityFilter = superAdmin && selectedCity !== "all" ? { cityId: selectedCity } : {}
 
   let tutorCount = 0
   let clientCount = 0
@@ -43,10 +50,10 @@ export default async function DashboardPage() {
   } else if (admin) {
     [tutorCount, clientCount, projectCount, pendingInvoices, newRequests] =
       await Promise.all([
-        prisma.tutor.count(),
-        prisma.client.count(),
-        prisma.project.count(),
-        prisma.invoice.count({ where: { status: "DRAFT" } }),
+        prisma.tutor.count({ where: superAdmin && selectedCity !== "all" ? { user: { cityId: selectedCity } } : {} }),
+        prisma.client.count({ where: superAdmin && selectedCity !== "all" ? { user: { cityId: selectedCity } } : {} }),
+        prisma.project.count({ where: cityFilter }),
+        prisma.invoice.count({ where: { status: "DRAFT", ...(superAdmin && selectedCity !== "all" ? { client: { user: { cityId: selectedCity } } } : {}) } }),
         prisma.tutoringRequest.count({ where: { status: "NEW" } }),
       ])
     const logs = await prisma.hourLog.findMany({ select: { hours: true } })
@@ -71,9 +78,12 @@ export default async function DashboardPage() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-6">
-        Welcome, {session?.user?.name}
-      </h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+          Welcome, {session?.user?.name}
+        </h2>
+        {superAdmin && <CityFilter selected={selectedCity} />}
+      </div>
 
       {tutor && contract && (
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-5 mb-6">

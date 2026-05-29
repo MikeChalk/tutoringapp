@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db"
+import Script from "next/script"
 
 export async function CityFilter({ selected = "all", name = "city" }: { selected?: string; name?: string }) {
   const cities = await prisma.city.findMany({ select: { id: true, name: true } })
@@ -18,7 +19,18 @@ export async function CityFilter({ selected = "all", name = "city" }: { selected
           ))}
         </select>
       </form>
-      <script dangerouslySetInnerHTML={{ __html: `document.querySelector('#${formId} select')?.addEventListener('change',function(){this.form.submit()})` }} />
+      <Script id={`${formId}-script`} strategy="afterInteractive">{`
+        (function(){
+          var sel = document.querySelector('#${formId} select');
+          if (!sel) return;
+          sel.addEventListener('change', function(){
+            var u = new URL(location.href);
+            u.searchParams.set('${name}', this.value);
+            if(this.value === 'all') u.searchParams.delete('${name}');
+            location.href = u.toString();
+          });
+        })();
+      `}</Script>
     </>
   )
 }

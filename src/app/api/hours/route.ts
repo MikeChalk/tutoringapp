@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { isAdmin, getTutorId } from "@/lib/auth-helpers"
 
 export async function POST(request: Request) {
   const session = await auth()
@@ -20,6 +21,22 @@ export async function POST(request: Request) {
 
   if (!projectId || !tutorId || !date || !hours) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 })
+  }
+
+  const admin = isAdmin(session.user.role)
+
+  if (!admin) {
+    const userTutorId = await getTutorId(session.user.id, session.user.email)
+    if (!userTutorId || userTutorId !== tutorId) {
+      return NextResponse.json({ error: "You can only log hours for yourself" }, { status: 403 })
+    }
+  }
+
+  const assignment = await prisma.projectTutor.findFirst({
+    where: { projectId, tutorId },
+  })
+  if (!assignment) {
+    return NextResponse.json({ error: "Tutor is not assigned to this project" }, { status: 403 })
   }
 
   const project = await prisma.project.findUnique({ where: { id: projectId } })

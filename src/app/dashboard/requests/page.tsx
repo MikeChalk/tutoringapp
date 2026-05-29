@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useSession } from "next-auth/react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { StatusBadge } from "@/components/ui"
 
 const STATUS_FILTERS = [
@@ -29,9 +29,10 @@ interface Recommendation {
   name: string; score: number; reason: string
 }
 
-export default function RequestsPage() {
+function RequestsContent() {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   const [requests, setRequests] = useState<Request[]>([])
   const [tutors, setTutors] = useState<Tutor[]>([])
@@ -40,20 +41,27 @@ export default function RequestsPage() {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([])
   const [loading, setLoading] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
+  const [cityFilter, setCityFilter] = useState(searchParams.get("city") || "all")
+  const [cities, setCities] = useState<{ id: string; name: string }[]>([])
   const isAdmin = session?.user?.role === "ADMIN"
+
+  useEffect(() => {
+    fetch("/api/city").then(r => r.json()).then(d => setCities(d.cities || []))
+  }, [])
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login")
   }, [status, router])
 
   useEffect(() => {
-    fetch(`/api/requests/list?status=${filter}`)
+    const cityParam = cityFilter !== "all" ? `&city=${cityFilter}` : ""
+    fetch(`/api/requests/list?status=${filter}${cityParam}`)
       .then((r) => r.json())
       .then(setRequests)
-    fetch("/api/requests/waitlist")
+    fetch(`/api/requests/waitlist${cityFilter !== "all" ? `?city=${cityFilter}` : ""}`)
       .then((r) => r.json())
       .then(setTutors)
-  }, [filter])
+  }, [filter, cityFilter])
 
   async function getRecommendations(requestId: string) {
     setSelected(requestId)
@@ -94,6 +102,25 @@ export default function RequestsPage() {
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Tutoring Requests</h2>
         <div className="flex gap-2">
+          {session?.user?.role === "ADMIN" && (
+            <select
+              value={cityFilter}
+              onChange={(e) => {
+                const v = e.target.value
+                setCityFilter(v)
+                const u = new URL(window.location.href)
+                if (v === "all") u.searchParams.delete("city")
+                else u.searchParams.set("city", v)
+                window.history.replaceState(null, "", u.toString())
+              }}
+              className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-1.5 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">All Cities</option>
+              {cities.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          )}
           <button
             onClick={() => setShowArchived(!showArchived)}
             className={`text-sm px-3 py-1.5 rounded-lg transition-colors ${
@@ -245,5 +272,13 @@ export default function RequestsPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function RequestsPage() {
+  return (
+    <Suspense fallback={<div className="animate-pulse bg-zinc-100 dark:bg-zinc-700 rounded-lg h-96" />}>
+      <RequestsContent />
+    </Suspense>
   )
 }

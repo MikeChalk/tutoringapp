@@ -32,3 +32,16 @@ export const CONTRACT_TYPE_LABELS: Record<string, string> = {
   STUDY_HALL: "Study Hall",
   PROGRAM_SUPERVISOR: "Program Supervisor",
 }
+
+export const SUBJECT_OPTIONS = [
+  "Math",
+  "English",
+  "French",
+  "Science",
+  "Physics",
+  "Chemistry",
+  "Biology",
+  "History",
+  "Geography",
+  "Computer Science",
+]

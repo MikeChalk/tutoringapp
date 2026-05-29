@@ -35,7 +35,10 @@ export default async function ClientsPage(props: { searchParams: Promise<{ city?
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-6">Clients</h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Clients</h2>
+        {isSuperAdmin(session.user.role) && <CityFilter selected={selectedCity} />}
+      </div>
 
       <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
         <table className="w-full">

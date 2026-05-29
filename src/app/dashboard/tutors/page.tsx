@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin } from "@/lib/auth-helpers"
+import { requireAuth, isAdmin, isSuperAdmin } from "@/lib/auth-helpers"
 import { TENURE_LABELS, CONTRACT_TYPE_LABELS } from "@/lib/constants"
+import { CityFilter } from "@/components/city-filter"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 
@@ -11,16 +12,26 @@ const TYPE_FILTERS = [
   { value: "CITY_ADMIN", label: "City Admins" },
 ]
 
-export default async function TutorsPage(props: { searchParams: Promise<{ type?: string }> }) {
+function buildHref(typeValue: string, cityValue: string) {
+  const params = new URLSearchParams()
+  if (typeValue !== "ALL") params.set("type", typeValue)
+  if (cityValue !== "all") params.set("city", cityValue)
+  const qs = params.toString()
+  return `/dashboard/tutors${qs ? `?${qs}` : ""}`
+}
+
+export default async function TutorsPage(props: { searchParams: Promise<{ type?: string; city?: string }> }) {
   const session = await requireAuth()
   if (!isAdmin(session.user.role)) redirect("/dashboard")
 
-  const { type } = await props.searchParams
+  const { type, city: cityParam } = await props.searchParams
   const filter = type || "ALL"
+  const selectedCity = cityParam || "all"
+  const superAdmin = isSuperAdmin(session.user.role)
 
   if (filter === "CITY_ADMIN") {
     const cityAdmins = await prisma.user.findMany({
-      where: { role: "CITY_ADMIN" },
+      where: { role: "CITY_ADMIN", ...(superAdmin && selectedCity !== "all" ? { cityId: selectedCity } : {}) },
       include: { city: { select: { name: true } } },
       orderBy: { createdAt: "desc" },
     })
@@ -29,12 +40,12 @@ export default async function TutorsPage(props: { searchParams: Promise<{ type?:
       <div>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Team</h2>
-          <Link href="/signup" className="rounded-lg bg-zinc-900 dark:bg-white px-4 py-2 text-sm font-medium text-white dark:text-zinc-900 hover:opacity-90">Add Tutor</Link>
+          <div className="flex items-center gap-4">{superAdmin && <CityFilter selected={selectedCity} />}<Link href="/signup" className="rounded-lg bg-zinc-900 dark:bg-white px-4 py-2 text-sm font-medium text-white dark:text-zinc-900 hover:opacity-90">Add Tutor</Link></div>
         </div>
 
         <div className="flex gap-2 mb-6">
           {TYPE_FILTERS.map((f) => (
-            <Link key={f.value} href={`/dashboard/tutors${f.value !== "ALL" ? `?type=${f.value}` : ""}`}
+            <Link key={f.value} href={buildHref(f.value, selectedCity)}
               className={`text-sm px-3 py-1.5 rounded-lg transition-colors ${filter === f.value ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900" : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700"}`}>
               {f.label}
             </Link>
@@ -68,9 +79,13 @@ export default async function TutorsPage(props: { searchParams: Promise<{ type?:
   }
 
   const contractFilter = filter !== "ALL" ? { type: filter, status: "ACTIVE" } : undefined
+  const baseWhere: Record<string, unknown> = contractFilter ? { contract: contractFilter, onboarded: true } : { onboarded: true }
+  if (superAdmin && selectedCity !== "all") {
+    baseWhere.user = { cityId: selectedCity }
+  }
 
   const tutors = await prisma.tutor.findMany({
-    where: contractFilter ? { contract: contractFilter, onboarded: true } : { onboarded: true },
+    where: baseWhere,
     include: {
       user: { select: { name: true, email: true } },
       contract: { select: { type: true } },
@@ -82,12 +97,12 @@ export default async function TutorsPage(props: { searchParams: Promise<{ type?:
     <div>
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Team</h2>
-        <Link href="/signup" className="rounded-lg bg-zinc-900 dark:bg-white px-4 py-2 text-sm font-medium text-white dark:text-zinc-900 hover:opacity-90">Add Tutor</Link>
+        <div className="flex items-center gap-4">{superAdmin && <CityFilter selected={selectedCity} />}<Link href="/signup" className="rounded-lg bg-zinc-900 dark:bg-white px-4 py-2 text-sm font-medium text-white dark:text-zinc-900 hover:opacity-90">Add Tutor</Link></div>
       </div>
 
       <div className="flex gap-2 mb-6">
         {TYPE_FILTERS.map((f) => (
-          <Link key={f.value} href={`/dashboard/tutors${f.value !== "ALL" ? `?type=${f.value}` : ""}`}
+          <Link key={f.value} href={buildHref(f.value, selectedCity)}
             className={`text-sm px-3 py-1.5 rounded-lg transition-colors ${filter === f.value ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900" : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700"}`}>
             {f.label}
           </Link>

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin } from "@/lib/auth-helpers"
+import { requireAuth, isAdmin, isSuperAdmin } from "@/lib/auth-helpers"
+import { CityFilter } from "@/components/city-filter"
 import { redirect } from "next/navigation"
 
 const ONBOARDING_STEPS = [
@@ -9,11 +10,13 @@ const ONBOARDING_STEPS = [
   "Contact sent to client",
 ]
 
-export default async function OnboardingPage(props: { searchParams: Promise<{ created?: string; pw?: string }> }) {
+export default async function OnboardingPage(props: { searchParams: Promise<{ created?: string; pw?: string; city?: string }> }) {
   const session = await requireAuth()
   if (!isAdmin(session.user.role)) redirect("/dashboard")
 
-  const { created, pw } = await props.searchParams
+  const { created, pw, city: cityParam } = await props.searchParams
+  const selectedCity = cityParam || "all"
+  const superAdmin = isSuperAdmin(session.user.role)
 
   const today = new Date()
   const july1ThisYear = new Date(today.getFullYear(), 6, 1)
@@ -21,7 +24,7 @@ export default async function OnboardingPage(props: { searchParams: Promise<{ cr
   const endDateDefault = nextJuly1.toISOString().split("T")[0]
 
   const pendingTutors = await prisma.tutor.findMany({
-    where: { onboarded: false, isActive: true },
+    where: { onboarded: false, isActive: true, ...(superAdmin && selectedCity !== "all" ? { user: { cityId: selectedCity } } : {}) },
     include: { user: { select: { name: true, email: true } } },
     orderBy: { createdAt: "asc" },
   })
@@ -30,7 +33,7 @@ export default async function OnboardingPage(props: { searchParams: Promise<{ cr
     <div>
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Onboarding</h2>
-        <a href="#quickAddSection" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">+ Add Team Member</a>
+        <div className="flex items-center gap-4">{superAdmin && <CityFilter selected={selectedCity} />}<a href="#quickAddSection" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">+ Add Team Member</a></div>
       </div>
 
       {created && pw && (

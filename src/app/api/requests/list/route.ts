@@ -10,9 +10,18 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url)
   const status = searchParams.get("status") || "NEW"
+  const cityId = searchParams.get("city")
+
+  const where: Record<string, unknown> = { status }
+  if (cityId && cityId !== "all") {
+    where.OR = [
+      { matchedTutor: { user: { cityId } } },
+      { client: { user: { cityId } } },
+    ]
+  }
 
   const requests = await prisma.tutoringRequest.findMany({
-    where: { status },
+    where,
     include: {
       matchedTutor: { include: { user: { select: { name: true } } } },
     },

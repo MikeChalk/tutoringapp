@@ -1,16 +1,20 @@
 import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin, isTutor, getTutorId, isSuperAdmin } from "@/lib/auth-helpers"
 import { GRADE_LABELS, STATUS_LABELS, STATUS_COLORS } from "@/lib/constants"
-import { cookies } from "next/headers"
+import { CityFilter } from "@/components/city-filter"
+import { CreateProjectForm } from "@/components/create-project-form"
 import Link from "next/link"
+import Script from "next/script"
 
-export default async function ProjectsPage(props: { searchParams: Promise<{ status?: string; type?: string }> }) {
+export default async function ProjectsPage(props: { searchParams: Promise<{ status?: string; type?: string; city?: string }> }) {
   const session = await requireAuth()
   const admin = isAdmin(session.user.role)
   const tutor = isTutor(session.user.role)
 
-  const { status: statusFilter, type: typeFilter } = await props.searchParams
+  const { status: statusFilter, type: typeFilter, city: cityParam } = await props.searchParams
   const projectType = typeFilter || "STUDENT"
+  const selectedCity = cityParam || "all"
+  const superAdmin = isSuperAdmin(session.user.role)
 
   let whereClause: Record<string, unknown> = { projectType }
   if (tutor) {
@@ -26,12 +30,8 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
     }
   }
 
-  if (isSuperAdmin(session.user.role)) {
-    const cookieStore = await cookies()
-    const selectedCity = cookieStore.get("selectedCity")?.value
-    if (selectedCity && selectedCity !== "all") {
-      whereClause = { ...whereClause, cityId: selectedCity }
-    }
+  if (superAdmin && selectedCity !== "all") {
+    whereClause = { ...whereClause, cityId: selectedCity }
   }
 
   const projects = await prisma.project.findMany({
@@ -52,19 +52,33 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
     { value: "STUDY_HALL", label: "Other Projects" },
   ]
 
+  const clients = admin ? await prisma.client.findMany({
+    where: superAdmin && selectedCity !== "all" ? { user: { cityId: selectedCity } } : {},
+    include: { user: { select: { name: true } } },
+    orderBy: { user: { name: "asc" } },
+  }) : []
+
+  const cities = admin ? await prisma.city.findMany({ select: { id: true, name: true } }) : []
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Projects</h2>
+        {superAdmin && <CityFilter selected={selectedCity} />}
       </div>
 
       <div className="flex gap-2 mb-4">
-        {tabs.map((t) => (
-          <Link key={t.value} href={`/dashboard/projects?type=${t.value}`}
-            className={`text-sm px-3 py-1.5 rounded-lg transition-colors ${projectType === t.value ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900" : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700"}`}>
-            {t.label}
-          </Link>
-        ))}
+        {tabs.map((t) => {
+          const tabParams = new URLSearchParams()
+          tabParams.set("type", t.value)
+          if (superAdmin && selectedCity !== "all") tabParams.set("city", selectedCity)
+          return (
+            <Link key={t.value} href={`/dashboard/projects?${tabParams.toString()}`}
+              className={`text-sm px-3 py-1.5 rounded-lg transition-colors ${projectType === t.value ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900" : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700"}`}>
+              {t.label}
+            </Link>
+          )
+        })}
         {admin && (
           <form id="statusForm" className="ml-auto">
             <select name="status" defaultValue={statusFilter || "IN_PROGRESS"} id="statusFilterSelect"
@@ -76,9 +90,19 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
               <option value="CANCELLED">Cancelled</option>
             </select>
             <input type="hidden" name="type" value={projectType} />
+            {superAdmin && selectedCity !== "all" && <input type="hidden" name="city" value={selectedCity} />}
           </form>
         )}
       </div>
+
+      {admin && (
+        <CreateProjectForm
+          clients={clients}
+          cities={cities}
+          defaultType={projectType}
+          defaultCity={selectedCity}
+        />
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {projects.map((project) => {
@@ -113,7 +137,7 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
         })}
         {projects.length === 0 && <p className="text-sm text-zinc-500 col-span-full">No projects.</p>}
       </div>
-      {admin && <script dangerouslySetInnerHTML={{ __html: `document.getElementById('statusFilterSelect')?.addEventListener('change',function(){this.form.submit()})` }} />}
+      {admin && <Script id="statusFormScript" strategy="afterInteractive">{`document.getElementById('statusFilterSelect')?.addEventListener('change',function(){this.form.submit()})`}</Script>}
     </div>
   )
 }

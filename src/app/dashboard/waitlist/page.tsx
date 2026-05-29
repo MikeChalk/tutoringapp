@@ -1,22 +1,35 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin } from "@/lib/auth-helpers"
+import { requireAuth, isAdmin, isSuperAdmin } from "@/lib/auth-helpers"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { TENURE_LABELS } from "@/lib/constants"
+import { CityFilter } from "@/components/city-filter"
 
-export default async function WaitlistPage() {
+export default async function WaitlistPage(props: { searchParams: Promise<{ city?: string }> }) {
   const session = await requireAuth()
   if (!isAdmin(session.user.role)) redirect("/dashboard")
 
+  const { city: cityParam } = await props.searchParams
+  const selectedCity = cityParam || "all"
+  const superAdmin = isSuperAdmin(session.user.role)
+
+  const whereClause: Record<string, unknown> = { onboarded: false, isActive: true }
+  if (superAdmin && selectedCity !== "all") {
+    whereClause.user = { cityId: selectedCity }
+  }
+
   const tutors = await prisma.tutor.findMany({
-    where: { onboarded: false, isActive: true },
+    where: whereClause,
     include: { user: { select: { name: true, email: true } } },
     orderBy: { createdAt: "asc" },
   })
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-6">Tutor Waitlist</h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Tutor Waitlist</h2>
+        {superAdmin && <CityFilter selected={selectedCity} />}
+      </div>
 
       {tutors.length === 0 ? (
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-8 text-center">

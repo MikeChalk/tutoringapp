@@ -1,10 +1,18 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isTutor, getTutorId } from "@/lib/auth-helpers"
+import { requireAuth, isTutor, getTutorId, isSuperAdmin, isAdmin } from "@/lib/auth-helpers"
 import { GRADE_LABELS, TENURE_LABELS, STATUS_COLORS } from "@/lib/constants"
+import { CityFilter } from "@/components/city-filter"
+import { DeleteHourButton } from "@/components/delete-hour-button"
+import Script from "next/script"
 
-export default async function HoursPage() {
+export default async function HoursPage(props: { searchParams: Promise<{ city?: string }> }) {
   const session = await requireAuth()
   const tutor = isTutor(session.user.role)
+  const superAdmin = isSuperAdmin(session.user.role)
+  const admin = isAdmin(session.user.role)
+
+  const { city: cityParam } = await props.searchParams
+  const selectedCity = cityParam || "all"
 
   let tutorId: string | null = null
 
@@ -14,7 +22,11 @@ export default async function HoursPage() {
 
   const [hourLogs, projects, tutors, billingRates, payScales] = await Promise.all([
     prisma.hourLog.findMany({
-      where: tutor && tutorId ? { tutorId } : {},
+      where: tutor && tutorId
+        ? { tutorId }
+        : superAdmin && selectedCity !== "all"
+          ? { project: { cityId: selectedCity } }
+          : {},
       include: {
         tutor: { include: { user: { select: { name: true } } } },
         project: { select: { name: true, gradeLevel: true, status: true, client: { select: { user: { select: { name: true } } } } } },
@@ -23,7 +35,11 @@ export default async function HoursPage() {
       take: 50,
     }),
     prisma.project.findMany({
-      where: tutor && tutorId ? { projectTutors: { some: { tutorId } } } : {},
+      where: tutor && tutorId
+        ? { projectTutors: { some: { tutorId } } }
+        : superAdmin && selectedCity !== "all"
+          ? { cityId: selectedCity }
+          : {},
       include: {
         client: { select: { user: { select: { name: true } } } },
         projectTutors: { include: { tutor: { include: { user: { select: { name: true, id: true } } } } } },
@@ -38,7 +54,7 @@ export default async function HoursPage() {
           : Promise.resolve([])
         )
       : prisma.tutor.findMany({
-          where: { isActive: true },
+          where: { isActive: true, ...(superAdmin && selectedCity !== "all" ? { user: { cityId: selectedCity } } : {}) },
           include: { user: { select: { name: true } } },
         }),
     prisma.billingRate.findMany(),
@@ -50,10 +66,21 @@ export default async function HoursPage() {
     pay: payScales.map(s => ({ t: s.tenure, g: s.gradeLevel, m: s.mode, r: s.rate })),
   })
 
+  const tutorProjectsMap: Record<string, string[]> = {}
+  for (const p of projects) {
+    for (const pt of p.projectTutors) {
+      const tid = pt.tutor.user.id
+      if (!tutorProjectsMap[tid]) tutorProjectsMap[tid] = []
+      tutorProjectsMap[tid].push(p.id)
+    }
+  }
+  const assignJson = JSON.stringify(tutorProjectsMap)
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Log Hours</h2>
+        {superAdmin && <CityFilter selected={selectedCity} />}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -75,6 +102,7 @@ export default async function HoursPage() {
                     {!tutor && <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Bill $/hr</th>}
                     <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Pay $/hr</th>
                     <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Total Pay</th>
+                    {admin && <th className="text-center px-2 py-2 text-xs font-medium text-zinc-500">Actions</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700/50">
@@ -102,6 +130,11 @@ export default async function HoursPage() {
                       {!tutor && <td className="px-2 py-2 text-right text-zinc-600 dark:text-zinc-400">${log.billingRate.toFixed(2)}</td>}
                       <td className="px-2 py-2 text-right font-medium text-green-600 dark:text-green-400">${log.tutorPayRate.toFixed(2)}</td>
                       <td className="px-2 py-2 text-right font-medium text-green-600 dark:text-green-400">${(log.hours * log.tutorPayRate).toFixed(2)}</td>
+                      {admin && (
+                        <td className="px-2 py-2 text-center">
+                          <DeleteHourButton id={log.id} />
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -113,6 +146,18 @@ export default async function HoursPage() {
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Log New Hours</h3>
           <form action="/api/hours" method="POST" className="flex flex-col gap-4" id="hourLogForm">
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Team Member</label>
+              <select name="tutorId" required id="tutorSelect" defaultValue={tutorId ?? ""}
+                className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="" disabled={!!tutorId}>Select tutor</option>
+                {tutors.map((t) => (
+                  <option key={t.id} value={t.id} data-tenure={t.tenure}>
+                    {t.user.name} ({TENURE_LABELS[t.tenure] || t.tenure})
+                  </option>
+                ))}
+              </select>
+            </div>
             <div>
               <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Project Type</label>
               <select id="projectTypeSelect"
@@ -127,20 +172,9 @@ export default async function HoursPage() {
                 className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="">Select project</option>
                 {projects.map((p) => (
-                  <option key={p.id} value={p.id} data-grade={p.gradeLevel} data-type={p.projectType || "STUDENT"}>
+                  <option key={p.id} value={p.id} data-grade={p.gradeLevel} data-type={p.projectType || "STUDENT"}
+                    data-tutors={p.projectTutors.map(pt => pt.tutor.user.id).join(",")}>
                     {p.name} — {p.client?.user.name || "Other"} ({GRADE_LABELS[p.gradeLevel] || p.gradeLevel})
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Tutor</label>
-              <select name="tutorId" required id="tutorSelect" defaultValue={tutorId ?? ""}
-                className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="" disabled={!!tutorId}>Select tutor</option>
-                {tutors.map((t) => (
-                  <option key={t.id} value={t.id} data-tenure={t.tenure}>
-                    {t.user.name} ({TENURE_LABELS[t.tenure] || t.tenure})
                   </option>
                 ))}
               </select>
@@ -200,9 +234,10 @@ export default async function HoursPage() {
         </div>
       </div>
 
-      <script dangerouslySetInnerHTML={{ __html: `
+      <Script id="hourLogFormScript" strategy="afterInteractive">{`
         (function() {
           var RATES = ${ratesJson};
+          var ASSIGN = ${assignJson};
           var projectSelect = document.getElementById('projectSelect');
           var tutorSelect = document.getElementById('tutorSelect');
           var modeSelect = document.getElementById('modeSelect');
@@ -212,12 +247,16 @@ export default async function HoursPage() {
 
           function filterProjects() {
             var type = typeSelect && typeSelect.value;
+            var tutorId = tutorSelect && tutorSelect.value;
+            var assignedProjects = tutorId ? (ASSIGN[tutorId] || []) : null;
             if (!projectSelect) return;
             var opts = projectSelect.options;
             var hasVisible = false;
             for (var i = 0; i < opts.length; i++) {
               if (opts[i].value === '') { opts[i].hidden = false; continue; }
-              var show = !type || (opts[i].dataset.type === type);
+              var show = true;
+              if (type && opts[i].dataset.type !== type) show = false;
+              if (show && assignedProjects && assignedProjects.indexOf(opts[i].value) === -1) show = false;
               opts[i].hidden = !show;
               if (show && !hasVisible) { hasVisible = true; opts[i].selected = true; }
             }
@@ -226,9 +265,9 @@ export default async function HoursPage() {
           }
 
           function updateRates() {
-            var grade = projectSelect && projectSelect.value ? (projectSelect.querySelector('option[value="' + projectSelect.value.replace(/"/g, '\\"') + '"]') || {}).dataset.grade : null;
+            var grade = projectSelect && projectSelect.value ? (projectSelect.querySelector('option[value="' + projectSelect.value.replace(/"/g, '\\\\"') + '"]') || {}).dataset.grade : null;
             var mode = modeSelect && modeSelect.value;
-            var tenure = tutorSelect && tutorSelect.value ? (tutorSelect.querySelector('option[value="' + tutorSelect.value.replace(/"/g, '\\"') + '"]') || {}).dataset.tenure : null;
+            var tenure = tutorSelect && tutorSelect.value ? (tutorSelect.querySelector('option[value="' + tutorSelect.value.replace(/"/g, '\\\\"') + '"]') || {}).dataset.tenure : null;
 
             if (!grade || !mode) {
               if (billingDisplay) billingDisplay.textContent = '--';
@@ -257,12 +296,12 @@ export default async function HoursPage() {
           }
 
           if (projectSelect) projectSelect.addEventListener('change', updateRates);
-          if (tutorSelect) tutorSelect.addEventListener('change', updateRates);
+          if (tutorSelect) tutorSelect.addEventListener('change', filterProjects);
           if (modeSelect) modeSelect.addEventListener('change', updateRates);
           if (typeSelect) typeSelect.addEventListener('change', filterProjects);
           filterProjects();
         })();
-      `}} />
+      `}</Script>
     </div>
   )
 }
