@@ -4,7 +4,7 @@ import { CityFilter } from "@/components/city-filter"
 import { GRADE_LABELS } from "@/lib/constants"
 import { redirect } from "next/navigation"
 import Link from "next/link"
-import { AddTeamMemberForm } from "@/components/add-team-member-form"
+import { AddTutorForm } from "@/components/add-tutor-form"
 
 const ONBOARDING_STEPS = [
   "Email sent to tutor",
@@ -51,6 +51,8 @@ export default async function OnboardingPage(props: { searchParams: Promise<{ cr
     orderBy: { user: { name: "asc" } },
   })
 
+  const cities = await prisma.city.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } })
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -69,7 +71,7 @@ export default async function OnboardingPage(props: { searchParams: Promise<{ cr
         </div>
       )}
 
-      <AddTeamMemberForm templates={templates} clients={clients} />
+      <AddTutorForm templates={templates} cities={cities} onboardFlow />
 
       {pendingTutors.length === 0 ? (
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-8 text-center">
