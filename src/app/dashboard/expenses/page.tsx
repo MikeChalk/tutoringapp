@@ -72,7 +72,7 @@ export default async function ExpensesPage() {
                   <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Hrs</th>
                   <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Rate</th>
                   <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Amount</th>
-                  <StatusBadge status="PAID" />
+                  <th className="text-center px-2 py-2 text-xs font-medium text-zinc-500">Paid</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700/50">
@@ -86,7 +86,7 @@ export default async function ExpensesPage() {
                     <td className="px-2 py-2 text-right font-medium text-amber-600 dark:text-amber-400">${(log.hours * log.tutorPayRate).toFixed(2)}</td>
                     <td className="px-2 py-2">
                       {log.paidAt ? (
-                  <th className="text-center px-2 py-2 text-xs font-medium text-zinc-500">Status</th>
+                        <StatusBadge status="PAID" />
                       ) : (
                         <span className="text-xs text-zinc-400">Unpaid</span>
                       )}
