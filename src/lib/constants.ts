@@ -32,16 +32,3 @@ export const CONTRACT_TYPE_LABELS: Record<string, string> = {
   STUDY_HALL: "Study Hall",
   PROGRAM_SUPERVISOR: "Program Supervisor",
 }
-
-export const GRADE_PROMOTION_ORDER = [
-  "ELEMENTARY", "SEC1_2", "SEC3", "SEC4_5", "CEGEP", "UNI",
-]
-
-export const SUBJECT_OPTIONS = [
-  "Math", "Science", "Physics", "Chemistry", "English", "French",
-  "History", "Geography", "Reading", "Writing", "Study Skills",
-  "Executive Functioning", "Homework Buddy", "Hebrew",
-  "Calculus 1", "Calculus 2", "Chemistry 1", "Chemistry 2",
-  "Mechanics", "E&M", "Waves and Optics", "Statistics",
-  "Macro Economics", "Micro Economics", "Other",
-]
