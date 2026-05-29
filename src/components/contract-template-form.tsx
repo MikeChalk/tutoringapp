@@ -27,7 +27,7 @@ export function ContractTemplateForm({ editing, onCancel }: {
   onCancel?: string
 }) {
   const isEdit = !!editing
-  const contractType = editing?.type || "PRIVATE_TUTORING"
+  const [contractType, setContractType] = useState(editing?.type || "PRIVATE_TUTORING")
   const isProgramSupervisor = contractType === "PROGRAM_SUPERVISOR"
 
   const existingRates: Record<string, number> = {}
@@ -104,7 +104,8 @@ export function ContractTemplateForm({ editing, onCancel }: {
           <div>
             <label className="block text-xs text-zinc-500 mb-1">Contract Type</label>
             <select name="type" required
-              defaultValue={contractType}
+              value={contractType}
+              onChange={e => setContractType(e.target.value)}
               className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="PRIVATE_TUTORING">Private Tutoring</option>
               <option value="PROGRAM_SUPERVISOR">Program Supervisor</option>
