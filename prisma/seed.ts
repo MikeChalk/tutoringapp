@@ -88,6 +88,14 @@ async function main() {
     { tenure: "3RD_YEAR", gradeLevel: "SEC4_5", mode: "IN_PERSON", rate: 31 },
     { tenure: "3RD_YEAR", gradeLevel: "CEGEP", mode: "IN_PERSON", rate: 43 },
     { tenure: "3RD_YEAR", gradeLevel: "UNI", mode: "IN_PERSON", rate: 52 },
+    // Study Hall rates
+    { tenure: "1ST_YEAR", gradeLevel: "STUDY_HALL", mode: "IN_PERSON", rate: 30 },
+    { tenure: "2ND_YEAR", gradeLevel: "STUDY_HALL", mode: "IN_PERSON", rate: 32 },
+    { tenure: "3RD_YEAR", gradeLevel: "STUDY_HALL", mode: "IN_PERSON", rate: 35 },
+    // Program Supervisor rates
+    { tenure: "1ST_YEAR", gradeLevel: "PROGRAM_SUPERVISOR", mode: "IN_PERSON", rate: 40 },
+    { tenure: "2ND_YEAR", gradeLevel: "PROGRAM_SUPERVISOR", mode: "IN_PERSON", rate: 45 },
+    { tenure: "3RD_YEAR", gradeLevel: "PROGRAM_SUPERVISOR", mode: "IN_PERSON", rate: 50 },
   ]
 
   for (const scale of payScales) {
@@ -154,6 +162,38 @@ async function main() {
     },
   })
 
+  // Tutor 4 — Program Supervisor
+  const t4User = await prisma.user.create({
+    data: { name: "Pierre Lavoie", email: "pierre@tutoring.com", password: hash, role: "TUTOR", cityId: montreal.id },
+  })
+  const tutor4 = await prisma.tutor.create({
+    data: {
+      userId: t4User.id,
+      bio: "Program supervisor for study hall programs. Oversees group tutoring sessions and manages school partnerships.",
+      subjects: "Math, Science, Study Skills",
+      tenure: "3RD_YEAR",
+      isActive: true,
+      onboarded: true,
+      onboardedAt: new Date("2024-01-15"),
+    },
+  })
+
+  // Tutor 5 — Study Hall assistant
+  const t5User = await prisma.user.create({
+    data: { name: "Leila Haddad", email: "leila@tutoring.com", password: hash, role: "TUTOR", cityId: montreal.id },
+  })
+  const tutor5 = await prisma.tutor.create({
+    data: {
+      userId: t5User.id,
+      bio: "Study hall tutor. Supports group sessions and homework help.",
+      subjects: "English, French, Homework Buddy",
+      tenure: "1ST_YEAR",
+      isActive: true,
+      onboarded: true,
+      onboardedAt: new Date("2025-11-01"),
+    },
+  })
+
   // Contracts for onboarded tutors
   await prisma.contract.create({
     data: {
@@ -178,6 +218,32 @@ async function main() {
       endDate: new Date("2026-07-01"),
       signed: true,
       signedAt: new Date("2025-09-28"),
+    },
+  })
+
+  await prisma.contract.create({
+    data: {
+      tutorId: tutor4.id,
+      type: "PROGRAM_SUPERVISOR",
+      yearLevel: "3RD_YEAR",
+      terms: "Program supervisor contract. Oversees study hall programs at partner schools. Responsible for tutor scheduling, program quality, and school liaison.",
+      startDate: new Date("2025-08-01"),
+      endDate: new Date("2026-07-01"),
+      signed: true,
+      signedAt: new Date("2025-07-20"),
+    },
+  })
+
+  await prisma.contract.create({
+    data: {
+      tutorId: tutor5.id,
+      type: "STUDY_HALL",
+      yearLevel: "1ST_YEAR",
+      terms: "Study hall tutor contract. Provides group tutoring and homework support during study hall sessions.",
+      startDate: new Date("2025-11-15"),
+      endDate: new Date("2026-07-01"),
+      signed: true,
+      signedAt: new Date("2025-11-10"),
     },
   })
 
@@ -434,15 +500,17 @@ async function main() {
   // Study Hall projects
   const sh1 = await prisma.project.create({
     data: {
-      name: "Forest Hill Collegiate — Study Hall",
+      name: "Royal West Academy — Study Hall",
       description: "After-school study hall program, grades 9-11",
       subjects: "Math, Science, English",
       projectType: "STUDY_HALL",
-      school: "Forest Hill Collegiate",
+      school: "Royal West Academy",
       gradeLevel: "SEC4_5",
-      cityId: toronto.id,
+      cityId: montreal.id,
     },
   })
+  await prisma.projectTutor.create({ data: { projectId: sh1.id, tutorId: tutor4.id } })
+  await prisma.projectTutor.create({ data: { projectId: sh1.id, tutorId: tutor5.id } })
 
   const sh2 = await prisma.project.create({
     data: {
