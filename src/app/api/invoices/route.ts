@@ -19,6 +19,8 @@ export async function POST(request: Request) {
   const taxRate = parseFloat((formData.get("taxRate") as string) || "0")
   const taxAmount = parseFloat((formData.get("taxAmount") as string) || "0")
   const totalAmount = parseFloat((formData.get("totalAmount") as string) || "0")
+  const discountCode = formData.get("discountCode") as string
+  const discountAmount = parseFloat((formData.get("discountAmount") as string) || "0")
 
   if (!clientId) {
     return NextResponse.json({ error: "Missing clientId" }, { status: 400 })
@@ -44,6 +46,8 @@ export async function POST(request: Request) {
           subtotal,
           taxRate,
           taxAmount,
+          discountCode: discountCode || null,
+          discountAmount,
           status: "DRAFT",
           notes: notes || null,
           items: {

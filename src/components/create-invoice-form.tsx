@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 interface Client { id: string; user: { name: string } }
 
@@ -13,10 +13,31 @@ export function CreateInvoiceForm({ clients }: { clients: Client[] }) {
   const [lines, setLines] = useState<LineItem[]>([{ description: "", hours: 1, rate: 0, amount: 0 }])
   const [taxRate, setTaxRate] = useState(0)
   const [notes, setNotes] = useState("")
+  const [discountCode, setDiscountCode] = useState("")
+  const [discountPct, setDiscountPct] = useState(0)
+  const [discountAmt, setDiscountAmt] = useState(0)
+  const [codes, setCodes] = useState<Array<{ code: string; discountPct: number; discountAmt: number }>>([])
+
+  useEffect(() => {
+    fetch("/api/discounts").then(r => r.json()).then(d => setCodes(d.codes || []))
+  }, [])
+
+  function applyCode(code: string) {
+    setDiscountCode(code)
+    const c = codes.find(x => x.code === code)
+    if (c) {
+      setDiscountPct(c.discountPct)
+      setDiscountAmt(c.discountAmt)
+    } else {
+      setDiscountPct(0)
+      setDiscountAmt(0)
+    }
+  }
 
   const subtotal = lines.reduce((s, l) => s + l.amount, 0)
   const taxAmount = subtotal * (taxRate / 100)
-  const total = subtotal + taxAmount
+  const discAmt = discountPct > 0 ? subtotal * (discountPct / 100) : discountAmt
+  const total = Math.max(0, subtotal + taxAmount - discAmt)
 
   function updateLine(idx: number, field: keyof LineItem, value: string) {
     setLines(prev => {
@@ -104,6 +125,8 @@ export function CreateInvoiceForm({ clients }: { clients: Client[] }) {
           <input type="hidden" name="taxRate" value={taxRate.toFixed(1)} />
           <input type="hidden" name="taxAmount" value={taxAmount.toFixed(2)} />
           <input type="hidden" name="totalAmount" value={total.toFixed(2)} />
+          <input type="hidden" name="discountCode" value={discountCode} />
+          <input type="hidden" name="discountAmount" value={discAmt.toFixed(2)} />
         </div>
 
         {/* Totals */}
@@ -112,6 +135,12 @@ export function CreateInvoiceForm({ clients }: { clients: Client[] }) {
             <span>Subtotal</span>
             <span>${subtotal.toFixed(2)}</span>
           </div>
+          {(discountPct > 0 || discountAmt > 0) && (
+            <div className="flex justify-between text-red-600 dark:text-red-400">
+              <span>Discount {discountCode && `(${discountCode})`}</span>
+              <span>-${discAmt.toFixed(2)}</span>
+            </div>
+          )}
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
               <span className="text-zinc-600 dark:text-zinc-400">Tax</span>
@@ -127,6 +156,16 @@ export function CreateInvoiceForm({ clients }: { clients: Client[] }) {
             <span>${total.toFixed(2)}</span>
           </div>
         </div>
+
+        {codes.length > 0 && (
+          <div>
+            <label className="block text-xs text-zinc-500 mb-1">Discount Code</label>
+            <select value={discountCode} onChange={e => applyCode(e.target.value)} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">None</option>
+              {codes.map(c => (<option key={c.code} value={c.code}>{c.code} ({c.discountPct > 0 ? `${c.discountPct}%` : `$${c.discountAmt}`})</option>))}
+            </select>
+          </div>
+        )}
 
         <div>
           <label className="block text-xs text-zinc-500 mb-1">Notes</label>

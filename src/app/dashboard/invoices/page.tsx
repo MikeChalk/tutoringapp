@@ -47,6 +47,8 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Invoices</h2>
         <div className="flex items-center gap-3">
+          <a href="/api/cron?action=generate" className="text-xs text-green-600 dark:text-green-400 hover:underline">Generate Invoices</a>
+          <a href="/api/cron?action=remind" className="text-xs text-amber-600 dark:text-amber-400 hover:underline">Send Reminders</a>
           <a href="/api/export?type=invoices" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Export CSV</a>
           {isSuperAdmin(session.user.role) && <CityFilter selected={selectedCity} />}
         </div>
