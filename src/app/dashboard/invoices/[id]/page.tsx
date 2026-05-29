@@ -18,7 +18,7 @@ export default async function InvoiceDetailPage(props: { params: Promise<{ id: s
       client: { include: { user: { select: { name: true, email: true, city: { select: { name: true } } } } } },
       project: { select: { name: true } },
       items: {
-        include: { hourLog: { select: { date: true, description: true, hours: true } } },
+        include: { hourLog: { select: { date: true, hours: true, tutor: { select: { user: { select: { name: true } } } }, project: { select: { name: true } } } } },
       },
     },
   })
@@ -63,38 +63,46 @@ export default async function InvoiceDetailPage(props: { params: Promise<{ id: s
           {invoice.items.length === 0 ? (
             <p className="text-sm text-zinc-500">No line items.</p>
           ) : (
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-zinc-200 dark:border-zinc-700">
-                  <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Description</th>
-                  <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Hours</th>
-                  <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Rate</th>
-                  <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {invoice.items.map((item) => (
-                  <tr key={item.id} className="text-sm border-b border-zinc-100 dark:border-zinc-700/50">
-                    <td className="px-2 py-2 text-zinc-900 dark:text-zinc-100">{item.description}</td>
-                    <td className="px-2 py-2 text-right text-zinc-600 dark:text-zinc-400">{item.hours}</td>
-                    <td className="px-2 py-2 text-right text-zinc-600 dark:text-zinc-400">
-                      ${item.rate.toFixed(2)}
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-zinc-200 dark:border-zinc-700">
+                    <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Tutor</th>
+                    <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Date</th>
+                    <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Project</th>
+                    <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Hours</th>
+                    <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {invoice.items.map((item) => (
+                    <tr key={item.id} className="text-sm border-b border-zinc-100 dark:border-zinc-700/50">
+                      <td className="px-2 py-2 text-zinc-900 dark:text-zinc-100">
+                        {item.hourLog?.tutor ? item.hourLog.tutor.user.name : "-"}
+                      </td>
+                      <td className="px-2 py-2 text-zinc-600 dark:text-zinc-400">
+                        {item.hourLog ? new Date(item.hourLog.date).toLocaleDateString() : "-"}
+                      </td>
+                      <td className="px-2 py-2 text-zinc-600 dark:text-zinc-400">
+                        {item.hourLog ? item.hourLog.project.name : item.description}
+                      </td>
+                      <td className="px-2 py-2 text-right text-zinc-600 dark:text-zinc-400">
+                        {item.hours > 0 ? item.hours : "-"}
+                      </td>
+                      <td className="px-2 py-2 text-right text-zinc-900 dark:text-zinc-100 font-medium">
+                        ${item.amount.toFixed(2)}
+                      </td>
+                    </tr>
+                  ))}
+                  <tr className="text-sm font-bold">
+                    <td colSpan={4} className="px-2 py-3 text-right text-zinc-900 dark:text-zinc-100">
+                      Total
                     </td>
-                    <td className="px-2 py-2 text-right text-zinc-900 dark:text-zinc-100 font-medium">
-                      ${item.amount.toFixed(2)}
+                    <td className="px-2 py-3 text-right text-zinc-900 dark:text-zinc-100">
+                      ${invoice.totalAmount.toFixed(2)}
                     </td>
                   </tr>
-                ))}
-                <tr className="text-sm font-bold">
-                  <td colSpan={3} className="px-2 py-3 text-right text-zinc-900 dark:text-zinc-100">
-                    Total
-                  </td>
-                  <td className="px-2 py-3 text-right text-zinc-900 dark:text-zinc-100">
-                    ${invoice.totalAmount.toFixed(2)}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                </tbody>
+              </table>
           )}
         </div>
 

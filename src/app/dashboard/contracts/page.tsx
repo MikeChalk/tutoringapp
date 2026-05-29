@@ -24,13 +24,19 @@ export default async function ContractsPage(props: { searchParams: Promise<{ tab
   const contracts = await prisma.contract.findMany({
     where,
     include: {
-      tutor: { include: { user: { select: { name: true, email: true, cityId: true } } } },
+      tutor: { include: { user: { select: { name: true, email: true, city: { select: { name: true } } } } } },
     },
     orderBy: { tutor: { user: { name: "asc" } } },
   })
 
   const templates = await prisma.contractTemplate.findMany({
     orderBy: [{ type: "asc" }, { name: "asc" }],
+  })
+
+  const tutors = await prisma.tutor.findMany({
+    where: { onboarded: true, ...(effectiveCityId ? { user: { cityId: effectiveCityId } } : {}) },
+    include: { user: { select: { name: true } } },
+    orderBy: { user: { name: "asc" } },
   })
 
   const activeCount = contracts.filter(c => c.status === "ACTIVE").length
@@ -66,84 +72,152 @@ export default async function ContractsPage(props: { searchParams: Promise<{ tab
       {activeTab === "templates" ? (
         <TemplatesTab templates={templates} />
       ) : (
-        <ContractsTab contracts={contracts} />
+        <ContractsTab contracts={contracts} tutors={tutors} />
       )}
     </div>
   )
 }
 
-function ContractsTab({ contracts }: { contracts: Array<{
-  id: string; tutorId: string; type: string; yearLevel: string;
-  startDate: Date; endDate: Date; signed: boolean; signedAt: Date | null; status: string;
-  tutor: { user: { name: string; email: string } };
-}> }) {
-  if (contracts.length === 0) {
-    return (
-      <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-8 text-center">
-        <p className="text-zinc-500">No contracts found.</p>
-      </div>
-    )
-  }
+function ContractsTab({ contracts, tutors }: {
+  contracts: Array<{
+    id: string; tutorId: string; type: string; yearLevel: string;
+    startDate: Date; endDate: Date; signed: boolean; signedAt: Date | null; status: string;
+    tutor: { user: { name: string; email: string; city: { name: string } | null } };
+  }>;
+  tutors: Array<{ id: string; user: { name: string } }>;
+}) {
+  const today = new Date()
+  const nextJuly1 = today < new Date(today.getFullYear(), 6, 1)
+    ? new Date(today.getFullYear(), 6, 1)
+    : new Date(today.getFullYear() + 1, 6, 1)
+  const endDateDefault = nextJuly1.toISOString().split("T")[0]
 
   return (
-    <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
-      <table className="w-full">
-        <thead>
-          <tr className="border-b border-zinc-200 dark:border-zinc-700">
-            <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Tutor</th>
-            <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Type</th>
-            <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Year</th>
-            <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Start</th>
-            <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">End</th>
-            <th className="text-center px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Signed</th>
-            <th className="text-center px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Status</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700/50">
-          {contracts.map((c) => (
-            <tr key={c.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-700/50">
-              <td className="px-4 py-3">
-                <Link href={`/dashboard/tutors/${c.tutorId}`} className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline">
-                  {c.tutor.user.name}
-                </Link>
-                <p className="text-xs text-zinc-400">{c.tutor.user.email}</p>
-              </td>
-              <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
-                {CONTRACT_TYPE_LABELS[c.type] || c.type}
-              </td>
-              <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
-                {TENURE_LABELS[c.yearLevel] || c.yearLevel}
-              </td>
-              <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
-                {new Date(c.startDate).toLocaleDateString()}
-              </td>
-              <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
-                {new Date(c.endDate).toLocaleDateString()}
-              </td>
-              <td className="px-4 py-3 text-center">
-                {c.signed ? (
-                  <span className="inline-flex text-xs font-medium rounded-full px-2 py-0.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                    {c.signedAt ? new Date(c.signedAt).toLocaleDateString() : "Yes"}
-                  </span>
-                ) : (
-                  <span className="inline-flex text-xs font-medium rounded-full px-2 py-0.5 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                    Unsigned
-                  </span>
-                )}
-              </td>
-              <td className="px-4 py-3 text-center">
-                <span className={`inline-flex text-xs font-medium rounded-full px-2 py-0.5 ${
-                  c.status === "ACTIVE"
-                    ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                    : "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"
-                }`}>
-                  {c.status}
-                </span>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="space-y-6">
+      <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
+        <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Create Contract</h3>
+        <form action="/api/contracts" method="POST" className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4 items-end">
+          <div>
+            <label className="block text-xs text-zinc-500 mb-1">Tutor</label>
+            <select name="tutorId" required
+              className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">Select tutor</option>
+              {tutors.map(t => (
+                <option key={t.id} value={t.id}>{t.user.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-zinc-500 mb-1">Contract Type</label>
+            <select name="type" required
+              className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="PRIVATE_TUTORING">Private Tutoring</option>
+              <option value="STUDY_HALL">Study Hall</option>
+              <option value="PROGRAM_SUPERVISOR">Program Supervisor</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-zinc-500 mb-1">Year Level</label>
+            <select name="yearLevel" required
+              className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="1ST_YEAR">Year 1</option>
+              <option value="2ND_YEAR">Year 2</option>
+              <option value="3RD_YEAR">Year 3</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-zinc-500 mb-1">Start Date</label>
+            <input type="date" name="startDate" required
+              defaultValue={new Date().toISOString().split("T")[0]}
+              className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+          <div>
+            <label className="block text-xs text-zinc-500 mb-1">End Date</label>
+            <input type="date" name="endDate" required
+              defaultValue={endDateDefault}
+              className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+          <div className="sm:col-span-3 lg:col-span-5">
+            <label className="block text-xs text-zinc-500 mb-1">Terms</label>
+            <textarea name="terms" rows={2} placeholder="Contract terms (leave blank for default)."
+              className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+          <button type="submit"
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">
+            Create Contract
+          </button>
+        </form>
+      </div>
+
+      {contracts.length === 0 ? (
+        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-8 text-center">
+          <p className="text-zinc-500">No contracts found.</p>
+        </div>
+      ) : (
+        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-zinc-200 dark:border-zinc-700">
+                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Tutor</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">City</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Type</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Year</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Start</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">End</th>
+                <th className="text-center px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Signed</th>
+                <th className="text-center px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700/50">
+              {contracts.map((c) => (
+                <tr key={c.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-700/50">
+                  <td className="px-4 py-3">
+                    <Link href={`/dashboard/tutors/${c.tutorId}`} className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline">
+                      {c.tutor.user.name}
+                    </Link>
+                    <p className="text-xs text-zinc-400">{c.tutor.user.email}</p>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
+                    {c.tutor.user.city?.name || "-"}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
+                    {CONTRACT_TYPE_LABELS[c.type] || c.type}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
+                    {TENURE_LABELS[c.yearLevel] || c.yearLevel}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
+                    {new Date(c.startDate).toLocaleDateString()}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
+                    {new Date(c.endDate).toLocaleDateString()}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    {c.signed ? (
+                      <span className="inline-flex text-xs font-medium rounded-full px-2 py-0.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                        {c.signedAt ? new Date(c.signedAt).toLocaleDateString() : "Yes"}
+                      </span>
+                    ) : (
+                      <span className="inline-flex text-xs font-medium rounded-full px-2 py-0.5 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                        Unsigned
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <span className={`inline-flex text-xs font-medium rounded-full px-2 py-0.5 ${
+                      c.status === "ACTIVE"
+                        ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                        : "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"
+                    }`}>
+                      {c.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }
@@ -185,19 +259,17 @@ function TemplatesTab({ templates }: { templates: Array<{
             <input type="text" name="gradeLevels" placeholder="ELEMENTARY, SEC1_2, SEC3, SEC4_5, CEGEP, UNI"
               className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
-          <div>
+          <div className="sm:col-span-2">
             <label className="block text-xs text-zinc-500 mb-1">Contract Terms</label>
             <textarea name="terms" rows={3} placeholder="Contract terms and conditions..."
               className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div className="flex items-center gap-2">
             <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-              <input type="checkbox" name="isDefault" className="rounded" /> Set as default for this type/year
+              <input type="checkbox" name="isDefault" className="rounded" /> Set as default
             </label>
-          </div>
-          <div className="sm:col-start-3">
             <button type="submit"
-              className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">
+              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">
               Create Template
             </button>
           </div>
@@ -242,8 +314,7 @@ function TemplatesTab({ templates }: { templates: Array<{
                     )}
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <form action={`/api/contract-templates/${t.id}`} method="POST" className="inline"
-                      onSubmit={(e) => { if (!confirm("Delete this template?")) e.preventDefault() }}>
+                    <form action={`/api/contract-templates/${t.id}`} method="POST">
                       <input type="hidden" name="_method" value="DELETE" />
                       <button type="submit" className="text-xs text-red-600 dark:text-red-400 hover:underline">Delete</button>
                     </form>

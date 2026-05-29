@@ -4,12 +4,27 @@ import { CityFilter } from "@/components/city-filter"
 import { CLIENT_TYPE_LABELS } from "@/lib/constants"
 import Link from "next/link"
 
-export default async function ClientsPage(props: { searchParams: Promise<{ city?: string }> }) {
+const TYPE_FILTERS = [
+  { value: "ALL", label: "All" },
+  { value: "PARENT", label: "Parents" },
+  { value: "SCHOOL", label: "Schools" },
+]
+
+function buildHref(typeValue: string, cityValue: string) {
+  const params = new URLSearchParams()
+  if (typeValue !== "ALL") params.set("type", typeValue)
+  if (cityValue !== "all") params.set("city", cityValue)
+  const qs = params.toString()
+  return `/dashboard/clients${qs ? `?${qs}` : ""}`
+}
+
+export default async function ClientsPage(props: { searchParams: Promise<{ type?: string; city?: string }> }) {
   const session = await requireAuth()
   const admin = isAdmin(session.user.role)
   const tutor = isTutor(session.user.role)
 
-  const { city: cityParam } = await props.searchParams
+  const { type: typeParam, city: cityParam } = await props.searchParams
+  const typeFilter = typeParam || "ALL"
   const selectedCity = cityParam || "all"
   const cityAdminId = isCityAdmin(session.user.role) ? await getActiveCityId(session.user.role, session.user.id) : null
   const effectiveCityId = cityAdminId || (isSuperAdmin(session.user.role) && selectedCity !== "all" ? selectedCity : null)
@@ -20,6 +35,10 @@ export default async function ClientsPage(props: { searchParams: Promise<{ city?
     if (tutorId) {
       whereClause = { projects: { some: { projectTutors: { some: { tutorId } } } } }
     }
+  }
+
+  if (typeFilter !== "ALL") {
+    whereClause = { ...whereClause, type: typeFilter }
   }
 
   if (effectiveCityId) {
@@ -38,9 +57,18 @@ export default async function ClientsPage(props: { searchParams: Promise<{ city?
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Clients</h2>
         {isSuperAdmin(session.user.role) && <CityFilter selected={selectedCity} />}
+      </div>
+
+      <div className="flex gap-2 mb-6">
+        {TYPE_FILTERS.map((f) => (
+          <Link key={f.value} href={buildHref(f.value, selectedCity)}
+            className={`text-sm px-3 py-1.5 rounded-lg transition-colors ${typeFilter === f.value ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900" : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700"}`}>
+            {f.label}
+          </Link>
+        ))}
       </div>
 
       <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
