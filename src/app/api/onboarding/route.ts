@@ -53,6 +53,46 @@ export async function POST(request: Request) {
     return NextResponse.redirect(new URL("/dashboard/onboarding", request.url), 303)
   }
 
+  if (action === "contract" && tutorId) {
+    const contractType = formData.get("contractType") as string
+    const yearLevel = formData.get("yearLevel") as string
+    const startDate = formData.get("startDate") as string
+    const endDate = formData.get("endDate") as string
+    const gradeLevels = formData.get("gradeLevels") as string
+    const templateId = formData.get("templateId") as string
+
+    if (!contractType || !yearLevel || !startDate || !endDate) {
+      return NextResponse.json({ error: "Missing fields" }, { status: 400 })
+    }
+
+    let templateTerms = ""
+    let templateGradeLevels = ""
+    if (templateId) {
+      const template = await prisma.contractTemplate.findUnique({ where: { id: templateId } })
+      if (template) { templateTerms = template.terms; templateGradeLevels = template.gradeLevels }
+    }
+
+    await prisma.tutor.update({
+      where: { id: tutorId },
+      data: { tenure: yearLevel, ...(gradeLevels || templateGradeLevels ? { gradeLevels: gradeLevels || templateGradeLevels } : {}) },
+    })
+
+    await prisma.contract.updateMany({
+      where: { tutorId, status: "ACTIVE" },
+      data: { status: "EXPIRED" },
+    })
+
+    await prisma.contract.create({
+      data: {
+        tutorId, type: contractType, yearLevel,
+        startDate: new Date(startDate), endDate: new Date(endDate),
+        terms: templateTerms || `${contractType.replace(/_/g, " ")} contract — Year ${yearLevel === "1ST_YEAR" ? "1" : yearLevel === "2ND_YEAR" ? "2" : "3"}`,
+      },
+    })
+
+    return NextResponse.redirect(new URL("/dashboard/onboarding", request.url), 303)
+  }
+
   const contractType = formData.get("contractType") as string
   const yearLevel = formData.get("yearLevel") as string
   const startDate = formData.get("startDate") as string

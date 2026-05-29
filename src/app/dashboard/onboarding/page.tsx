@@ -104,7 +104,6 @@ export default async function OnboardingPage(props: { searchParams: Promise<{ cr
         <div className="space-y-4">
           {pendingTutors.map((tutor) => {
             const step = tutor.onboardingStep
-            const needsContract = step === 0
             const displayStep = step + 1
 
             return (
@@ -122,29 +121,49 @@ export default async function OnboardingPage(props: { searchParams: Promise<{ cr
                   </div>
 
                   <div className="flex items-start gap-2">
-                    {needsContract ? (
-                      <form action="/api/onboarding" method="POST" className="border border-zinc-200 dark:border-zinc-700 rounded-lg p-3 space-y-2 max-w-md">
-                        <input type="hidden" name="tutorId" value={tutor.id} />
-                        <div className="flex flex-wrap gap-1.5">
-                          <select name="contractType" required className="rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500">
-                            <option value="PRIVATE_TUTORING">Private Tutoring</option>
-                            <option value="PROGRAM_SUPERVISOR">Program Supervisor</option>
-                          </select>
-                          <select name="yearLevel" required className="rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500">
-                            <option value="1ST_YEAR">Year 1</option><option value="2ND_YEAR">Year 2</option><option value="3RD_YEAR">Year 3</option>
-                          </select>
-                          <input type="date" name="startDate" required defaultValue={new Date().toISOString().split("T")[0]} className="rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500" />
-                          <input type="date" name="endDate" required defaultValue={endDateDefault} className="rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                    {step === 0 ? (
+                      <div className="space-y-3 max-w-md">
+                        <div className="border border-blue-200 dark:border-blue-800 rounded-lg p-3 bg-blue-50/50 dark:bg-blue-900/10">
+                          <p className="text-xs font-medium text-blue-700 dark:text-blue-300 mb-2">Step 1: Send Welcome Email</p>
+                          <form action="/api/onboarding" method="POST" className="space-y-2">
+                            <input type="hidden" name="_action" value="advance" />
+                            <input type="hidden" name="tutorId" value={tutor.id} />
+                            <textarea name="emailMessage" rows={3} placeholder="Custom welcome message..."
+                              className="w-full rounded border border-blue-200 dark:border-blue-700 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              defaultValue={`Welcome to J.A.S.S.! We're excited to have you on the team.\n\nPlease log in to the platform and sign your contract to get started.`} />
+                            <button type="submit" className="w-full rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 transition-colors">
+                              Send Email & Advance to Step 2
+                            </button>
+                          </form>
                         </div>
-                        <input type="text" name="gradeLevels" placeholder="Grade levels" defaultValue={tutor.gradeLevels || ""} className="w-full rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500" />
-                        {templates.length > 0 && (
-                          <select name="templateId" className="w-full rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500">
-                            <option value="">No template</option>
-                            {templates.map((t) => (<option key={t.id} value={t.id}>{t.name}</option>))}
-                          </select>
-                        )}
-                        <button type="submit" className="w-full rounded bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 transition-colors">Create Contract & Send Email</button>
-                      </form>
+
+                        <div className="border border-green-200 dark:border-green-800 rounded-lg p-3 bg-green-50/50 dark:bg-green-900/10">
+                          <p className="text-xs font-medium text-green-700 dark:text-green-300 mb-2">Step 2: Create Contract</p>
+                          <form action="/api/onboarding" method="POST" className="space-y-2">
+                            <input type="hidden" name="_action" value="contract" />
+                            <input type="hidden" name="tutorId" value={tutor.id} />
+                            <div className="flex flex-wrap gap-1.5">
+                              <select name="contractType" required className="rounded border border-green-200 dark:border-green-700 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-green-500">
+                                <option value="PRIVATE_TUTORING">Private Tutoring</option>
+                                <option value="PROGRAM_SUPERVISOR">Program Supervisor</option>
+                              </select>
+                              <select name="yearLevel" required className="rounded border border-green-200 dark:border-green-700 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-green-500">
+                                <option value="1ST_YEAR">Year 1</option><option value="2ND_YEAR">Year 2</option><option value="3RD_YEAR">Year 3</option>
+                              </select>
+                              <input type="date" name="startDate" required defaultValue={new Date().toISOString().split("T")[0]} className="rounded border border-green-200 dark:border-green-700 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-green-500" />
+                              <input type="date" name="endDate" required defaultValue={endDateDefault} className="rounded border border-green-200 dark:border-green-700 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-green-500" />
+                            </div>
+                            <input type="text" name="gradeLevels" placeholder="Grade levels" defaultValue={tutor.gradeLevels || ""} className="w-full rounded border border-green-200 dark:border-green-700 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-green-500" />
+                            {templates.length > 0 && (
+                              <select name="templateId" className="w-full rounded border border-green-200 dark:border-green-700 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-green-500">
+                                <option value="">No template</option>
+                                {templates.map((t) => (<option key={t.id} value={t.id}>{t.name}</option>))}
+                              </select>
+                            )}
+                            <button type="submit" className="w-full rounded bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 transition-colors">Create Contract</button>
+                          </form>
+                        </div>
+                      </div>
                     ) : ADMIN_ADVANCE_STEPS.has(step) ? (
                       <div className="border border-zinc-200 dark:border-zinc-700 rounded-lg p-3 space-y-2 max-w-md">
                         <p className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
