@@ -69,7 +69,7 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
   const tutorProjectsMap: Record<string, string[]> = {}
   for (const p of projects) {
     for (const pt of p.projectTutors) {
-      const tid = pt.tutor.user.id
+      const tid = pt.tutorId
       if (!tutorProjectsMap[tid]) tutorProjectsMap[tid] = []
       tutorProjectsMap[tid].push(p.id)
     }
@@ -173,7 +173,7 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
                 <option value="">Select project</option>
                 {projects.map((p) => (
                   <option key={p.id} value={p.id} data-grade={p.gradeLevel} data-type={p.projectType || "STUDENT"}
-                    data-tutors={p.projectTutors.map(pt => pt.tutor.user.id).join(",")}>
+                    data-tutors={p.projectTutors.map(pt => pt.tutorId).join(",")}>
                     {p.name} — {p.client?.user.name || "Other"} ({GRADE_LABELS[p.gradeLevel] || p.gradeLevel})
                   </option>
                 ))}
