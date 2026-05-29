@@ -3,6 +3,8 @@ import { requireAuth, isAdmin, isTutor, getTutorId } from "@/lib/auth-helpers"
 import { notFound } from "next/navigation"
 import Link from "next/link"
 
+import { CLIENT_TYPE_LABELS } from "@/lib/constants"
+
 const STATUS_COLORS: Record<string, string> = {
   IN_PROGRESS: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
   ON_HOLD: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
@@ -35,7 +37,7 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
   const client = await prisma.client.findUnique({
     where: { id },
     include: {
-      user: { select: { name: true, email: true } },
+      user: { select: { name: true, email: true, city: { select: { name: true } } } },
       projects: {
         include: {
           projectTutors: {
@@ -54,6 +56,18 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
       <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">{client.user.name}</h2>
       <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-1">{client.user.email}</p>
       <p className="text-xs text-zinc-400 dark:text-zinc-500 mb-6">Client since {new Date(client.createdAt).toLocaleDateString()}</p>
+      <div className="flex flex-wrap gap-2 mb-6">
+        <span className={`inline-flex text-xs font-medium rounded-full px-2 py-0.5 ${
+          client.type === "SCHOOL" ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+        }`}>
+          {CLIENT_TYPE_LABELS[client.type] || client.type}
+        </span>
+        {client.user.city?.name && (
+          <span className="inline-flex text-xs font-medium rounded-full px-2 py-0.5 bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400">
+            {client.user.city.name}
+          </span>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">

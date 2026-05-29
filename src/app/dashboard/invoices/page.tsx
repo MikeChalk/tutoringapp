@@ -30,7 +30,7 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
   const invoices = await prisma.invoice.findMany({
     where: whereClause,
     include: {
-      client: { include: { user: { select: { name: true } } } },
+      client: { include: { user: { select: { name: true, city: { select: { name: true } } } } } },
     },
     orderBy: { createdAt: "desc" },
   })
@@ -71,6 +71,7 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
             <tr className="border-b border-zinc-200 dark:border-zinc-700">
               <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Number</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Client</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">City</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Amount</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Status</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Due</th>
@@ -89,6 +90,9 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
                 </td>
                 <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
                   {invoice.client.user.name}
+                </td>
+                <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
+                  {invoice.client.user.city?.name || "-"}
                 </td>
                 <td className="px-4 py-3 text-sm text-zinc-900 dark:text-zinc-100">
                   ${invoice.totalAmount.toFixed(2)}
@@ -115,7 +119,7 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
             ))}
             {invoices.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-sm text-zinc-500">
+                <td colSpan={6} className="px-4 py-8 text-center text-sm text-zinc-500">
                   No invoices yet.
                 </td>
               </tr>

@@ -32,6 +32,10 @@ export default async function OnboardingPage(props: { searchParams: Promise<{ cr
     orderBy: { createdAt: "asc" },
   })
 
+  const templates = await prisma.contractTemplate.findMany({
+    orderBy: [{ type: "asc" }, { yearLevel: "asc" }],
+  })
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -82,6 +86,18 @@ export default async function OnboardingPage(props: { searchParams: Promise<{ cr
               <option value="3RD_YEAR">Year 3</option>
             </select>
           </div>
+          {templates.length > 0 && (
+            <div>
+              <label className="block text-xs text-zinc-500 mb-1">Template (optional)</label>
+              <select name="templateId"
+                className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">No template</option>
+                {templates.map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <button type="submit"
             className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">
             Create & Onboard
@@ -132,6 +148,15 @@ export default async function OnboardingPage(props: { searchParams: Promise<{ cr
                   <input type="text" name="gradeLevels" placeholder="Grade levels (e.g. ELEMENTARY,SEC1_2)"
                     defaultValue={tutor.gradeLevels || ""}
                     className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                  {templates.length > 0 && (
+                    <select name="templateId"
+                      className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                      <option value="">No template</option>
+                      {templates.map((t) => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
+                  )}
                   <button type="submit"
                     className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 transition-colors">
                     Onboard

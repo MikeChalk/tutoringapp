@@ -1,0 +1,49 @@
+import { NextResponse } from "next/server"
+import { auth } from "@/lib/auth"
+import { prisma } from "@/lib/db"
+import { isAdmin } from "@/lib/auth-helpers"
+
+export async function GET() {
+  const session = await auth()
+  if (!session?.user || !isAdmin(session.user.role)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  const templates = await prisma.contractTemplate.findMany({
+    orderBy: [{ type: "asc" }, { name: "asc" }],
+  })
+
+  return NextResponse.json({ templates })
+}
+
+export async function POST(request: Request) {
+  const session = await auth()
+  if (!session?.user || !isAdmin(session.user.role)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  const formData = await request.formData()
+  const name = (formData.get("name") as string)?.trim()
+  const type = (formData.get("type") as string) || "PRIVATE_TUTORING"
+  const yearLevel = (formData.get("yearLevel") as string) || "1ST_YEAR"
+  const terms = (formData.get("terms") as string) || ""
+  const gradeLevels = (formData.get("gradeLevels") as string) || ""
+  const isDefault = formData.get("isDefault") === "on"
+
+  if (!name) {
+    return NextResponse.json({ error: "Name is required" }, { status: 400 })
+  }
+
+  if (isDefault) {
+    await prisma.contractTemplate.updateMany({
+      where: { type, yearLevel, isDefault: true },
+      data: { isDefault: false },
+    })
+  }
+
+  const template = await prisma.contractTemplate.create({
+    data: { name, type, yearLevel, terms, gradeLevels, isDefault },
+  })
+
+  return NextResponse.redirect(new URL("/dashboard/contracts", request.url), 303)
+}

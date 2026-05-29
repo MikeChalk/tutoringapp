@@ -28,7 +28,8 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
   const project = await prisma.project.findUnique({
     where: { id },
     include: {
-      client: { include: { user: { select: { name: true, email: true } } } },
+      client: { include: { user: { select: { name: true, email: true, city: { select: { name: true } } } } } },
+      city: { select: { name: true } },
       projectTutors: {
         include: { tutor: { include: { user: { select: { name: true, email: true, id: true } } } } },
       },
@@ -59,7 +60,7 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
         <p className="text-base font-medium text-zinc-600 dark:text-zinc-300 mb-1">{project.school}</p>
       )}
       <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-2">
-        Client: {project.client?.user.name || "N/A"} &middot; {GRADE_LABELS[project.gradeLevel]} &middot; Started {new Date(project.createdAt).toLocaleDateString()}
+        Client: {project.client?.user.name || "N/A"} &middot; {GRADE_LABELS[project.gradeLevel]} &middot; {project.city?.name || project.client?.user.city?.name || ""} &middot; Started {new Date(project.createdAt).toLocaleDateString()}
       </p>
 
       <div className="flex flex-wrap gap-2 mb-6">

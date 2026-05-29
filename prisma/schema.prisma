@@ -84,6 +84,7 @@ model Tutor {
 model Client {
   id        String   @id @default(cuid())
   userId    String   @unique
+  type      String   @default("PARENT")
   company   String?
   phone     String?
   address   String?
@@ -252,6 +253,20 @@ model Contract {
   tutor Tutor @relation(fields: [tutorId], references: [id], onDelete: Cascade)
 
   @@map("contracts")
+}
+
+model ContractTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   @default("PRIVATE_TUTORING")
+  yearLevel   String   @default("1ST_YEAR")
+  terms       String   @default("")
+  gradeLevels String   @default("")
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("contract_templates")
 }
 
 model Expense {

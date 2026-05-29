@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin, isTutor, getTutorId, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
 import { CityFilter } from "@/components/city-filter"
+import { CLIENT_TYPE_LABELS } from "@/lib/constants"
 import Link from "next/link"
 
 export default async function ClientsPage(props: { searchParams: Promise<{ city?: string }> }) {
@@ -28,7 +29,7 @@ export default async function ClientsPage(props: { searchParams: Promise<{ city?
   const clients = await prisma.client.findMany({
     where: whereClause,
     include: {
-      user: { select: { name: true, email: true } },
+      user: { select: { name: true, email: true, city: { select: { name: true } } } },
       projects: { select: { id: true } },
       invoices: { select: { id: true } },
     },
@@ -48,6 +49,8 @@ export default async function ClientsPage(props: { searchParams: Promise<{ city?
             <tr className="border-b border-zinc-200 dark:border-zinc-700">
               <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Name</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Email</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">City</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Type</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Company</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Projects</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Invoices</th>
@@ -68,6 +71,16 @@ export default async function ClientsPage(props: { searchParams: Promise<{ city?
                   {client.user.email}
                 </td>
                 <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
+                  {client.user.city?.name || "-"}
+                </td>
+                <td className="px-4 py-3">
+                  <span className={`inline-flex text-xs font-medium rounded-full px-2 py-0.5 ${
+                    client.type === "SCHOOL" ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                  }`}>
+                    {CLIENT_TYPE_LABELS[client.type] || client.type}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
                   {client.company || "-"}
                 </td>
                 <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
@@ -80,7 +93,7 @@ export default async function ClientsPage(props: { searchParams: Promise<{ city?
             ))}
             {clients.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-sm text-zinc-500">
+                <td colSpan={8} className="px-4 py-8 text-center text-sm text-zinc-500">
                   No clients yet.
                 </td>
               </tr>

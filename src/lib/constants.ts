@@ -35,6 +35,11 @@ export const CONTRACT_TYPE_LABELS: Record<string, string> = {
   PROGRAM_SUPERVISOR: "Program Supervisor",
 }
 
+export const CLIENT_TYPE_LABELS: Record<string, string> = {
+  PARENT: "Parent",
+  SCHOOL: "School",
+}
+
 export const STUDENT_GRADE_OPTIONS: Record<string, string> = {
   ELEMENTARY: "Elementary",
   SEC1_2: "Sec 1-2",

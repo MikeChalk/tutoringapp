@@ -15,7 +15,7 @@ export default async function InvoiceDetailPage(props: { params: Promise<{ id: s
   const invoice = await prisma.invoice.findUnique({
     where: { id },
     include: {
-      client: { include: { user: { select: { name: true, email: true } } } },
+      client: { include: { user: { select: { name: true, email: true, city: { select: { name: true } } } } } },
       project: { select: { name: true } },
       items: {
         include: { hourLog: { select: { date: true, description: true, hours: true } } },
@@ -39,6 +39,7 @@ export default async function InvoiceDetailPage(props: { params: Promise<{ id: s
           </h2>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
             {invoice.client.user.name} &middot; {invoice.client.user.email}
+            {invoice.client.user.city?.name && <span> &middot; {invoice.client.user.city.name}</span>}
           </p>
         </div>
         <span
