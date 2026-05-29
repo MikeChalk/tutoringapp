@@ -10,7 +10,7 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
 
   const { status: statusFilter } = await props.searchParams
 
-  let whereClause: Record<string, unknown> = {}
+  let whereClause: Record<string, unknown> = { projectType: "STUDENT" }
   if (tutor) {
     const tutorId = await getTutorId(session.user.id, session.user.email)
     if (tutorId) {
@@ -39,7 +39,7 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Student Projects</h2>
+        <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Private Tutoring</h2>
         {admin && (
           <form id="statusForm">
             <select

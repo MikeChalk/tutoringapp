@@ -375,6 +375,87 @@ async function main() {
     },
   })
 
+  // Second city: Toronto
+  const toronto = await prisma.city.create({
+    data: { name: "Toronto", slug: "toronto" },
+  })
+
+  const torontoAdmin = await prisma.user.create({
+    data: { name: "Toronto Admin", email: "admin@toronto.jasstutors.com", password: hash, role: "CITY_ADMIN", cityId: toronto.id },
+  })
+
+  const tt1User = await prisma.user.create({
+    data: { name: "James Wilson", email: "james@toronto.jasstutors.com", password: hash, role: "TUTOR", cityId: toronto.id },
+  })
+  const torontoTutor = await prisma.tutor.create({
+    data: {
+      userId: tt1User.id,
+      bio: "Math and science tutor based in Toronto. 2 years experience.",
+      subjects: "Math, Science",
+      tenure: "2ND_YEAR",
+      isActive: true,
+      onboarded: true,
+      onboardedAt: new Date("2025-06-01"),
+    },
+  })
+
+  await prisma.contract.create({
+    data: {
+      tutorId: torontoTutor.id,
+      type: "PRIVATE_TUTORING",
+      yearLevel: "2ND_YEAR",
+      terms: "Toronto private tutoring contract.",
+      startDate: new Date("2025-09-01"),
+      endDate: new Date("2026-07-01"),
+      signed: true,
+      signedAt: new Date("2025-08-20"),
+    },
+  })
+
+  const tc1User = await prisma.user.create({
+    data: { name: "Alice Brown", email: "alice@toronto.email.com", password: hash, role: "CLIENT", cityId: toronto.id },
+  })
+  const torontoClient = await prisma.client.create({
+    data: { userId: tc1User.id, phone: "416-555-0101", notes: "Grade 9 math tutoring." },
+  })
+
+  const tp1 = await prisma.project.create({
+    data: {
+      name: "Emily Brown — Math",
+      subjects: "Math",
+      gradeLevel: "SEC3",
+      projectType: "STUDENT",
+      clientId: torontoClient.id,
+      cityId: toronto.id,
+    },
+  })
+  await prisma.projectTutor.create({ data: { projectId: tp1.id, tutorId: torontoTutor.id } })
+
+  // Study Hall projects
+  const sh1 = await prisma.project.create({
+    data: {
+      name: "Forest Hill Collegiate — Study Hall",
+      description: "After-school study hall program, grades 9-11",
+      subjects: "Math, Science, English",
+      projectType: "STUDY_HALL",
+      school: "Forest Hill Collegiate",
+      gradeLevel: "SEC4_5",
+      cityId: toronto.id,
+    },
+  })
+
+  const sh2 = await prisma.project.create({
+    data: {
+      name: "Northern Secondary — Study Hall",
+      description: "Lunch-time study hall",
+      subjects: "All subjects",
+      projectType: "STUDY_HALL",
+      school: "Northern Secondary School",
+      gradeLevel: "SEC3",
+      cityId: toronto.id,
+    },
+  })
+
   console.log("Seed complete!")
   console.log(`Created: admin, 3 tutors, 3 clients, 6 projects, 5 hour logs`)
   console.log("All passwords: password123")
