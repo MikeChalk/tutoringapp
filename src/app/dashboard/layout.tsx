@@ -68,6 +68,7 @@ const adminSections = [
 
 const tutorLinks = [
   { href: "/dashboard", label: "Overview" },
+  { href: "/dashboard/profile", label: "My Profile" },
   { href: "/dashboard/clients", label: "My Clients" },
   { href: "/dashboard/projects", label: "My Students" },
   { href: "/dashboard/hours", label: "Log Hours" },
@@ -78,6 +79,7 @@ const tutorLinks = [
 
 const clientLinks = [
   { href: "/dashboard", label: "Overview" },
+  { href: "/dashboard/profile", label: "My Profile" },
   { href: "/dashboard/projects", label: "My Students" },
   { href: "/dashboard/invoices", label: "Invoices" },
 ]

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin, isTutor, getTutorId, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
 import { GRADE_LABELS, STATUS_LABELS, STATUS_COLORS } from "@/lib/constants"
 import { CityFilter } from "@/components/city-filter"
+import { CreateProjectForm } from "@/components/create-project-form"
 import Link from "next/link"
 import Script from "next/script"
 
@@ -46,6 +47,14 @@ export default async function OtherProjectsPage(props: { searchParams: Promise<{
     orderBy: { createdAt: "desc" },
   })
 
+  const clients = admin ? await prisma.client.findMany({
+    where: effectiveCityId ? { user: { cityId: effectiveCityId } } : {},
+    include: { user: { select: { name: true } } },
+    orderBy: { user: { name: "asc" } },
+  }) : []
+
+  const cities = admin ? await prisma.city.findMany({ select: { id: true, name: true } }) : []
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -65,11 +74,12 @@ export default async function OtherProjectsPage(props: { searchParams: Promise<{
                 <option value="FINISHED">Finished</option>
                 <option value="CANCELLED">Cancelled</option>
               </select>
-              {superAdmin && selectedCity !== "all" && <input type="hidden" name="city" value={selectedCity} />}
             </form>
           )}
         </div>
       </div>
+
+      {admin && <CreateProjectForm clients={clients} cities={cities} defaultType="STUDY_HALL" defaultCity={selectedCity} />}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {projects.map((project) => {

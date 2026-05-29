@@ -40,14 +40,14 @@ export async function POST(request: Request) {
       }
     }
 
-    // Step 3 → 4: Create project
+    // Step 3 → 4: Create project and auto-assign tutor
     if (currentStep === 3) {
       const projectName = (formData.get("projectName") as string)?.trim()
       const clientId = formData.get("projectClientId") as string
       const gradeLevel = (formData.get("projectGradeLevel") as string) || "ELEMENTARY"
       const subjects = formData.get("projectSubjects") as string
       if (projectName) {
-        await prisma.project.create({
+        const project = await prisma.project.create({
           data: {
             name: projectName,
             clientId: clientId || null,
@@ -56,6 +56,8 @@ export async function POST(request: Request) {
             projectType: "STUDENT",
           },
         })
+        // Auto-assign the tutor to the project
+        await prisma.projectTutor.create({ data: { projectId: project.id, tutorId } })
       }
     }
 

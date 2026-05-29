@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { sendOnboardingEmail } from "@/lib/email"
 
 export async function POST(request: Request) {
   const session = await auth()
@@ -38,6 +39,10 @@ export async function POST(request: Request) {
       where: { id: tutor.id },
       data: { onboardingStep: 2 },
     })
+    const tutorUser = await prisma.user.findUnique({ where: { id: tutor.userId }, select: { name: true, email: true } })
+    if (tutorUser) {
+      await sendOnboardingEmail(tutorUser.email, tutorUser.name, "<p>Your contract has been signed. We'll be in touch with the next steps.</p>")
+    }
   }
 
   return NextResponse.redirect(new URL("/dashboard/contract", request.url), 303)
