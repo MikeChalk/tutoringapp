@@ -11,37 +11,60 @@ export async function POST(request: Request) {
 
   const formData = await request.formData()
   const clientId = formData.get("clientId") as string
-  const projectId = formData.get("projectId") as string
-  const description = formData.get("description") as string
-  const manualAmount = parseFloat((formData.get("amount") as string) || "0")
+  const linesJson = formData.get("lines") as string
   const date = formData.get("date") as string
   const dueDateStr = formData.get("dueDate") as string
+  const notes = formData.get("notes") as string
+  const subtotal = parseFloat((formData.get("subtotal") as string) || "0")
+  const taxRate = parseFloat((formData.get("taxRate") as string) || "0")
+  const taxAmount = parseFloat((formData.get("taxAmount") as string) || "0")
+  const totalAmount = parseFloat((formData.get("totalAmount") as string) || "0")
 
   if (!clientId) {
     return NextResponse.json({ error: "Missing clientId" }, { status: 400 })
   }
 
-  const dueDate = dueDateStr ? new Date(dueDateStr) : new Date(Date.now() + 3 * 86400000)
-  const invoiceCount = await prisma.invoice.count()
-  const number = `INV-${String(invoiceCount + 1).padStart(4, "0")}`
+  // Multi-line invoice
+  if (linesJson) {
+    try {
+      const lines = JSON.parse(linesJson) as Array<{ description: string; hours: number; rate: number; amount: number }>
+      const validLines = lines.filter(l => l.description && l.amount > 0)
+      if (validLines.length === 0) return NextResponse.json({ error: "At least one line item required" }, { status: 400 })
 
-  if (description) {
-    if (manualAmount <= 0) return NextResponse.json({ error: "Amount must be positive" }, { status: 400 })
-    await prisma.invoice.create({
-      data: {
-        number,
-        clientId,
-        projectId: projectId || null,
-        dueDate,
-        totalAmount: manualAmount,
-        status: "DRAFT",
-        notes: description,
-        items: { create: [{ description, hours: 0, rate: 0, amount: manualAmount }] },
-      },
-    })
-    return NextResponse.redirect(new URL("/dashboard/invoices", request.url), 303)
+      const dueDate = dueDateStr ? new Date(dueDateStr) : new Date(Date.now() + 3 * 86400000)
+      const invoiceCount = await prisma.invoice.count()
+      const number = `INV-${String(invoiceCount + 1).padStart(4, "0")}`
+
+      await prisma.invoice.create({
+        data: {
+          number,
+          clientId,
+          dueDate,
+          totalAmount,
+          subtotal,
+          taxRate,
+          taxAmount,
+          status: "DRAFT",
+          notes: notes || null,
+          items: {
+            create: validLines.map(l => ({
+              description: l.description,
+              hours: l.hours,
+              rate: l.rate,
+              amount: l.amount,
+            })),
+          },
+        },
+      })
+
+      return NextResponse.redirect(new URL("/dashboard/invoices", request.url), 303)
+    } catch {
+      return NextResponse.json({ error: "Invalid line items" }, { status: 400 })
+    }
   }
 
+  // Legacy: auto invoice from hour logs
+  const projectId = formData.get("projectId") as string
   const logs = await prisma.hourLog.findMany({
     where: {
       invoiceItems: { none: {} },
@@ -52,7 +75,7 @@ export async function POST(request: Request) {
   })
 
   if (logs.length === 0) {
-    return NextResponse.json({ error: "No unbilled hours to invoice. Use manual invoice with a description instead." }, { status: 400 })
+    return NextResponse.json({ error: "No unbilled hours to invoice." }, { status: 400 })
   }
 
   const items = logs.map((log) => ({
@@ -63,7 +86,10 @@ export async function POST(request: Request) {
     hourLogId: log.id,
   }))
 
-  const totalAmount = items.reduce((sum, item) => sum + item.amount, 0)
+  const total = items.reduce((sum, item) => sum + item.amount, 0)
+  const dueDate = new Date(Date.now() + 3 * 86400000)
+  const invoiceCount = await prisma.invoice.count()
+  const number = `INV-${String(invoiceCount + 1).padStart(4, "0")}`
 
   const invoice = await prisma.invoice.create({
     data: {
@@ -71,7 +97,7 @@ export async function POST(request: Request) {
       clientId,
       projectId: projectId || null,
       dueDate,
-      totalAmount,
+      totalAmount: total,
       status: "DRAFT",
       items: { create: items },
     },

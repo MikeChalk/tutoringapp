@@ -56,6 +56,12 @@ const adminSections = [
       { href: "/dashboard/import", label: "Import" },
     ],
   },
+  {
+    label: "Settings",
+    links: [
+      { href: "/dashboard/settings", label: "Company" },
+    ],
+  },
 ]
 
 const tutorLinks = [

@@ -171,6 +171,9 @@ model Invoice {
   sentAt      DateTime?
   paidAt      DateTime?
   paymentGateway String?
+  subtotal    Float     @default(0)
+  taxRate     Float     @default(0)
+  taxAmount   Float     @default(0)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -302,4 +305,19 @@ model City {
   expenses Expense[]
 
   @@map("cities")
+}
+
+model CompanySettings {
+  id              String  @id @default("main")
+  name            String  @default("J.A.S.S. Tutoring")
+  email           String  @default("info@jasstutors.com")
+  phone           String  @default("")
+  address         String  @default("")
+  website         String  @default("")
+  taxNumber       String  @default("")
+  invoicePrefix   String  @default("INV-")
+  invoiceNotes    String  @default("Thank you for your business!")
+  defaultTaxRate  Float   @default(0)
+
+  @@map("company_settings")
 }

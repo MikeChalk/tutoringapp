@@ -32,6 +32,8 @@ export default async function InvoiceDetailPage(props: { params: Promise<{ id: s
     if (!clientId || invoice.clientId !== clientId) notFound()
   }
 
+  const settings = await prisma.companySettings.findUnique({ where: { id: "main" } })
+
   return (
     <div>
       {paid === "1" && (
@@ -70,50 +72,71 @@ export default async function InvoiceDetailPage(props: { params: Promise<{ id: s
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
+          {settings && (
+            <div className="mb-6 pb-4 border-b border-zinc-200 dark:border-zinc-700">
+              <h4 className="font-bold text-zinc-900 dark:text-zinc-100">{settings.name}</h4>
+              <div className="text-xs text-zinc-500 space-y-0.5 mt-1">
+                {settings.address && <p>{settings.address}</p>}
+                {settings.email && <p>{settings.email}</p>}
+                {settings.phone && <p>{settings.phone}</p>}
+                {settings.taxNumber && <p>Tax: {settings.taxNumber}</p>}
+              </div>
+            </div>
+          )}
+
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Line Items</h3>
           {invoice.items.length === 0 ? (
             <p className="text-sm text-zinc-500">No line items.</p>
           ) : (
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-zinc-200 dark:border-zinc-700">
-                    <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Tutor</th>
-                    <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Date</th>
-                    <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Project</th>
-                    <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Hours</th>
-                    <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Amount</th>
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-zinc-200 dark:border-zinc-700">
+                  <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Description</th>
+                  <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Hours</th>
+                  <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Rate</th>
+                  <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {invoice.items.map((item) => (
+                  <tr key={item.id} className="text-sm border-b border-zinc-100 dark:border-zinc-700/50">
+                    <td className="px-2 py-2 text-zinc-900 dark:text-zinc-100">{item.description}</td>
+                    <td className="px-2 py-2 text-right text-zinc-600 dark:text-zinc-400">{item.hours > 0 ? item.hours : "-"}</td>
+                    <td className="px-2 py-2 text-right text-zinc-600 dark:text-zinc-400">{item.rate > 0 ? `$${item.rate.toFixed(2)}` : "-"}</td>
+                    <td className="px-2 py-2 text-right text-zinc-900 dark:text-zinc-100 font-medium">${item.amount.toFixed(2)}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {invoice.items.map((item) => (
-                    <tr key={item.id} className="text-sm border-b border-zinc-100 dark:border-zinc-700/50">
-                      <td className="px-2 py-2 text-zinc-900 dark:text-zinc-100">
-                        {item.hourLog?.tutor ? item.hourLog.tutor.user.name : "-"}
-                      </td>
-                      <td className="px-2 py-2 text-zinc-600 dark:text-zinc-400">
-                        {item.hourLog ? new Date(item.hourLog.date).toLocaleDateString() : "-"}
-                      </td>
-                      <td className="px-2 py-2 text-zinc-600 dark:text-zinc-400">
-                        {item.hourLog ? item.hourLog.project.name : item.description}
-                      </td>
-                      <td className="px-2 py-2 text-right text-zinc-600 dark:text-zinc-400">
-                        {item.hours > 0 ? item.hours : "-"}
-                      </td>
-                      <td className="px-2 py-2 text-right text-zinc-900 dark:text-zinc-100 font-medium">
-                        ${item.amount.toFixed(2)}
-                      </td>
+                ))}
+              </tbody>
+              <tfoot>
+                {invoice.subtotal > 0 && (
+                  <>
+                    <tr className="text-sm">
+                      <td colSpan={3} className="px-2 py-1 text-right text-zinc-500">Subtotal</td>
+                      <td className="px-2 py-1 text-right text-zinc-700 dark:text-zinc-300">${invoice.subtotal.toFixed(2)}</td>
                     </tr>
-                  ))}
-                  <tr className="text-sm font-bold">
-                    <td colSpan={4} className="px-2 py-3 text-right text-zinc-900 dark:text-zinc-100">
-                      Total
-                    </td>
-                    <td className="px-2 py-3 text-right text-zinc-900 dark:text-zinc-100">
-                      ${invoice.totalAmount.toFixed(2)}
-                    </td>
+                    {invoice.taxRate > 0 && (
+                      <tr className="text-sm">
+                        <td colSpan={3} className="px-2 py-1 text-right text-zinc-500">Tax ({invoice.taxRate}%)</td>
+                        <td className="px-2 py-1 text-right text-zinc-700 dark:text-zinc-300">${invoice.taxAmount.toFixed(2)}</td>
+                      </tr>
+                    )}
+                    <tr className="text-sm font-bold border-t border-zinc-200 dark:border-zinc-700">
+                      <td colSpan={3} className="px-2 py-3 text-right text-zinc-900 dark:text-zinc-100">Total</td>
+                      <td className="px-2 py-3 text-right text-zinc-900 dark:text-zinc-100">${invoice.totalAmount.toFixed(2)}</td>
+                    </tr>
+                  </>
+                )}
+                {invoice.subtotal === 0 && (
+                  <tr className="text-sm font-bold border-t border-zinc-200 dark:border-zinc-700">
+                    <td colSpan={3} className="px-2 py-3 text-right text-zinc-900 dark:text-zinc-100">Total</td>
+                    <td className="px-2 py-3 text-right text-zinc-900 dark:text-zinc-100">${invoice.totalAmount.toFixed(2)}</td>
                   </tr>
-                </tbody>
-              </table>
+                )}
+              </tfoot>
+            </table>
+          )}
+          {settings?.invoiceNotes && (
+            <p className="text-xs text-zinc-400 mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-700">{settings.invoiceNotes}</p>
           )}
         </div>
 
