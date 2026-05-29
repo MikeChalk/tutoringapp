@@ -1,8 +1,22 @@
 import { prisma } from "@/lib/db"
+import { requireAuth, isAdmin, isTutor, getTutorId } from "@/lib/auth-helpers"
 import Link from "next/link"
 
 export default async function ClientsPage() {
+  const session = await requireAuth()
+  const admin = isAdmin(session.user.role)
+  const tutor = isTutor(session.user.role)
+
+  let whereClause = {}
+  if (tutor) {
+    const tutorId = await getTutorId(session.user.id)
+    if (tutorId) {
+      whereClause = { projects: { some: { projectTutors: { some: { tutorId } } } } }
+    }
+  }
+
   const clients = await prisma.client.findMany({
+    where: whereClause,
     include: {
       user: { select: { name: true, email: true } },
       projects: { select: { id: true } },

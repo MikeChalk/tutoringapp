@@ -1,8 +1,26 @@
 import { prisma } from "@/lib/db"
+import { requireAuth, isAdmin, isTutor, isClient, getClientId } from "@/lib/auth-helpers"
+import { redirect } from "next/navigation"
 import Link from "next/link"
 
 export default async function InvoicesPage() {
+  const session = await requireAuth()
+  const admin = isAdmin(session.user.role)
+  const tutor = isTutor(session.user.role)
+  const client = isClient(session.user.role)
+
+  if (tutor) redirect("/dashboard")
+
+  let whereClause = {}
+  if (client) {
+    const clientId = await getClientId(session.user.id)
+    if (clientId) {
+      whereClause = { clientId }
+    }
+  }
+
   const invoices = await prisma.invoice.findMany({
+    where: whereClause,
     include: {
       client: { include: { user: { select: { name: true } } } },
     },

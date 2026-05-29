@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/db"
-import { auth } from "@/lib/auth"
-import { redirect } from "next/navigation"
+import { requireAuth, isTutor, getTutorId } from "@/lib/auth-helpers"
 
 const GRADE_LABELS: Record<string, string> = {
   ELEMENTARY: "Elementary",
@@ -18,11 +17,25 @@ const TENURE_LABELS: Record<string, string> = {
 }
 
 export default async function HoursPage() {
-  const session = await auth()
-  if (!session?.user) redirect("/login")
+  const session = await requireAuth()
+  const tutor = isTutor(session.user.role)
+
+  let tutorId: string | null = null
+  let currentTutor: { id: string; tenure: string; user: { name: string } } | null = null
+
+  if (tutor) {
+    tutorId = await getTutorId(session.user.id)
+    currentTutor = tutorId
+      ? await prisma.tutor.findUnique({
+          where: { id: tutorId },
+          include: { user: { select: { name: true } } },
+        })
+      : null
+  }
 
   const [hourLogs, projects, tutors] = await Promise.all([
     prisma.hourLog.findMany({
+      where: tutor && tutorId ? { tutorId } : {},
       include: {
         tutor: { include: { user: { select: { name: true } } } },
         project: { select: { name: true, gradeLevel: true, client: { select: { user: { select: { name: true } } } } } },
@@ -31,15 +44,24 @@ export default async function HoursPage() {
       take: 50,
     }),
     prisma.project.findMany({
+      where: tutor && tutorId ? { projectTutors: { some: { tutorId } } } : {},
       include: {
         client: { select: { user: { select: { name: true } } } },
-        projectTutors: { include: { tutor: { include: { user: { select: { name: true, id: true } }, }, }, }, },
+        projectTutors: { include: { tutor: { include: { user: { select: { name: true, id: true } } } } } },
       },
     }),
-    prisma.tutor.findMany({
-      where: { isActive: true },
-      include: { user: { select: { name: true } } },
-    }),
+    tutor
+      ? (tutorId
+          ? prisma.tutor.findMany({
+              where: { id: tutorId, isActive: true },
+              include: { user: { select: { name: true } } },
+            })
+          : Promise.resolve([])
+        )
+      : prisma.tutor.findMany({
+          where: { isActive: true },
+          include: { user: { select: { name: true } } },
+        }),
   ])
 
   return (
@@ -124,7 +146,12 @@ export default async function HoursPage() {
                 className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="">Select tutor</option>
                 {tutors.map((t) => (
-                  <option key={t.id} value={t.id} data-tenure={t.tenure}>
+                  <option
+                    key={t.id}
+                    value={t.id}
+                    data-tenure={t.tenure}
+                    selected={tutor && t.id === tutorId ? true : undefined}
+                  >
                     {t.user.name} ({TENURE_LABELS[t.tenure] || t.tenure})
                   </option>
                 ))}

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db"
-import { notFound } from "next/navigation"
+import { requireAuth, isAdmin } from "@/lib/auth-helpers"
+import { redirect, notFound } from "next/navigation"
 
 const TENURE_LABELS: Record<string, string> = {
   "1ST_YEAR": "Year 1",
@@ -17,6 +18,9 @@ const GRADE_LABELS: Record<string, string> = {
 }
 
 export default async function TutorDetailPage(props: { params: Promise<{ id: string }> }) {
+  const session = await requireAuth()
+  if (!isAdmin(session.user.role)) redirect("/dashboard")
+
   const { id } = await props.params
 
   const tutor = await prisma.tutor.findUnique({

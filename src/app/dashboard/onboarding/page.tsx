@@ -1,6 +1,11 @@
 import { prisma } from "@/lib/db"
+import { requireAuth, isAdmin } from "@/lib/auth-helpers"
+import { redirect } from "next/navigation"
 
 export default async function OnboardingPage() {
+  const session = await requireAuth()
+  if (!isAdmin(session.user.role)) redirect("/dashboard")
+
   const pendingTutors = await prisma.tutor.findMany({
     where: { onboarded: false, isActive: true },
     include: { user: { select: { name: true, email: true } } },

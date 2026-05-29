@@ -1,9 +1,29 @@
 import { prisma } from "@/lib/db"
+import { requireAuth, isAdmin, isTutor, getTutorId } from "@/lib/auth-helpers"
 import { notFound } from "next/navigation"
 import Link from "next/link"
 
 export default async function ClientDetailPage(props: { params: Promise<{ id: string }> }) {
+  const session = await requireAuth()
+  const admin = isAdmin(session.user.role)
+  const tutor = isTutor(session.user.role)
+
   const { id } = await props.params
+
+  let hasAccess = true
+  if (tutor) {
+    const tutorId = await getTutorId(session.user.id)
+    if (!tutorId) {
+      hasAccess = false
+    } else {
+      const projectCount = await prisma.project.count({
+        where: { clientId: id, projectTutors: { some: { tutorId } } },
+      })
+      hasAccess = projectCount > 0
+    }
+  }
+
+  if (!hasAccess) notFound()
 
   const client = await prisma.client.findUnique({
     where: { id },
@@ -76,12 +96,14 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
       <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Invoices</h3>
-          <Link
-            href={`/dashboard/invoices/new?clientId=${client.id}`}
-            className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
-          >
-            Create Invoice
-          </Link>
+          {admin && (
+            <Link
+              href={`/dashboard/invoices/new?clientId=${client.id}`}
+              className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              Create Invoice
+            </Link>
+          )}
         </div>
         {client.invoices.length === 0 ? (
           <p className="text-sm text-zinc-500">No invoices yet.</p>

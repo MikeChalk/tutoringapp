@@ -1,7 +1,15 @@
 import { prisma } from "@/lib/db"
-import { notFound } from "next/navigation"
+import { requireAuth, isAdmin, isTutor, isClient, getClientId } from "@/lib/auth-helpers"
+import { redirect, notFound } from "next/navigation"
 
 export default async function InvoiceDetailPage(props: { params: Promise<{ id: string }> }) {
+  const session = await requireAuth()
+  const admin = isAdmin(session.user.role)
+  const tutor = isTutor(session.user.role)
+  const client = isClient(session.user.role)
+
+  if (tutor) redirect("/dashboard")
+
   const { id } = await props.params
 
   const invoice = await prisma.invoice.findUnique({
@@ -16,6 +24,11 @@ export default async function InvoiceDetailPage(props: { params: Promise<{ id: s
   })
 
   if (!invoice) notFound()
+
+  if (client) {
+    const clientId = await getClientId(session.user.id)
+    if (!clientId || invoice.clientId !== clientId) notFound()
+  }
 
   return (
     <div>

@@ -1,19 +1,76 @@
-import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { requireAuth, isAdmin, isTutor, getTutorId, isClient, getClientId } from "@/lib/auth-helpers"
 import Link from "next/link"
 
 export default async function DashboardPage() {
-  const session = await auth()
+  const session = await requireAuth()
+  const role = session.user.role
+  const admin = isAdmin(role)
+  const tutor = isTutor(role)
+  const client = isClient(role)
 
-  const [tutorCount, clientCount, projectCount, pendingHours, pendingInvoices, newRequests] =
-    await Promise.all([
-      prisma.tutor.count(),
-      prisma.client.count(),
-      prisma.project.count(),
-      prisma.hourLog.count({ where: { status: "PENDING" } }),
-      prisma.invoice.count({ where: { status: "DRAFT" } }),
-      prisma.tutoringRequest.count({ where: { status: "NEW" } }),
-    ])
+  let tutorCount: number
+  let clientCount: number
+  let projectCount: number
+  let pendingHours: number
+  let pendingInvoices: number
+  let newRequests: number
+
+  if (tutor) {
+    const tutorId = await getTutorId(session.user.id)
+
+    if (!tutorId) {
+      tutorCount = 0
+      clientCount = 0
+      projectCount = 0
+      pendingHours = 0
+      pendingInvoices = 0
+      newRequests = 0
+    } else {
+      ;[tutorCount, clientCount, projectCount, pendingHours, pendingInvoices, newRequests] =
+        await Promise.all([
+          prisma.tutor.count({ where: { id: tutorId } }),
+          prisma.client.count({
+            where: { projects: { some: { projectTutors: { some: { tutorId } } } } },
+          }),
+          prisma.project.count({
+            where: { projectTutors: { some: { tutorId } } },
+          }),
+          prisma.hourLog.count({ where: { tutorId, status: "PENDING" } }),
+          Promise.resolve(0),
+          prisma.tutoringRequest.count({ where: { matchedTutorId: tutorId, status: "NEW" } }),
+        ])
+    }
+  } else if (admin) {
+    ;[tutorCount, clientCount, projectCount, pendingHours, pendingInvoices, newRequests] =
+      await Promise.all([
+        prisma.tutor.count(),
+        prisma.client.count(),
+        prisma.project.count(),
+        prisma.hourLog.count({ where: { status: "PENDING" } }),
+        prisma.invoice.count({ where: { status: "DRAFT" } }),
+        prisma.tutoringRequest.count({ where: { status: "NEW" } }),
+      ])
+  } else if (client) {
+    const clientId = await getClientId(session.user.id)
+    if (!clientId) {
+      tutorCount = 0; clientCount = 0; projectCount = 0
+      pendingHours = 0; pendingInvoices = 0; newRequests = 0
+    } else {
+      ;[tutorCount, clientCount, projectCount, pendingHours, pendingInvoices, newRequests] =
+        await Promise.all([
+          Promise.resolve(0),
+          prisma.client.count({ where: { id: clientId } }),
+          prisma.project.count({ where: { clientId } }),
+          Promise.resolve(0),
+          prisma.invoice.count({ where: { clientId, status: "DRAFT" } }),
+          Promise.resolve(0),
+        ])
+    }
+  } else {
+    tutorCount = 0; clientCount = 0; projectCount = 0
+    pendingHours = 0; pendingInvoices = 0; newRequests = 0
+  }
 
   return (
     <div>
@@ -21,11 +78,17 @@ export default async function DashboardPage() {
         Welcome, {session?.user?.name}
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-        <StatCard label="Tutors" value={tutorCount} href="/dashboard/tutors" />
+        {admin && (
+          <StatCard label="Tutors" value={tutorCount} href="/dashboard/tutors" />
+        )}
         <StatCard label="Clients" value={clientCount} href="/dashboard/clients" />
         <StatCard label="Projects" value={projectCount} href="/dashboard/projects" />
-        <StatCard label="Pending Hours" value={pendingHours} href="/dashboard/hours" highlight />
-        <StatCard label="Draft Invoices" value={pendingInvoices} href="/dashboard/invoices" highlight />
+        {(admin || tutor) && (
+          <StatCard label="Pending Hours" value={pendingHours} href="/dashboard/hours" highlight />
+        )}
+        {!tutor && (
+          <StatCard label="Draft Invoices" value={pendingInvoices} href="/dashboard/invoices" highlight />
+        )}
         <StatCard label="New Requests" value={newRequests} href="/dashboard/requests" highlight />
       </div>
     </div>

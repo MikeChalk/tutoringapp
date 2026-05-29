@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db"
+import { requireAuth, isAdmin, isTutor, getTutorId } from "@/lib/auth-helpers"
 import { notFound } from "next/navigation"
 
 const GRADE_LABELS: Record<string, string> = {
@@ -11,7 +12,26 @@ const GRADE_LABELS: Record<string, string> = {
 }
 
 export default async function ProjectDetailPage(props: { params: Promise<{ id: string }> }) {
+  const session = await requireAuth()
+  const admin = isAdmin(session.user.role)
+  const tutor = isTutor(session.user.role)
+
   const { id } = await props.params
+
+  let hasAccess = true
+  if (tutor) {
+    const tutorId = await getTutorId(session.user.id)
+    if (!tutorId) {
+      hasAccess = false
+    } else {
+      const assignment = await prisma.projectTutor.findFirst({
+        where: { projectId: id, tutorId },
+      })
+      hasAccess = !!assignment
+    }
+  }
+
+  if (!hasAccess) notFound()
 
   const project = await prisma.project.findUnique({
     where: { id },

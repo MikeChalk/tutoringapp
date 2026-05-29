@@ -1,8 +1,23 @@
 import { prisma } from "@/lib/db"
+import { requireAuth, isAdmin, isTutor, getTutorId } from "@/lib/auth-helpers"
 
 export default async function RequestsPage() {
+  const session = await requireAuth()
+  const admin = isAdmin(session.user.role)
+  const tutor = isTutor(session.user.role)
+
+  let tutorId: string | null = null
+  let requestsWhere = {}
+  if (tutor) {
+    tutorId = await getTutorId(session.user.id)
+    if (tutorId) {
+      requestsWhere = { matchedTutorId: tutorId }
+    }
+  }
+
   const [requests, tutors] = await Promise.all([
     prisma.tutoringRequest.findMany({
+      where: requestsWhere,
       include: {
         matchedTutor: {
           include: { user: { select: { name: true } } },
@@ -13,10 +28,12 @@ export default async function RequestsPage() {
       },
       orderBy: { createdAt: "desc" },
     }),
-    prisma.tutor.findMany({
-      where: { isActive: true },
-      include: { user: { select: { name: true } } },
-    }),
+    admin
+      ? prisma.tutor.findMany({
+          where: { isActive: true },
+          include: { user: { select: { name: true } } },
+        })
+      : Promise.resolve([]),
   ])
 
   return (
@@ -26,9 +43,9 @@ export default async function RequestsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
+        <div className={`${admin ? "lg:col-span-2" : "lg:col-span-3"} bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6`}>
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">
-            All Requests
+            {tutor ? "My Matched Requests" : "All Requests"}
           </h3>
           {requests.length === 0 ? (
             <p className="text-sm text-zinc-500">No tutoring requests yet.</p>
@@ -50,6 +67,10 @@ export default async function RequestsPage() {
                           ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
                           : req.status === "MATCHED"
                           ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                          : req.status === "ACCEPTED"
+                          ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                          : req.status === "REJECTED"
+                          ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
                           : req.status === "COMPLETED"
                           ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
                           : "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"
@@ -69,105 +90,127 @@ export default async function RequestsPage() {
                       Matched with: {req.matchedTutor.user.name}
                     </p>
                   )}
+                  {tutor && req.status === "MATCHED" && tutorId && req.matchedTutorId === tutorId && (
+                    <div className="flex gap-2 mt-3">
+                      <form action={`/api/requests/${req.id}/accept`} method="POST">
+                        <button
+                          type="submit"
+                          className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 transition-colors"
+                        >
+                          Accept
+                        </button>
+                      </form>
+                      <form action={`/api/requests/${req.id}/reject`} method="POST">
+                        <button
+                          type="submit"
+                          className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 transition-colors"
+                        >
+                          Reject
+                        </button>
+                      </form>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
-          <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">
-            New Request
-          </h3>
-          <form action="/api/requests" method="POST" className="flex flex-col gap-4">
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                Name
-              </label>
-              <input
-                type="text"
-                name="name"
-                required
-                className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                Email
-              </label>
-              <input
-                type="email"
-                name="email"
-                required
-                className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                Phone
-              </label>
-              <input
-                type="text"
-                name="phone"
-                className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                Subject
-              </label>
-              <input
-                type="text"
-                name="subject"
-                required
-                className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                Description
-              </label>
-              <textarea
-                name="description"
-                rows={3}
-                className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                Preferred Schedule
-              </label>
-              <input
-                type="text"
-                name="preferredSchedule"
-                placeholder="e.g. Mon/Wed 3-5pm"
-                className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                Assign Tutor
-              </label>
-              <select
-                name="matchedTutorId"
-                className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        {admin && (
+          <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
+            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">
+              New Request
+            </h3>
+            <form action="/api/requests" method="POST" className="flex flex-col gap-4">
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  required
+                  className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  required
+                  className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                  Phone
+                </label>
+                <input
+                  type="text"
+                  name="phone"
+                  className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                  Subject
+                </label>
+                <input
+                  type="text"
+                  name="subject"
+                  required
+                  className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                  Description
+                </label>
+                <textarea
+                  name="description"
+                  rows={3}
+                  className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                  Preferred Schedule
+                </label>
+                <input
+                  type="text"
+                  name="preferredSchedule"
+                  placeholder="e.g. Mon/Wed 3-5pm"
+                  className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                  Assign Tutor
+                </label>
+                <select
+                  name="matchedTutorId"
+                  className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Auto-match later</option>
+                  {tutors.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.user.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button
+                type="submit"
+                className="w-full rounded-lg bg-zinc-900 dark:bg-white px-4 py-2.5 text-sm font-medium text-white dark:text-zinc-900 hover:opacity-90 transition-opacity"
               >
-                <option value="">Auto-match later</option>
-                {tutors.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.user.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <button
-              type="submit"
-              className="w-full rounded-lg bg-zinc-900 dark:bg-white px-4 py-2.5 text-sm font-medium text-white dark:text-zinc-900 hover:opacity-90 transition-opacity"
-            >
-              Submit Request
-            </button>
-          </form>
-        </div>
+                Submit Request
+              </button>
+            </form>
+          </div>
+        )}
       </div>
     </div>
   )

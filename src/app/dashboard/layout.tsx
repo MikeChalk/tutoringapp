@@ -4,15 +4,30 @@ import { signOut, useSession } from "next-auth/react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
-const links = [
+const adminLinks = [
   { href: "/dashboard", label: "Overview" },
   { href: "/dashboard/tutors", label: "Tutors" },
   { href: "/dashboard/clients", label: "Clients" },
-  { href: "/dashboard/projects", label: "Projects" },
+  { href: "/dashboard/projects", label: "Students" },
   { href: "/dashboard/hours", label: "Log Hours" },
   { href: "/dashboard/invoices", label: "Invoices" },
   { href: "/dashboard/requests", label: "Requests" },
   { href: "/dashboard/onboarding", label: "Onboarding" },
+]
+
+const tutorLinks = [
+  { href: "/dashboard", label: "Overview" },
+  { href: "/dashboard/clients", label: "My Clients" },
+  { href: "/dashboard/projects", label: "My Students" },
+  { href: "/dashboard/hours", label: "Log Hours" },
+  { href: "/dashboard/requests", label: "Offers" },
+  { href: "/dashboard/payments", label: "My Payments" },
+]
+
+const clientLinks = [
+  { href: "/dashboard", label: "Overview" },
+  { href: "/dashboard/projects", label: "My Students" },
+  { href: "/dashboard/invoices", label: "Invoices" },
 ]
 
 export default function DashboardLayout({
@@ -22,6 +37,8 @@ export default function DashboardLayout({
 }) {
   const { data: session } = useSession()
   const pathname = usePathname()
+  const role = session?.user?.role
+  const links = role === "ADMIN" ? adminLinks : role === "TUTOR" ? tutorLinks : clientLinks
 
   return (
     <div className="flex min-h-screen">
@@ -40,7 +57,7 @@ export default function DashboardLayout({
               key={link.href}
               href={link.href}
               className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                pathname === link.href
+                pathname === link.href || (link.href !== "/dashboard" && pathname.startsWith(link.href))
                   ? "bg-zinc-100 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100"
                   : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700/50"
               }`}

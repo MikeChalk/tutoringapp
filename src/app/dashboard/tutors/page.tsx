@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/db"
+import { requireAuth, isAdmin } from "@/lib/auth-helpers"
+import { redirect } from "next/navigation"
 import Link from "next/link"
 
 const TENURE_LABELS: Record<string, string> = {
@@ -8,6 +10,9 @@ const TENURE_LABELS: Record<string, string> = {
 }
 
 export default async function TutorsPage() {
+  const session = await requireAuth()
+  if (!isAdmin(session.user.role)) redirect("/dashboard")
+
   const tutors = await prisma.tutor.findMany({
     include: { user: { select: { name: true, email: true } } },
     orderBy: { createdAt: "desc" },

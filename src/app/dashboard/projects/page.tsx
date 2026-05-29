@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db"
+import { requireAuth, isAdmin, isTutor, getTutorId } from "@/lib/auth-helpers"
 import Link from "next/link"
 
 const GRADE_LABELS: Record<string, string> = {
@@ -11,7 +12,20 @@ const GRADE_LABELS: Record<string, string> = {
 }
 
 export default async function ProjectsPage() {
+  const session = await requireAuth()
+  const admin = isAdmin(session.user.role)
+  const tutor = isTutor(session.user.role)
+
+  let whereClause = {}
+  if (tutor) {
+    const tutorId = await getTutorId(session.user.id)
+    if (tutorId) {
+      whereClause = { projectTutors: { some: { tutorId } } }
+    }
+  }
+
   const projects = await prisma.project.findMany({
+    where: whereClause,
     include: {
       client: { include: { user: { select: { name: true } } } },
       projectTutors: {
