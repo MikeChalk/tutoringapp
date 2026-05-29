@@ -11,6 +11,20 @@ const GRADE_LABELS: Record<string, string> = {
   UNI: "University",
 }
 
+const STATUS_COLORS: Record<string, string> = {
+  IN_PROGRESS: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  ON_HOLD: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+  FINISHED: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  CANCELLED: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  IN_PROGRESS: "In Progress",
+  ON_HOLD: "On Hold",
+  FINISHED: "Finished",
+  CANCELLED: "Cancelled",
+}
+
 export default async function ProjectDetailPage(props: { params: Promise<{ id: string }> }) {
   const session = await requireAuth()
   const admin = isAdmin(session.user.role)
@@ -59,12 +73,28 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
     where: { gradeLevel: project.gradeLevel },
   })
 
+  const subjectList = project.subjects ? project.subjects.split(",").map((s) => s.trim()).filter(Boolean) : []
+
   return (
     <div>
-      <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">{project.name}</h2>
-      <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
-        Client: {project.client.user.name} &middot; {GRADE_LABELS[project.gradeLevel]} &middot; {project.subject}
+      <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-1">{project.name}</h2>
+      {project.school && (
+        <p className="text-base font-medium text-zinc-600 dark:text-zinc-300 mb-1">{project.school}</p>
+      )}
+      <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-2">
+        Client: {project.client.user.name} &middot; {GRADE_LABELS[project.gradeLevel]} &middot; Started {new Date(project.createdAt).toLocaleDateString()}
       </p>
+
+      <div className="flex flex-wrap gap-2 mb-6">
+        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[project.status] || "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"}`}>
+          {STATUS_LABELS[project.status] || project.status}
+        </span>
+        {subjectList.map((subject) => (
+          <span key={subject} className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+            {subject}
+          </span>
+        ))}
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">

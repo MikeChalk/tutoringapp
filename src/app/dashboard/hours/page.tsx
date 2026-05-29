@@ -16,6 +16,13 @@ const TENURE_LABELS: Record<string, string> = {
   "3RD_YEAR": "Year 3",
 }
 
+const STATUS_COLORS: Record<string, string> = {
+  IN_PROGRESS: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  ON_HOLD: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+  FINISHED: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  CANCELLED: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+}
+
 export default async function HoursPage() {
   const session = await requireAuth()
   const tutor = isTutor(session.user.role)
@@ -38,7 +45,7 @@ export default async function HoursPage() {
       where: tutor && tutorId ? { tutorId } : {},
       include: {
         tutor: { include: { user: { select: { name: true } } } },
-        project: { select: { name: true, gradeLevel: true, client: { select: { user: { select: { name: true } } } } } },
+        project: { select: { name: true, status: true, client: { select: { user: { select: { name: true } } } } } },
       },
       orderBy: { date: "desc" },
       take: 50,
@@ -98,7 +105,12 @@ export default async function HoursPage() {
                         {new Date(log.date).toLocaleDateString()}
                       </td>
                       <td className="px-2 py-2 text-zinc-900 dark:text-zinc-100">{log.tutor.user.name}</td>
-                      <td className="px-2 py-2 text-zinc-900 dark:text-zinc-100">{log.project.name}</td>
+                      <td className="px-2 py-2">
+                        <span className="text-zinc-900 dark:text-zinc-100">{log.project.name}</span>
+                        <span className={`inline-flex text-xs font-medium rounded-full px-2 py-0.5 ml-2 ${STATUS_COLORS[log.project.status] || "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"}`}>
+                          {log.project.status}
+                        </span>
+                      </td>
                       <td className="px-2 py-2 text-zinc-600 dark:text-zinc-400">{log.project.client.user.name}</td>
                       <td className="px-2 py-2">
                         <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${

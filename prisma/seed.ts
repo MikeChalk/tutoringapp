@@ -188,7 +188,8 @@ async function main() {
     data: {
       name: "Lucas Dupont — Math",
       description: "Sec 3 math tutoring",
-      subject: "Mathematics",
+      subjects: "Math, Study Skills",
+      school: "École Secondaire St-Luc",
       gradeLevel: "SEC3",
       clientId: client1.id,
     },
@@ -199,7 +200,8 @@ async function main() {
     data: {
       name: "Chloe Dupont — Science",
       description: "Elementary science enrichment",
-      subject: "Science",
+      subjects: "Science, Reading",
+      school: "École Primaire Soleil",
       gradeLevel: "ELEMENTARY",
       clientId: client1.id,
     },
@@ -210,7 +212,8 @@ async function main() {
     data: {
       name: "Camille Lambert — Math",
       description: "Sec 5 math, ministry exam prep",
-      subject: "Mathematics",
+      subjects: "Math, Executive Functioning",
+      school: "Collège Jean-de-Brébeuf",
       gradeLevel: "SEC4_5",
       clientId: client2.id,
     },
@@ -221,7 +224,8 @@ async function main() {
     data: {
       name: "Alexandre Tremblay — Physics",
       description: "CEGEP physics, mechanics",
-      subject: "Physics",
+      subjects: "Physics, Mechanics",
+      school: "Dawson College",
       gradeLevel: "CEGEP",
       clientId: client3.id,
     },
@@ -232,7 +236,8 @@ async function main() {
     data: {
       name: "Sophie Lambert — English",
       description: "Sec 1 English tutoring",
-      subject: "English",
+      subjects: "English, Writing",
+      school: "Royal West Academy",
       gradeLevel: "SEC1_2",
       clientId: client2.id,
     },
@@ -243,7 +248,8 @@ async function main() {
     data: {
       name: "Marc Tremblay — Chemistry",
       description: "UNI chemistry, first year",
-      subject: "Chemistry",
+      subjects: "Chemistry, Chemistry 1",
+      school: "McGill University",
       gradeLevel: "UNI",
       clientId: client3.id,
     },

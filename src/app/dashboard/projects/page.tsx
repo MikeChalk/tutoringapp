@@ -11,17 +11,30 @@ const GRADE_LABELS: Record<string, string> = {
   UNI: "University",
 }
 
-export default async function ProjectsPage() {
+const STATUS_COLORS: Record<string, string> = {
+  IN_PROGRESS: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  ON_HOLD: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+  FINISHED: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  CANCELLED: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+}
+
+export default async function ProjectsPage(props: { searchParams: Promise<{ showAll?: string }> }) {
   const session = await requireAuth()
   const admin = isAdmin(session.user.role)
   const tutor = isTutor(session.user.role)
 
-  let whereClause = {}
+  const { showAll } = await props.searchParams
+  const showAllProjects = showAll === "1"
+
+  let whereClause: Record<string, unknown> = {}
   if (tutor) {
     const tutorId = await getTutorId(session.user.id)
     if (tutorId) {
       whereClause = { projectTutors: { some: { tutorId } } }
     }
+  }
+  if (!showAllProjects) {
+    whereClause = { ...whereClause, status: "IN_PROGRESS" }
   }
 
   const projects = await prisma.project.findMany({
@@ -40,11 +53,26 @@ export default async function ProjectsPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Students / Projects</h2>
+        <form id="showAllForm">
+          <label className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400 cursor-pointer select-none">
+            <input
+              id="showAllCheckbox"
+              type="checkbox"
+              name="showAll"
+              value="1"
+              defaultChecked={showAllProjects}
+              className="rounded border-zinc-300 dark:border-zinc-600"
+            />
+            Show All
+          </label>
+        </form>
+        <script dangerouslySetInnerHTML={{ __html: `document.getElementById('showAllCheckbox')?.addEventListener('change',function(){this.form.requestSubmit()})` }} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {projects.map((project) => {
           const totalHours = project.hourLogs.reduce((sum, h) => sum + h.hours, 0)
+          const subjectList = project.subjects ? project.subjects.split(",").map((s) => s.trim()).filter(Boolean) : []
           return (
             <Link
               key={project.id}
@@ -55,20 +83,22 @@ export default async function ProjectsPage() {
               <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
                 {project.client.user.name}
               </p>
+              {project.school && (
+                <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">{project.school}</p>
+              )}
+              <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
+                {new Date(project.createdAt).toLocaleDateString()}
+              </p>
               <div className="flex flex-wrap gap-2 mt-2">
                 <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
                   {GRADE_LABELS[project.gradeLevel] || project.gradeLevel}
                 </span>
-                {project.subject && (
-                  <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                    {project.subject}
+                {subjectList.map((subject) => (
+                  <span key={subject} className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                    {subject}
                   </span>
-                )}
-                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                  project.status === "ACTIVE"
-                    ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                    : "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"
-                }`}>
+                ))}
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[project.status] || "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"}`}>
                   {project.status}
                 </span>
               </div>

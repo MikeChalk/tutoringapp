@@ -97,9 +97,10 @@ model Project {
   id          String   @id @default(cuid())
   name        String
   description String?
-  subject     String   @default("")
+  subjects    String   @default("")
+  school      String   @default("")
   gradeLevel  String   @default("ELEMENTARY")
-  status      String   @default("ACTIVE")
+  status      String   @default("IN_PROGRESS")
   clientId    String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
