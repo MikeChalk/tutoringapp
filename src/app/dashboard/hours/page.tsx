@@ -62,8 +62,8 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
   ])
 
   const ratesJson = JSON.stringify({
-    billing: billingRates.map(r => ({ g: r.gradeLevel, m: r.mode, r: r.rate })),
-    pay: payScales.map(s => ({ t: s.tenure, g: s.gradeLevel, m: s.mode, r: s.rate })),
+    billing: billingRates.map(r => ({ g: r.gradeLevel, m: r.mode, p: r.projectType, r: r.rate })),
+    pay: payScales.map(s => ({ t: s.tenure, g: s.gradeLevel, m: s.mode, p: s.projectType, r: s.rate })),
   })
 
   const tutorProjectsMap: Record<string, string[]> = {}
@@ -268,6 +268,7 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
             var grade = projectSelect && projectSelect.value ? (projectSelect.querySelector('option[value="' + projectSelect.value.replace(/"/g, '\\\\"') + '"]') || {}).dataset.grade : null;
             var mode = modeSelect && modeSelect.value;
             var tenure = tutorSelect && tutorSelect.value ? (tutorSelect.querySelector('option[value="' + tutorSelect.value.replace(/"/g, '\\\\"') + '"]') || {}).dataset.tenure : null;
+            var ptype = projectSelect && projectSelect.value ? (projectSelect.querySelector('option[value="' + projectSelect.value.replace(/"/g, '\\\\"') + '"]') || {}).dataset.type : null;
 
             if (!grade || !mode) {
               if (billingDisplay) billingDisplay.textContent = '--';
@@ -278,11 +279,11 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
             var billing = null;
             var pay = null;
             for (var i = 0; i < RATES.billing.length; i++) {
-              if (RATES.billing[i].g === grade && RATES.billing[i].m === mode) { billing = RATES.billing[i].r; break; }
+              if (RATES.billing[i].g === grade && RATES.billing[i].m === mode && RATES.billing[i].p === ptype) { billing = RATES.billing[i].r; break; }
             }
             if (tenure) {
               for (var j = 0; j < RATES.pay.length; j++) {
-                if (RATES.pay[j].t === tenure && RATES.pay[j].g === grade && RATES.pay[j].m === mode) { pay = RATES.pay[j].r; break; }
+                if (RATES.pay[j].t === tenure && RATES.pay[j].g === grade && RATES.pay[j].m === mode && RATES.pay[j].p === ptype) { pay = RATES.pay[j].r; break; }
               }
             }
 

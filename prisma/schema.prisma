@@ -211,23 +211,25 @@ model TutoringRequest {
 }
 
 model BillingRate {
-  id         String @id @default(cuid())
-  gradeLevel String
-  mode       String
-  rate       Float
+  id          String @id @default(cuid())
+  gradeLevel  String
+  mode        String
+  projectType String @default("STUDENT")
+  rate        Float
 
-  @@unique([gradeLevel, mode])
+  @@unique([gradeLevel, mode, projectType])
   @@map("billing_rates")
 }
 
 model PayScale {
-  id         String @id @default(cuid())
-  tenure     String
-  gradeLevel String
-  mode       String
-  rate       Float
+  id          String @id @default(cuid())
+  tenure      String
+  gradeLevel  String
+  mode        String
+  projectType String @default("STUDENT")
+  rate        Float
 
-  @@unique([tenure, gradeLevel, mode])
+  @@unique([tenure, gradeLevel, mode, projectType])
   @@map("pay_scales")
 }
 

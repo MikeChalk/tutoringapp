@@ -54,10 +54,10 @@ export async function POST(request: Request) {
     tutorPayRate = parseFloat(manualPay)
   } else {
     const br = await prisma.billingRate.findFirst({
-      where: { gradeLevel: project.gradeLevel, mode },
+      where: { gradeLevel: project.gradeLevel, mode, projectType: project.projectType },
     })
     const ps = await prisma.payScale.findFirst({
-      where: { tenure: tutor.tenure, gradeLevel: project.gradeLevel, mode },
+      where: { tenure: tutor.tenure, gradeLevel: project.gradeLevel, mode, projectType: project.projectType },
     })
     if (!br || !ps) {
       return NextResponse.json({ error: "Rate not found" }, { status: 400 })
