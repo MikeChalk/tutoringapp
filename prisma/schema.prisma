@@ -322,6 +322,13 @@ model CompanySettings {
   invoicePrefix   String  @default("INV-")
   invoiceNotes    String  @default("Thank you for your business!")
   defaultTaxRate  Float   @default(0)
+  stripeEnabled   Boolean @default(false)
+  smsEnabled      Boolean @default(false)
+  openaiEnabled   Boolean @default(false)
+  twilioSid       String  @default("")
+  twilioToken     String  @default("")
+  twilioFrom      String  @default("")
+  openaiKey       String  @default("")
 
   @@map("company_settings")
 }
