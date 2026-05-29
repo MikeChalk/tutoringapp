@@ -13,7 +13,7 @@ const GRADE_LABELS: Record<string, string> = {
 const TENURE_LABELS: Record<string, string> = {
   "1ST_YEAR": "Year 1",
   "2ND_YEAR": "Year 2",
-  "3RD_YEAR": "Year 3",
+  "3RD_YEAR": "Year 3+",
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -33,7 +33,7 @@ export default async function HoursPage() {
     tutorId = await getTutorId(session.user.id, session.user.email)
   }
 
-  const [hourLogs, projects, tutors] = await Promise.all([
+  const [hourLogs, projects, tutors, billingRates, payScales] = await Promise.all([
     prisma.hourLog.findMany({
       where: tutor && tutorId ? { tutorId } : {},
       include: {
@@ -62,7 +62,14 @@ export default async function HoursPage() {
           where: { isActive: true },
           include: { user: { select: { name: true } } },
         }),
+    prisma.billingRate.findMany(),
+    prisma.payScale.findMany(),
   ])
+
+  const ratesJson = JSON.stringify({
+    billing: billingRates.map(r => ({ g: r.gradeLevel, m: r.mode, r: r.rate })),
+    pay: payScales.map(s => ({ t: s.tenure, g: s.gradeLevel, m: s.mode, r: s.rate })),
+  })
 
   return (
     <div>
@@ -195,23 +202,18 @@ export default async function HoursPage() {
       </div>
 
       <script dangerouslySetInnerHTML={{ __html: `
-        document.addEventListener('DOMContentLoaded', function() {
-          const projectSelect = document.getElementById('projectSelect');
-          const tutorSelect = document.getElementById('tutorSelect');
-          const modeSelect = document.getElementById('modeSelect');
-          const billingDisplay = document.getElementById('billingRateDisplay');
-          const payDisplay = document.getElementById('payRateDisplay');
+        (function() {
+          var RATES = ${ratesJson};
+          var projectSelect = document.getElementById('projectSelect');
+          var tutorSelect = document.getElementById('tutorSelect');
+          var modeSelect = document.getElementById('modeSelect');
+          var billingDisplay = document.getElementById('billingRateDisplay');
+          var payDisplay = document.getElementById('payRateDisplay');
 
-          function getOptionData(select, attr) {
-            if (!select || !select.value) return null;
-            const opt = select.querySelector('option[value="' + select.value + '"]');
-            return opt ? opt.dataset[attr] : null;
-          }
-
-          async function updateRates() {
-            const grade = getOptionData(projectSelect, 'grade');
-            const mode = modeSelect?.value;
-            const tenure = getOptionData(tutorSelect, 'tenure');
+          function updateRates() {
+            var grade = projectSelect && projectSelect.value ? (projectSelect.querySelector('option[value="' + projectSelect.value.replace(/"/g, '\\"') + '"]') || {}).dataset.grade : null;
+            var mode = modeSelect && modeSelect.value;
+            var tenure = tutorSelect && tutorSelect.value ? (tutorSelect.querySelector('option[value="' + tutorSelect.value.replace(/"/g, '\\"') + '"]') || {}).dataset.tenure : null;
 
             if (!grade || !mode) {
               if (billingDisplay) billingDisplay.textContent = '--';
@@ -219,29 +221,26 @@ export default async function HoursPage() {
               return;
             }
 
-            const params = new URLSearchParams({ gradeLevel: grade, mode });
-            if (tenure) params.set('tenure', tenure);
-
-            try {
-              const res = await fetch('/api/rates?' + params.toString());
-              const data = await res.json();
-              if (billingDisplay) {
-                billingDisplay.textContent = data.billingRate != null ? '$' + data.billingRate.toFixed(2) + '/hr' : '--';
-              }
-              if (payDisplay) {
-                payDisplay.textContent = data.payRate != null ? '$' + data.payRate.toFixed(2) + '/hr' : '--';
-              }
-            } catch(e) {
-              if (billingDisplay) billingDisplay.textContent = 'Error';
-              if (payDisplay) payDisplay.textContent = 'Error';
+            var billing = null;
+            var pay = null;
+            for (var i = 0; i < RATES.billing.length; i++) {
+              if (RATES.billing[i].g === grade && RATES.billing[i].m === mode) { billing = RATES.billing[i].r; break; }
             }
+            if (tenure) {
+              for (var j = 0; j < RATES.pay.length; j++) {
+                if (RATES.pay[j].t === tenure && RATES.pay[j].g === grade && RATES.pay[j].m === mode) { pay = RATES.pay[j].r; break; }
+              }
+            }
+
+            if (billingDisplay) billingDisplay.textContent = billing != null ? '$' + billing.toFixed(2) + '/hr' : '--';
+            if (payDisplay) payDisplay.textContent = pay != null ? '$' + pay.toFixed(2) + '/hr' : '--';
           }
 
-          projectSelect?.addEventListener('change', updateRates);
-          tutorSelect?.addEventListener('change', updateRates);
-          modeSelect?.addEventListener('change', updateRates);
+          if (projectSelect) projectSelect.addEventListener('change', updateRates);
+          if (tutorSelect) tutorSelect.addEventListener('change', updateRates);
+          if (modeSelect) modeSelect.addEventListener('change', updateRates);
           updateRates();
-        });
+        })();
       `}} />
     </div>
   )

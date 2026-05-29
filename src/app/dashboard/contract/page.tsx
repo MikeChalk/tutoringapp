@@ -11,7 +11,7 @@ const TYPE_LABELS: Record<string, string> = {
 const YEAR_LABELS: Record<string, string> = {
   "1ST_YEAR": "Year 1",
   "2ND_YEAR": "Year 2",
-  "3RD_YEAR": "Year 3",
+  "3RD_YEAR": "Year 3+",
 }
 
 export default async function ContractPage() {

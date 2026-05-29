@@ -5,7 +5,7 @@ import { redirect, notFound } from "next/navigation"
 const TENURE_LABELS: Record<string, string> = {
   "1ST_YEAR": "Year 1",
   "2ND_YEAR": "Year 2",
-  "3RD_YEAR": "Year 3",
+  "3RD_YEAR": "Year 3+",
 }
 
 const GRADE_LABELS: Record<string, string> = {
