@@ -525,7 +525,8 @@ async function main() {
   })
 
   console.log("Seed complete!")
-  console.log(`Created: admin, 3 tutors, 3 clients, 6 projects, 5 hour logs`)
+  console.log("Montreal: 1 admin, 5 tutors, 3 clients, 6 projects, 5 hour logs, 2 contracts")
+  console.log("Toronto: 1 city admin, 1 tutor, 1 client, 2 projects")
   console.log("All passwords: password123")
 }
 
