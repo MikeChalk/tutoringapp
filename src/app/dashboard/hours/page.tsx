@@ -114,12 +114,20 @@ export default async function HoursPage() {
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Log New Hours</h3>
           <form action="/api/hours" method="POST" className="flex flex-col gap-4" id="hourLogForm">
             <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Project (Student)</label>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Project Type</label>
+              <select id="projectTypeSelect"
+                className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="STUDENT">Private Tutoring</option>
+                <option value="STUDY_HALL">Other Projects</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Project</label>
               <select name="projectId" required id="projectSelect"
                 className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="">Select student</option>
+                <option value="">Select project</option>
                 {projects.map((p) => (
-                  <option key={p.id} value={p.id} data-grade={p.gradeLevel}>
+                  <option key={p.id} value={p.id} data-grade={p.gradeLevel} data-type={p.projectType || "STUDENT"}>
                     {p.name} — {p.client?.user.name || "Other"} ({GRADE_LABELS[p.gradeLevel] || p.gradeLevel})
                   </option>
                 ))}
@@ -200,6 +208,24 @@ export default async function HoursPage() {
           var modeSelect = document.getElementById('modeSelect');
           var billingDisplay = document.getElementById('billingRateDisplay');
           var payDisplay = document.getElementById('payRateDisplay');
+          var typeSelect = document.getElementById('projectTypeSelect');
+
+          function filterProjects() {
+            var type = typeSelect && typeSelect.value;
+            if (!projectSelect) return;
+            var opts = projectSelect.options;
+            var found = false;
+            for (var i = 0; i < opts.length; i++) {
+              if (opts[i].value === '') continue;
+              var show = !type || (opts[i].dataset.type === type);
+              opts[i].style.display = show ? '' : 'none';
+              if (show && !found) { found = true; }
+            }
+            if (!projectSelect.value || !found) {
+              projectSelect.value = '';
+            }
+            updateRates();
+          }
 
           function updateRates() {
             var grade = projectSelect && projectSelect.value ? (projectSelect.querySelector('option[value="' + projectSelect.value.replace(/"/g, '\\"') + '"]') || {}).dataset.grade : null;
@@ -223,19 +249,20 @@ export default async function HoursPage() {
               }
             }
 
-          if (billingDisplay) billingDisplay.textContent = billing != null ? '$' + billing.toFixed(2) + '/hr' : '--';
-          if (payDisplay) payDisplay.textContent = pay != null ? '$' + pay.toFixed(2) + '/hr' : '--';
+            if (billingDisplay) billingDisplay.textContent = billing != null ? '$' + billing.toFixed(2) + '/hr' : '--';
+            if (payDisplay) payDisplay.textContent = pay != null ? '$' + pay.toFixed(2) + '/hr' : '--';
 
-          var billingInput = document.getElementById('billingRateInput');
-          var payInput = document.getElementById('payRateInput');
-          if (billingInput && !billingInput.value) billingInput.placeholder = billing != null ? billing.toFixed(2) : '';
-          if (payInput && !payInput.value) payInput.placeholder = pay != null ? pay.toFixed(2) : '';
-        }
+            var billingInput = document.getElementById('billingRateInput');
+            var payInput = document.getElementById('payRateInput');
+            if (billingInput && !billingInput.value) billingInput.placeholder = billing != null ? billing.toFixed(2) : '';
+            if (payInput && !payInput.value) payInput.placeholder = pay != null ? pay.toFixed(2) : '';
+          }
 
           if (projectSelect) projectSelect.addEventListener('change', updateRates);
           if (tutorSelect) tutorSelect.addEventListener('change', updateRates);
           if (modeSelect) modeSelect.addEventListener('change', updateRates);
-          updateRates();
+          if (typeSelect) typeSelect.addEventListener('change', filterProjects);
+          filterProjects();
         })();
       `}} />
     </div>
