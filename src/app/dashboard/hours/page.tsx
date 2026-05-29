@@ -167,16 +167,27 @@ export default async function HoursPage() {
               </select>
             </div>
             <div className="bg-zinc-50 dark:bg-zinc-900 rounded-lg p-3 border border-zinc-200 dark:border-zinc-700">
-              {!tutor && (
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-zinc-500">Billing Rate:</span>
-                  <span className="font-medium text-zinc-900 dark:text-zinc-100" id="billingRateDisplay">--</span>
-                </div>
+              {!tutor ? (
+                <>
+                  <div className="mb-2">
+                    <label className="block text-xs text-zinc-500 mb-1">Billing Rate ($/hr)</label>
+                    <input type="number" name="billingRate" required min="0" step="0.01" defaultValue="30"
+                      className="w-full rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-zinc-500 mb-1">Tutor Pay Rate ($/hr)</label>
+                    <input type="number" name="tutorPayRate" required min="0" step="0.01" defaultValue="20"
+                      className="w-full rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-zinc-500">Your Pay Rate:</span>
+                    <span className="font-medium text-green-600 dark:text-green-400" id="payRateDisplay">--</span>
+                  </div>
+                </>
               )}
-              <div className="flex justify-between text-sm">
-                <span className="text-zinc-500">Your Pay Rate:</span>
-                <span className="font-medium text-green-600 dark:text-green-400" id="payRateDisplay">--</span>
-              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Date</label>

@@ -11,6 +11,13 @@ const GRADE_LABELS: Record<string, string> = {
   UNI: "University",
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  IN_PROGRESS: "In Progress",
+  ON_HOLD: "On Hold",
+  FINISHED: "Finished",
+  CANCELLED: "Cancelled",
+}
+
 const STATUS_COLORS: Record<string, string> = {
   IN_PROGRESS: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
   ON_HOLD: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
@@ -18,23 +25,25 @@ const STATUS_COLORS: Record<string, string> = {
   CANCELLED: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
 }
 
-export default async function ProjectsPage(props: { searchParams: Promise<{ showAll?: string }> }) {
+export default async function ProjectsPage(props: { searchParams: Promise<{ status?: string }> }) {
   const session = await requireAuth()
   const admin = isAdmin(session.user.role)
   const tutor = isTutor(session.user.role)
 
-  const { showAll } = await props.searchParams
-  const showAllProjects = showAll === "1"
+  const { status: statusFilter } = await props.searchParams
 
   let whereClause: Record<string, unknown> = {}
   if (tutor) {
     const tutorId = await getTutorId(session.user.id, session.user.email)
     if (tutorId) {
-      whereClause = { projectTutors: { some: { tutorId } } }
+      whereClause = { projectTutors: { some: { tutorId } }, status: "IN_PROGRESS" }
     }
-  }
-  if (!showAllProjects) {
-    whereClause = { ...whereClause, status: "IN_PROGRESS" }
+  } else {
+    if (!statusFilter || statusFilter === "ALL") {
+      whereClause = {}
+    } else {
+      whereClause = { status: statusFilter }
+    }
   }
 
   const projects = await prisma.project.findMany({
@@ -53,20 +62,22 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ show
     <div>
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Students / Projects</h2>
-        <form id="showAllForm">
-          <label className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400 cursor-pointer select-none">
-            <input
-              id="showAllCheckbox"
-              type="checkbox"
-              name="showAll"
-              value="1"
-              defaultChecked={showAllProjects}
-              className="rounded border-zinc-300 dark:border-zinc-600"
-            />
-            Show All
-          </label>
-        </form>
-        <script dangerouslySetInnerHTML={{ __html: `document.getElementById('showAllCheckbox')?.addEventListener('change',function(){this.form.requestSubmit()})` }} />
+        {admin && (
+          <form id="statusForm">
+            <select
+              name="status"
+              defaultValue={statusFilter || "IN_PROGRESS"}
+              id="statusFilterSelect"
+              className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-1.5 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="ALL">All</option>
+              <option value="IN_PROGRESS">In Progress</option>
+              <option value="ON_HOLD">On Hold</option>
+              <option value="FINISHED">Finished</option>
+              <option value="CANCELLED">Cancelled</option>
+            </select>
+          </form>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -99,7 +110,7 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ show
                   </span>
                 ))}
                 <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[project.status] || "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"}`}>
-                  {project.status}
+                  {STATUS_LABELS[project.status] || project.status}
                 </span>
               </div>
               <div className="flex items-center gap-4 mt-4 text-sm">
@@ -115,9 +126,10 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ show
           )
         })}
         {projects.length === 0 && (
-          <p className="text-sm text-zinc-500 col-span-full">No projects yet.</p>
+          <p className="text-sm text-zinc-500 col-span-full">No projects found.</p>
         )}
       </div>
+      {admin && <script dangerouslySetInnerHTML={{ __html: `document.getElementById('statusFilterSelect').addEventListener('change',function(){this.form.requestSubmit()})` }} />}
     </div>
   )
 }

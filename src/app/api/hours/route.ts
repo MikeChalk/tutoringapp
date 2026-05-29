@@ -15,6 +15,8 @@ export async function POST(request: Request) {
   const hours = parseFloat(formData.get("hours") as string)
   const mode = (formData.get("mode") as string) || "IN_PERSON"
   const description = formData.get("description") as string
+  const manualBilling = formData.get("billingRate") as string
+  const manualPay = formData.get("tutorPayRate") as string
 
   if (!projectId || !tutorId || !date || !hours) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 })
@@ -27,23 +29,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Project or tutor not found" }, { status: 400 })
   }
 
-  const gradeLevel = project.gradeLevel
-  const tenure = tutor.tenure
+  let billingRate: number
+  let tutorPayRate: number
 
-  const billingRate = await prisma.billingRate.findFirst({
-    where: { gradeLevel, mode },
-  })
-
-  const payScale = await prisma.payScale.findFirst({
-    where: { tenure, gradeLevel, mode },
-  })
-
-  if (!billingRate) {
-    return NextResponse.json({ error: `No billing rate found for ${gradeLevel} ${mode}` }, { status: 400 })
-  }
-
-  if (!payScale) {
-    return NextResponse.json({ error: `No pay scale found for ${tenure} ${gradeLevel} ${mode}` }, { status: 400 })
+  if (manualBilling && manualPay) {
+    billingRate = parseFloat(manualBilling)
+    tutorPayRate = parseFloat(manualPay)
+  } else {
+    const br = await prisma.billingRate.findFirst({
+      where: { gradeLevel: project.gradeLevel, mode },
+    })
+    const ps = await prisma.payScale.findFirst({
+      where: { tenure: tutor.tenure, gradeLevel: project.gradeLevel, mode },
+    })
+    if (!br || !ps) {
+      return NextResponse.json({ error: "Rate not found" }, { status: 400 })
+    }
+    billingRate = br.rate
+    tutorPayRate = ps.rate
   }
 
   await prisma.hourLog.create({
@@ -53,8 +56,8 @@ export async function POST(request: Request) {
       date: new Date(date),
       hours,
       mode,
-      billingRate: billingRate.rate,
-      tutorPayRate: payScale.rate,
+      billingRate,
+      tutorPayRate,
       description: description || null,
     },
   })
