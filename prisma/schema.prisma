@@ -60,7 +60,7 @@ model Tutor {
   userId      String    @unique
   bio         String?
   subjects    String    @default("")
-  hourlyRate  Float     @default(0)
+  tenure      String    @default("1ST_YEAR")
   isActive    Boolean   @default(true)
   onboarded   Boolean   @default(false)
   onboardedAt DateTime?
@@ -97,8 +97,9 @@ model Project {
   id          String   @id @default(cuid())
   name        String
   description String?
+  subject     String   @default("")
+  gradeLevel  String   @default("ELEMENTARY")
   status      String   @default("ACTIVE")
-  hourlyRate  Float    @default(0)
   clientId    String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -125,15 +126,18 @@ model ProjectTutor {
 }
 
 model HourLog {
-  id          String   @id @default(cuid())
-  tutorId     String
-  projectId   String
-  date        DateTime
-  hours       Float
-  description String?
-  status      String   @default("PENDING")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(cuid())
+  tutorId      String
+  projectId    String
+  date         DateTime
+  hours        Float
+  mode         String   @default("IN_PERSON")
+  billingRate  Float    @default(0)
+  tutorPayRate Float    @default(0)
+  description  String?
+  status       String   @default("PENDING")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   tutor        Tutor         @relation(fields: [tutorId], references: [id], onDelete: Cascade)
   project      Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -196,4 +200,25 @@ model TutoringRequest {
   client       Client? @relation("RequestClient", fields: [clientId], references: [id], onDelete: SetNull)
 
   @@map("tutoring_requests")
+}
+
+model BillingRate {
+  id         String @id @default(cuid())
+  gradeLevel String
+  mode       String
+  rate       Float
+
+  @@unique([gradeLevel, mode])
+  @@map("billing_rates")
+}
+
+model PayScale {
+  id         String @id @default(cuid())
+  tenure     String
+  gradeLevel String
+  mode       String
+  rate       Float
+
+  @@unique([tenure, gradeLevel, mode])
+  @@map("pay_scales")
 }

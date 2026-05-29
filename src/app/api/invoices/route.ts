@@ -17,7 +17,8 @@ export async function POST(request: Request) {
   }
 
   const today = new Date()
-  const dueDate = new Date(today.setDate(today.getDate() + 30))
+  const dueDate = new Date(today)
+  dueDate.setDate(dueDate.getDate() + 30)
 
   const invoiceCount = await prisma.invoice.count()
   const number = `INV-${String(invoiceCount + 1).padStart(4, "0")}`
@@ -25,6 +26,7 @@ export async function POST(request: Request) {
   const approvedLogs = await prisma.hourLog.findMany({
     where: {
       status: "APPROVED",
+      invoiceItems: { none: {} },
       ...(projectId ? { projectId } : {}),
       project: { clientId },
     },
@@ -33,17 +35,16 @@ export async function POST(request: Request) {
 
   if (approvedLogs.length === 0) {
     return NextResponse.json(
-      { error: "No approved hours to invoice" },
+      { error: "No approved, unbilled hours to invoice" },
       { status: 400 }
     )
   }
 
-  const hourlyRate = approvedLogs[0].project.hourlyRate
   const items = approvedLogs.map((log) => ({
-    description: log.description || `Tutoring on ${new Date(log.date).toLocaleDateString()}`,
+    description: log.description || `Tutoring on ${new Date(log.date).toLocaleDateString()} (${log.mode === "ONLINE" ? "Online" : "In Person"})`,
     hours: log.hours,
-    rate: hourlyRate,
-    amount: log.hours * hourlyRate,
+    rate: log.billingRate,
+    amount: log.hours * log.billingRate,
     hourLogId: log.id,
   }))
 
@@ -57,9 +58,7 @@ export async function POST(request: Request) {
       dueDate,
       totalAmount,
       status: "DRAFT",
-      items: {
-        create: items,
-      },
+      items: { create: items },
     },
   })
 

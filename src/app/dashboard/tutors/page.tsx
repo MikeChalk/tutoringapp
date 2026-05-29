@@ -1,6 +1,12 @@
 import { prisma } from "@/lib/db"
 import Link from "next/link"
 
+const TENURE_LABELS: Record<string, string> = {
+  "1ST_YEAR": "1st Year",
+  "2ND_YEAR": "2nd Year",
+  "3RD_YEAR": "3rd Year",
+}
+
 export default async function TutorsPage() {
   const tutors = await prisma.tutor.findMany({
     include: { user: { select: { name: true, email: true } } },
@@ -25,8 +31,8 @@ export default async function TutorsPage() {
             <tr className="border-b border-zinc-200 dark:border-zinc-700">
               <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Name</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Email</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Tenure</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Subjects</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Rate</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Status</th>
             </tr>
           </thead>
@@ -45,10 +51,10 @@ export default async function TutorsPage() {
                   {tutor.user.email}
                 </td>
                 <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
-                  {typeof tutor.subjects === "string" ? tutor.subjects : (tutor.subjects as string[]).join(", ") || "-"}
+                  {TENURE_LABELS[tutor.tenure] || tutor.tenure}
                 </td>
                 <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
-                  ${tutor.hourlyRate.toFixed(2)}/hr
+                  {tutor.subjects || "-"}
                 </td>
                 <td className="px-4 py-3">
                   <span
