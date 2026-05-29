@@ -60,6 +60,14 @@ export async function POST(request: Request) {
   } else if (type === "deletePayScale") {
     const id = formData.get("id") as string
     if (id) await prisma.payScale.delete({ where: { id } })
+  } else if (type === "updateBilling") {
+    const id = formData.get("id") as string
+    const rate = parseFloat(formData.get("rate") as string)
+    if (id && !isNaN(rate)) await prisma.billingRate.update({ where: { id }, data: { rate } })
+  } else if (type === "updatePayScale") {
+    const id = formData.get("id") as string
+    const rate = parseFloat(formData.get("rate") as string)
+    if (id && !isNaN(rate)) await prisma.payScale.update({ where: { id }, data: { rate } })
   }
 
   return NextResponse.redirect(new URL(`/dashboard/rates?tab=${type.startsWith("delete") ? (type === "deleteBilling" ? "billing" : "payscales") : type === "city" ? "cities" : type === "billing" ? "billing" : "payscales"}`, request.url), 303)

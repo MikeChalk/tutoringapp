@@ -13,7 +13,16 @@ export function CreateProjectForm({ clients, cities, defaultType, defaultCity }:
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([])
   const [otherSubject, setOtherSubject] = useState("")
   const [showForm, setShowForm] = useState(false)
+  const [studentName, setStudentName] = useState("")
+  const [clientId, setClientId] = useState("")
+  const [gradeLevel, setGradeLevel] = useState("ELEMENTARY")
   const isStudent = projectType === "STUDENT"
+
+  const client = clients.find(c => c.id === clientId)
+  const gradeLabel = GRADE_LABELS[gradeLevel] || gradeLevel
+  const generatedName = studentName.trim()
+    ? `${studentName.trim()} — ${gradeLabel}${client ? ` (${client.user.name})` : ""}`
+    : ""
 
   function toggleSubject(subject: string) {
     setSelectedSubjects(prev => prev.includes(subject) ? prev.filter(s => s !== subject) : [...prev, subject])
@@ -51,13 +60,26 @@ export function CreateProjectForm({ clients, cities, defaultType, defaultCity }:
             </select>
           </div>
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">Project Name *</label>
-            <input type="text" name="name" required placeholder={isStudent ? "e.g. Emma Johnson — Math" : "e.g. Royal West Academy — Study Hall"}
-              className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <label className="block text-xs text-zinc-500 mb-1">
+              {isStudent ? "Student Name *" : "Project Name *"}
+            </label>
+            {isStudent ? (
+              <>
+                <input type="text" required placeholder="e.g. Emma Johnson"
+                  value={studentName} onChange={e => setStudentName(e.target.value)}
+                  className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                {generatedName && <p className="text-xs text-zinc-400 mt-1">Project: {generatedName}</p>}
+                <input type="hidden" name="name" value={generatedName || "Untitled"} />
+              </>
+            ) : (
+              <input type="text" name="name" required placeholder="e.g. Royal West Academy — Study Hall"
+                className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            )}
           </div>
           <div>
             <label className="block text-xs text-zinc-500 mb-1">Client</label>
-            <select name="clientId" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <select name="clientId" value={clientId} onChange={e => setClientId(e.target.value)}
+              className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="">None</option>
               {clients.map(c => (<option key={c.id} value={c.id}>{c.user.name}</option>))}
             </select>
@@ -75,7 +97,8 @@ export function CreateProjectForm({ clients, cities, defaultType, defaultCity }:
             <>
               <div>
                 <label className="block text-xs text-zinc-500 mb-1">Subtype</label>
-                <select name="gradeLevel" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <select name="gradeLevel" value={gradeLevel} onChange={e => setGradeLevel(e.target.value)}
+                className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
                   <option value="STUDY_HALL">{GRADE_LABELS.STUDY_HALL}</option>
                   <option value="PROGRAM_SUPERVISOR">{GRADE_LABELS.PROGRAM_SUPERVISOR}</option>
                 </select>

@@ -140,14 +140,21 @@ export default async function RatesPage(props: { searchParams: Promise<{ tab?: s
                     <td className="px-4 py-3 text-sm text-zinc-900 dark:text-zinc-100">{GRADE_LABELS[r.gradeLevel]}</td>
                     <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{r.mode === "ONLINE" ? "Online" : "In Person"}</td>
                     <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{r.projectType === "STUDY_HALL" ? "Study Hall" : "Private Tutoring"}</td>
-                    <td className="px-4 py-3 text-sm text-right font-medium text-zinc-900 dark:text-zinc-100">${r.rate.toFixed(2)}</td>
-                    <td className="px-4 py-3 text-center">
-                      <form action="/api/rates" method="POST">
-                        <input type="hidden" name="type" value="deleteBilling" />
-                        <input type="hidden" name="id" value={r.id} />
-                        <button type="submit" className="text-xs text-red-600 dark:text-red-400 hover:underline">Delete</button>
-                      </form>
-                    </td>
+                  <td className="px-4 py-3 text-sm text-right font-medium text-zinc-900 dark:text-zinc-100">${r.rate.toFixed(2)}</td>
+                  <td className="px-4 py-3 text-center">
+                    <form action="/api/rates" method="POST" className="inline-flex items-center gap-1">
+                      <input type="hidden" name="type" value="updateBilling" />
+                      <input type="hidden" name="id" value={r.id} />
+                      <input type="number" name="rate" defaultValue={r.rate} min={0} step={0.01}
+                        className="w-20 rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-1.5 py-0.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                      <button type="submit" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Save</button>
+                    </form>
+                    <form action="/api/rates" method="POST" className="inline ml-2">
+                      <input type="hidden" name="type" value="deleteBilling" />
+                      <input type="hidden" name="id" value={r.id} />
+                      <button type="submit" className="text-xs text-red-600 dark:text-red-400 hover:underline">Del</button>
+                    </form>
+                  </td>
                   </tr>
                 ))}
               </tbody>
@@ -218,14 +225,21 @@ export default async function RatesPage(props: { searchParams: Promise<{ tab?: s
                     <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{GRADE_LABELS[ps.gradeLevel]}</td>
                     <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{ps.mode === "ONLINE" ? "Online" : "In Person"}</td>
                     <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{ps.projectType === "STUDY_HALL" ? "Study Hall" : "Private Tutoring"}</td>
-                    <td className="px-4 py-3 text-sm text-right font-medium text-zinc-900 dark:text-zinc-100">${ps.rate.toFixed(2)}</td>
-                    <td className="px-4 py-3 text-center">
-                      <form action="/api/rates" method="POST">
-                        <input type="hidden" name="type" value="deletePayScale" />
-                        <input type="hidden" name="id" value={ps.id} />
-                        <button type="submit" className="text-xs text-red-600 dark:text-red-400 hover:underline">Delete</button>
-                      </form>
-                    </td>
+                  <td className="px-4 py-3 text-sm text-right font-medium text-zinc-900 dark:text-zinc-100">${ps.rate.toFixed(2)}</td>
+                  <td className="px-4 py-3 text-center">
+                    <form action="/api/rates" method="POST" className="inline-flex items-center gap-1">
+                      <input type="hidden" name="type" value="updatePayScale" />
+                      <input type="hidden" name="id" value={ps.id} />
+                      <input type="number" name="rate" defaultValue={ps.rate} min={0} step={0.01}
+                        className="w-20 rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-1.5 py-0.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                      <button type="submit" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Save</button>
+                    </form>
+                    <form action="/api/rates" method="POST" className="inline ml-2">
+                      <input type="hidden" name="type" value="deletePayScale" />
+                      <input type="hidden" name="id" value={ps.id} />
+                      <button type="submit" className="text-xs text-red-600 dark:text-red-400 hover:underline">Del</button>
+                    </form>
+                  </td>
                   </tr>
                 ))}
               </tbody>
