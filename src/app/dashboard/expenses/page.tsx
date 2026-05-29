@@ -26,7 +26,7 @@ export default async function ExpensesPage() {
     ? { client: { user: { cityId: selectedCity } } }
     : {}
 
-  const [hourLogs, expenses, invoices] = await Promise.all([
+  const [hourLogs, expenses, invoices, allInvoices, allExpenses] = await Promise.all([
     prisma.hourLog.findMany({
       where: cityFilter,
       include: {
@@ -43,6 +43,13 @@ export default async function ExpensesPage() {
       where: { status: { in: ["SENT", "PAID"] }, ...invoiceCityFilter },
       select: { totalAmount: true, status: true },
     }),
+    prisma.invoice.findMany({
+      where: { status: { in: ["SENT", "PAID"] } },
+      select: { totalAmount: true, status: true, client: { select: { user: { select: { cityId: true } } } } },
+    }),
+    prisma.expense.findMany({
+      select: { amount: true, cityId: true },
+    }),
   ])
 
   const totalBilled = invoices.reduce((s, i) => s + i.totalAmount, 0)
@@ -53,6 +60,16 @@ export default async function ExpensesPage() {
 
   const cityName = selectedCity !== "all" ? cities.find((c) => c.id === selectedCity)?.name || selectedCity : "All Cities"
 
+  // Per-city breakdown
+  const cityBreakdown = cities.map((city) => {
+    const cityInvoices = allInvoices.filter((i) => i.client.user.cityId === city.id)
+    const cityExpenses = allExpenses.filter((e) => e.cityId === city.id)
+    const billed = cityInvoices.reduce((s, i) => s + i.totalAmount, 0)
+    const collected = cityInvoices.filter((i) => i.status === "PAID").reduce((s, i) => s + i.totalAmount, 0)
+    const expensesAmt = cityExpenses.reduce((s, e) => s + e.amount, 0)
+    return { name: city.name, billed, collected, expenses: expensesAmt }
+  })
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -61,6 +78,33 @@ export default async function ExpensesPage() {
           <p className="text-sm text-zinc-500">{cityName}</p>
         </div>
       </div>
+
+      {superAdmin && (
+        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden mb-8">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-zinc-200 dark:border-zinc-700">
+                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">City</th>
+                <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Billed</th>
+                <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Collected</th>
+                <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Expenses</th>
+                <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Net</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700/50">
+              {cityBreakdown.map((c) => (
+                <tr key={c.name} className="text-sm">
+                  <td className="px-4 py-3 font-medium text-zinc-900 dark:text-zinc-100">{c.name}</td>
+                  <td className="px-4 py-3 text-right text-zinc-600 dark:text-zinc-400">${c.billed.toFixed(2)}</td>
+                  <td className="px-4 py-3 text-right text-green-600 dark:text-green-400">${c.collected.toFixed(2)}</td>
+                  <td className="px-4 py-3 text-right text-red-600 dark:text-red-400">${c.expenses.toFixed(2)}</td>
+                  <td className="px-4 py-3 text-right font-medium text-zinc-900 dark:text-zinc-100">${(c.collected - c.expenses).toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
