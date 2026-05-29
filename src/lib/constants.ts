@@ -5,6 +5,8 @@ export const GRADE_LABELS: Record<string, string> = {
   SEC4_5: "Sec 4-5",
   CEGEP: "CEGEP",
   UNI: "University",
+  STUDY_HALL: "Study Hall",
+  PROGRAM_SUPERVISOR: "Program Supervisor",
 }
 
 export const TENURE_LABELS: Record<string, string> = {

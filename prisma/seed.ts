@@ -44,6 +44,9 @@ async function main() {
     await prisma.billingRate.create({ data: rate })
   }
 
+  await prisma.billingRate.create({ data: { gradeLevel: "STUDY_HALL", mode: "IN_PERSON", projectType: "STUDY_HALL", rate: 0 } })
+  await prisma.billingRate.create({ data: { gradeLevel: "PROGRAM_SUPERVISOR", mode: "IN_PERSON", projectType: "STUDY_HALL", rate: 0 } })
+
   // Tutor pay scale: actual rates from the company
   const payScales = [
     // Year 1 — Online
@@ -89,13 +92,13 @@ async function main() {
     { tenure: "3RD_YEAR", gradeLevel: "CEGEP", mode: "IN_PERSON", rate: 43 },
     { tenure: "3RD_YEAR", gradeLevel: "UNI", mode: "IN_PERSON", rate: 52 },
     // Study Hall rates
-    { tenure: "1ST_YEAR", gradeLevel: "STUDY_HALL", mode: "IN_PERSON", rate: 30 },
-    { tenure: "2ND_YEAR", gradeLevel: "STUDY_HALL", mode: "IN_PERSON", rate: 32 },
-    { tenure: "3RD_YEAR", gradeLevel: "STUDY_HALL", mode: "IN_PERSON", rate: 35 },
+    { tenure: "1ST_YEAR", gradeLevel: "STUDY_HALL", mode: "IN_PERSON", projectType: "STUDY_HALL", rate: 30 },
+    { tenure: "2ND_YEAR", gradeLevel: "STUDY_HALL", mode: "IN_PERSON", projectType: "STUDY_HALL", rate: 32 },
+    { tenure: "3RD_YEAR", gradeLevel: "STUDY_HALL", mode: "IN_PERSON", projectType: "STUDY_HALL", rate: 35 },
     // Program Supervisor rates
-    { tenure: "1ST_YEAR", gradeLevel: "PROGRAM_SUPERVISOR", mode: "IN_PERSON", rate: 40 },
-    { tenure: "2ND_YEAR", gradeLevel: "PROGRAM_SUPERVISOR", mode: "IN_PERSON", rate: 45 },
-    { tenure: "3RD_YEAR", gradeLevel: "PROGRAM_SUPERVISOR", mode: "IN_PERSON", rate: 50 },
+    { tenure: "1ST_YEAR", gradeLevel: "PROGRAM_SUPERVISOR", mode: "IN_PERSON", projectType: "STUDY_HALL", rate: 40 },
+    { tenure: "2ND_YEAR", gradeLevel: "PROGRAM_SUPERVISOR", mode: "IN_PERSON", projectType: "STUDY_HALL", rate: 45 },
+    { tenure: "3RD_YEAR", gradeLevel: "PROGRAM_SUPERVISOR", mode: "IN_PERSON", projectType: "STUDY_HALL", rate: 50 },
   ]
 
   for (const scale of payScales) {
@@ -505,7 +508,7 @@ async function main() {
       subjects: "Math, Science, English",
       projectType: "STUDY_HALL",
       school: "Royal West Academy",
-      gradeLevel: "SEC4_5",
+      gradeLevel: "STUDY_HALL",
       cityId: montreal.id,
     },
   })
@@ -519,8 +522,19 @@ async function main() {
       subjects: "All subjects",
       projectType: "STUDY_HALL",
       school: "Northern Secondary School",
-      gradeLevel: "SEC3",
+      gradeLevel: "STUDY_HALL",
       cityId: toronto.id,
+    },
+  })
+
+  const sh3 = await prisma.project.create({
+    data: {
+      name: "Montreal Program Supervisors",
+      description: "Program supervisor team",
+      subjects: "All subjects",
+      projectType: "STUDY_HALL",
+      gradeLevel: "PROGRAM_SUPERVISOR",
+      cityId: montreal.id,
     },
   })
 

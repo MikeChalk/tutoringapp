@@ -82,19 +82,31 @@ export function CreateProjectForm({ clients, cities, defaultType, defaultCity }:
               name="gradeLevel"
               className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              {Object.entries(GRADE_LABELS).map(([k, v]) => (
+              {Object.entries(GRADE_LABELS).filter(([k]) => k !== "STUDY_HALL" && k !== "PROGRAM_SUPERVISOR").map(([k, v]) => (
                 <option key={k} value={k}>{v}</option>
               ))}
             </select>
           </div>
         ) : (
-          <div>
-            <label className="block text-xs text-zinc-500 mb-1">School</label>
-            <input
-              type="text" name="school"
-              className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+          <>
+            <div>
+              <label className="block text-xs text-zinc-500 mb-1">Subtype</label>
+              <select
+                name="gradeLevel"
+                className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="STUDY_HALL">{GRADE_LABELS.STUDY_HALL}</option>
+                <option value="PROGRAM_SUPERVISOR">{GRADE_LABELS.PROGRAM_SUPERVISOR}</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-zinc-500 mb-1">School</label>
+              <input
+                type="text" name="school"
+                className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </>
         )}
 
         {/* Row 3: City */}

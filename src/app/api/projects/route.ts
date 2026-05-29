@@ -12,11 +12,11 @@ export async function POST(request: Request) {
   const formData = await request.formData()
   const name = (formData.get("name") as string)?.trim()
   const description = formData.get("description") as string
-  const gradeLevel = (formData.get("gradeLevel") as string) || "ELEMENTARY"
+  const projectType = (formData.get("projectType") as string) || "STUDENT"
+  const gradeLevel = (formData.get("gradeLevel") as string) || (projectType === "STUDY_HALL" ? "STUDY_HALL" : "ELEMENTARY")
   const subjects = formData.get("subjects") as string
   const clientId = formData.get("clientId") as string
   const cityId = formData.get("cityId") as string
-  const projectType = (formData.get("projectType") as string) || "STUDENT"
 
   if (!name) {
     return NextResponse.json({ error: "Name required" }, { status: 400 })

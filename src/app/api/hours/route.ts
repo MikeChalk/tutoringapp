@@ -53,11 +53,16 @@ export async function POST(request: Request) {
     billingRate = parseFloat(manualBilling)
     tutorPayRate = parseFloat(manualPay)
   } else {
+    const stdGrades = ["ELEMENTARY", "SEC1_2", "SEC3", "SEC4_5", "CEGEP", "UNI"]
+    const lookupGrade = (project.projectType === "STUDY_HALL" && stdGrades.includes(project.gradeLevel))
+      ? "STUDY_HALL"
+      : project.gradeLevel
+
     const br = await prisma.billingRate.findFirst({
-      where: { gradeLevel: project.gradeLevel, mode, projectType: project.projectType },
+      where: { gradeLevel: lookupGrade, mode, projectType: project.projectType },
     })
     const ps = await prisma.payScale.findFirst({
-      where: { tenure: tutor.tenure, gradeLevel: project.gradeLevel, mode, projectType: project.projectType },
+      where: { tenure: tutor.tenure, gradeLevel: lookupGrade, mode, projectType: project.projectType },
     })
     if (!br || !ps) {
       return NextResponse.json({ error: "Rate not found" }, { status: 400 })

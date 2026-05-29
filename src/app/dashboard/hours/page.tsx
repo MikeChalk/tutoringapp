@@ -205,7 +205,7 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
                     </div>
                   </div>
                   <p className="text-xs text-zinc-400">Leave blank to auto-calculate from rate tables.</p>
-                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">Note: Study Hall projects do not generate client invoices.</p>
+
                 </>
               ) : (
                 <div className="flex justify-between text-sm">
@@ -277,14 +277,20 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
               return;
             }
 
+            var lookupGrade = grade;
+            var stdGrades = ['ELEMENTARY','SEC1_2','SEC3','SEC4_5','CEGEP','UNI'];
+            if (ptype === 'STUDY_HALL' && stdGrades.indexOf(grade) !== -1) {
+              lookupGrade = 'STUDY_HALL';
+            }
+
             var billing = null;
             var pay = null;
             for (var i = 0; i < RATES.billing.length; i++) {
-              if (RATES.billing[i].g === grade && RATES.billing[i].m === mode && RATES.billing[i].p === ptype) { billing = RATES.billing[i].r; break; }
+              if (RATES.billing[i].g === lookupGrade && RATES.billing[i].m === mode && RATES.billing[i].p === ptype) { billing = RATES.billing[i].r; break; }
             }
             if (tenure) {
               for (var j = 0; j < RATES.pay.length; j++) {
-                if (RATES.pay[j].t === tenure && RATES.pay[j].g === grade && RATES.pay[j].m === mode && RATES.pay[j].p === ptype) { pay = RATES.pay[j].r; break; }
+                if (RATES.pay[j].t === tenure && RATES.pay[j].g === lookupGrade && RATES.pay[j].m === mode && RATES.pay[j].p === ptype) { pay = RATES.pay[j].r; break; }
               }
             }
 
