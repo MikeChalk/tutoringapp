@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { redirect } from "next/navigation"
+import { cookies } from "next/headers"
 
 export async function requireAuth() {
   const session = await auth()
@@ -27,7 +28,15 @@ export async function getClientId(userId: string, email: string) {
 }
 
 export function isAdmin(role: string) {
+  return role === "ADMIN" || role === "CITY_ADMIN"
+}
+
+export function isSuperAdmin(role: string) {
   return role === "ADMIN"
+}
+
+export function isCityAdmin(role: string) {
+  return role === "CITY_ADMIN"
 }
 
 export function isTutor(role: string) {
@@ -36,4 +45,23 @@ export function isTutor(role: string) {
 
 export function isClient(role: string) {
   return role === "CLIENT"
+}
+
+export async function getActiveCityId(userRole: string, userId: string): Promise<string | null> {
+  if (isCityAdmin(userRole)) {
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { cityId: true } })
+    return user?.cityId || null
+  }
+  if (isSuperAdmin(userRole)) {
+    const cookieStore = await cookies()
+    const selectedCity = cookieStore.get("selectedCity")?.value
+    if (selectedCity && selectedCity !== "all") return selectedCity
+    return null
+  }
+  return null
+}
+
+export async function getCityFilter(userRole: string, userId: string): Promise<{ cityId?: string }> {
+  const cityId = await getActiveCityId(userRole, userId)
+  return cityId ? { cityId } : {}
 }
