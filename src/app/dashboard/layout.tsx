@@ -43,6 +43,12 @@ const adminSections = [
       { href: "/dashboard/contracts", label: "Contracts" },
     ],
   },
+  {
+    label: "Forms",
+    links: [
+      { href: "/careers", label: "Career Application" },
+    ],
+  },
 ]
 
 const tutorLinks = [
