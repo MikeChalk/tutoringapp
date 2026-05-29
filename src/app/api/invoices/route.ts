@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     where: {
       invoiceItems: { none: {} },
       ...(projectId ? { projectId } : {}),
-      project: { clientId },
+      project: { clientId, projectType: { not: "STUDY_HALL" } },
     },
     include: { project: true },
   })

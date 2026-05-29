@@ -203,6 +203,7 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
                     </div>
                   </div>
                   <p className="text-xs text-zinc-400">Leave blank to auto-calculate from rate tables.</p>
+                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">Note: Study Hall projects do not generate client invoices.</p>
                 </>
               ) : (
                 <div className="flex justify-between text-sm">

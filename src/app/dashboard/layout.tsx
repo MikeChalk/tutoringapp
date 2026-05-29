@@ -37,6 +37,12 @@ const adminSections = [
       { href: "/dashboard/expenses", label: "Finance" },
     ],
   },
+  {
+    label: "Files",
+    links: [
+      { href: "/dashboard/contracts", label: "Contracts" },
+    ],
+  },
 ]
 
 const tutorLinks = [
