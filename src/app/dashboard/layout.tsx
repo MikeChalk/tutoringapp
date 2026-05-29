@@ -13,7 +13,7 @@ const adminSections = [
   {
     label: "HRM",
     links: [
-      { href: "/dashboard/tutors", label: "Tutor Waitlist" },
+      { href: "/dashboard/tutors", label: "Team" },
       { href: "/dashboard/onboarding", label: "Onboarding" },
     ],
   },
