@@ -2,9 +2,9 @@ import { prisma } from "@/lib/db"
 import Link from "next/link"
 
 const TENURE_LABELS: Record<string, string> = {
-  "1ST_YEAR": "1st Year",
-  "2ND_YEAR": "2nd Year",
-  "3RD_YEAR": "3rd Year",
+  "1ST_YEAR": "Year 1",
+  "2ND_YEAR": "Year 2",
+  "3RD_YEAR": "Year 3",
 }
 
 export default async function TutorsPage() {

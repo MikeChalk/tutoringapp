@@ -37,48 +37,50 @@ async function main() {
     await prisma.billingRate.create({ data: rate })
   }
 
-  // Tutor pay scale: what the tutor earns based on tenure, grade, mode
-  // 1st year ≈56% of bill rate, 2nd year ≈63%, 3rd year ≈70%
+  // Tutor pay scale: actual rates from the company
   const payScales = [
-    // 1st Year
-    { tenure: "1ST_YEAR", gradeLevel: "ELEMENTARY", mode: "ONLINE", rate: 15 },
-    { tenure: "1ST_YEAR", gradeLevel: "ELEMENTARY", mode: "IN_PERSON", rate: 16 },
-    { tenure: "1ST_YEAR", gradeLevel: "SEC1_2", mode: "ONLINE", rate: 17 },
-    { tenure: "1ST_YEAR", gradeLevel: "SEC1_2", mode: "IN_PERSON", rate: 18 },
-    { tenure: "1ST_YEAR", gradeLevel: "SEC3", mode: "ONLINE", rate: 18 },
-    { tenure: "1ST_YEAR", gradeLevel: "SEC3", mode: "IN_PERSON", rate: 19 },
-    { tenure: "1ST_YEAR", gradeLevel: "SEC4_5", mode: "ONLINE", rate: 19 },
-    { tenure: "1ST_YEAR", gradeLevel: "SEC4_5", mode: "IN_PERSON", rate: 20 },
-    { tenure: "1ST_YEAR", gradeLevel: "CEGEP", mode: "ONLINE", rate: 25 },
-    { tenure: "1ST_YEAR", gradeLevel: "CEGEP", mode: "IN_PERSON", rate: 28 },
-    { tenure: "1ST_YEAR", gradeLevel: "UNI", mode: "ONLINE", rate: 31 },
-    { tenure: "1ST_YEAR", gradeLevel: "UNI", mode: "IN_PERSON", rate: 34 },
-    // 2nd Year
-    { tenure: "2ND_YEAR", gradeLevel: "ELEMENTARY", mode: "ONLINE", rate: 17 },
-    { tenure: "2ND_YEAR", gradeLevel: "ELEMENTARY", mode: "IN_PERSON", rate: 18 },
-    { tenure: "2ND_YEAR", gradeLevel: "SEC1_2", mode: "ONLINE", rate: 19 },
-    { tenure: "2ND_YEAR", gradeLevel: "SEC1_2", mode: "IN_PERSON", rate: 20 },
-    { tenure: "2ND_YEAR", gradeLevel: "SEC3", mode: "ONLINE", rate: 20 },
-    { tenure: "2ND_YEAR", gradeLevel: "SEC3", mode: "IN_PERSON", rate: 21 },
-    { tenure: "2ND_YEAR", gradeLevel: "SEC4_5", mode: "ONLINE", rate: 21 },
-    { tenure: "2ND_YEAR", gradeLevel: "SEC4_5", mode: "IN_PERSON", rate: 23 },
-    { tenure: "2ND_YEAR", gradeLevel: "CEGEP", mode: "ONLINE", rate: 28 },
-    { tenure: "2ND_YEAR", gradeLevel: "CEGEP", mode: "IN_PERSON", rate: 31 },
-    { tenure: "2ND_YEAR", gradeLevel: "UNI", mode: "ONLINE", rate: 35 },
-    { tenure: "2ND_YEAR", gradeLevel: "UNI", mode: "IN_PERSON", rate: 38 },
-    // 3rd Year
-    { tenure: "3RD_YEAR", gradeLevel: "ELEMENTARY", mode: "ONLINE", rate: 19 },
-    { tenure: "3RD_YEAR", gradeLevel: "ELEMENTARY", mode: "IN_PERSON", rate: 20 },
-    { tenure: "3RD_YEAR", gradeLevel: "SEC1_2", mode: "ONLINE", rate: 21 },
-    { tenure: "3RD_YEAR", gradeLevel: "SEC1_2", mode: "IN_PERSON", rate: 22 },
-    { tenure: "3RD_YEAR", gradeLevel: "SEC3", mode: "ONLINE", rate: 22 },
-    { tenure: "3RD_YEAR", gradeLevel: "SEC3", mode: "IN_PERSON", rate: 24 },
-    { tenure: "3RD_YEAR", gradeLevel: "SEC4_5", mode: "ONLINE", rate: 24 },
-    { tenure: "3RD_YEAR", gradeLevel: "SEC4_5", mode: "IN_PERSON", rate: 25 },
-    { tenure: "3RD_YEAR", gradeLevel: "CEGEP", mode: "ONLINE", rate: 31 },
-    { tenure: "3RD_YEAR", gradeLevel: "CEGEP", mode: "IN_PERSON", rate: 35 },
-    { tenure: "3RD_YEAR", gradeLevel: "UNI", mode: "ONLINE", rate: 38 },
-    { tenure: "3RD_YEAR", gradeLevel: "UNI", mode: "IN_PERSON", rate: 42 },
+    // Year 1 — Online
+    { tenure: "1ST_YEAR", gradeLevel: "ELEMENTARY", mode: "ONLINE", rate: 20 },
+    { tenure: "1ST_YEAR", gradeLevel: "SEC1_2", mode: "ONLINE", rate: 21 },
+    { tenure: "1ST_YEAR", gradeLevel: "SEC3", mode: "ONLINE", rate: 23 },
+    { tenure: "1ST_YEAR", gradeLevel: "SEC4_5", mode: "ONLINE", rate: 25 },
+    { tenure: "1ST_YEAR", gradeLevel: "CEGEP", mode: "ONLINE", rate: 35 },
+    { tenure: "1ST_YEAR", gradeLevel: "UNI", mode: "ONLINE", rate: 40 },
+    // Year 1 — In-Person
+    { tenure: "1ST_YEAR", gradeLevel: "ELEMENTARY", mode: "IN_PERSON", rate: 22 },
+    { tenure: "1ST_YEAR", gradeLevel: "SEC1_2", mode: "IN_PERSON", rate: 23 },
+    { tenure: "1ST_YEAR", gradeLevel: "SEC3", mode: "IN_PERSON", rate: 25 },
+    { tenure: "1ST_YEAR", gradeLevel: "SEC4_5", mode: "IN_PERSON", rate: 27 },
+    { tenure: "1ST_YEAR", gradeLevel: "CEGEP", mode: "IN_PERSON", rate: 37 },
+    { tenure: "1ST_YEAR", gradeLevel: "UNI", mode: "IN_PERSON", rate: 42 },
+    // Year 2 — Online
+    { tenure: "2ND_YEAR", gradeLevel: "ELEMENTARY", mode: "ONLINE", rate: 22 },
+    { tenure: "2ND_YEAR", gradeLevel: "SEC1_2", mode: "ONLINE", rate: 24 },
+    { tenure: "2ND_YEAR", gradeLevel: "SEC3", mode: "ONLINE", rate: 26 },
+    { tenure: "2ND_YEAR", gradeLevel: "SEC4_5", mode: "ONLINE", rate: 28 },
+    { tenure: "2ND_YEAR", gradeLevel: "CEGEP", mode: "ONLINE", rate: 37 },
+    { tenure: "2ND_YEAR", gradeLevel: "UNI", mode: "ONLINE", rate: 45 },
+    // Year 2 — In-Person
+    { tenure: "2ND_YEAR", gradeLevel: "ELEMENTARY", mode: "IN_PERSON", rate: 24 },
+    { tenure: "2ND_YEAR", gradeLevel: "SEC1_2", mode: "IN_PERSON", rate: 25 },
+    { tenure: "2ND_YEAR", gradeLevel: "SEC3", mode: "IN_PERSON", rate: 27 },
+    { tenure: "2ND_YEAR", gradeLevel: "SEC4_5", mode: "IN_PERSON", rate: 29 },
+    { tenure: "2ND_YEAR", gradeLevel: "CEGEP", mode: "IN_PERSON", rate: 40 },
+    { tenure: "2ND_YEAR", gradeLevel: "UNI", mode: "IN_PERSON", rate: 47 },
+    // Year 3 — Online
+    { tenure: "3RD_YEAR", gradeLevel: "ELEMENTARY", mode: "ONLINE", rate: 24 },
+    { tenure: "3RD_YEAR", gradeLevel: "SEC1_2", mode: "ONLINE", rate: 26 },
+    { tenure: "3RD_YEAR", gradeLevel: "SEC3", mode: "ONLINE", rate: 28 },
+    { tenure: "3RD_YEAR", gradeLevel: "SEC4_5", mode: "ONLINE", rate: 30 },
+    { tenure: "3RD_YEAR", gradeLevel: "CEGEP", mode: "ONLINE", rate: 39 },
+    { tenure: "3RD_YEAR", gradeLevel: "UNI", mode: "ONLINE", rate: 50 },
+    // Year 3 — In-Person
+    { tenure: "3RD_YEAR", gradeLevel: "ELEMENTARY", mode: "IN_PERSON", rate: 26 },
+    { tenure: "3RD_YEAR", gradeLevel: "SEC1_2", mode: "IN_PERSON", rate: 27 },
+    { tenure: "3RD_YEAR", gradeLevel: "SEC3", mode: "IN_PERSON", rate: 29 },
+    { tenure: "3RD_YEAR", gradeLevel: "SEC4_5", mode: "IN_PERSON", rate: 31 },
+    { tenure: "3RD_YEAR", gradeLevel: "CEGEP", mode: "IN_PERSON", rate: 43 },
+    { tenure: "3RD_YEAR", gradeLevel: "UNI", mode: "IN_PERSON", rate: 52 },
   ]
 
   for (const scale of payScales) {

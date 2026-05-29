@@ -12,16 +12,16 @@ const GRADE_LABELS: Record<string, string> = {
 }
 
 const TENURE_LABELS: Record<string, string> = {
-  "1ST_YEAR": "1st Year",
-  "2ND_YEAR": "2nd Year",
-  "3RD_YEAR": "3rd Year",
+  "1ST_YEAR": "Year 1",
+  "2ND_YEAR": "Year 2",
+  "3RD_YEAR": "Year 3",
 }
 
 export default async function HoursPage() {
   const session = await auth()
   if (!session?.user) redirect("/login")
 
-  const [hourLogs, projects, tutors, billingRates] = await Promise.all([
+  const [hourLogs, projects, tutors] = await Promise.all([
     prisma.hourLog.findMany({
       include: {
         tutor: { include: { user: { select: { name: true } } } },
@@ -40,12 +40,7 @@ export default async function HoursPage() {
       where: { isActive: true },
       include: { user: { select: { name: true } } },
     }),
-    prisma.billingRate.findMany(),
   ])
-
-  const ratesJson = JSON.stringify(
-    billingRates.map((r) => ({ gradeLevel: r.gradeLevel, mode: r.mode, rate: r.rate }))
-  )
 
   return (
     <div>
@@ -177,35 +172,32 @@ export default async function HoursPage() {
       </div>
 
       <script dangerouslySetInnerHTML={{ __html: `
-        const rates = ${ratesJson};
         const projectSelect = document.getElementById('projectSelect');
         const tutorSelect = document.getElementById('tutorSelect');
         const modeSelect = document.getElementById('modeSelect');
         const billingDisplay = document.getElementById('billingRateDisplay');
         const payDisplay = document.getElementById('payRateDisplay');
 
-        function updateRates() {
+        async function updateRates() {
           const projectOption = projectSelect?.selectedOptions[0];
           const tutorOption = tutorSelect?.selectedOptions[0];
           const grade = projectOption?.dataset.grade;
           const mode = modeSelect?.value;
           const tenure = tutorOption?.dataset.tenure;
 
-          const billingRate = rates.find(r => r.gradeLevel === grade && r.mode === mode);
-          billingDisplay.textContent = billingRate ? '$' + billingRate.rate.toFixed(2) + '/hr' : '--';
-
-          if (tenure) {
-            const payscale = rates.find(r => r.gradeLevel === grade && r.mode === mode);
-            if (payscale) {
-              const basePay = payscale.rate;
-              const tenureMultiplier = tenure === '3RD_YEAR' ? 1.15 : tenure === '2ND_YEAR' ? 1.07 : 1.0;
-              payDisplay.textContent = '$' + (basePay * tenureMultiplier).toFixed(2) + '/hr';
-            } else {
-              payDisplay.textContent = '--';
-            }
-          } else {
+          if (!grade || !mode) {
+            billingDisplay.textContent = '--';
             payDisplay.textContent = '--';
+            return;
           }
+
+          const params = new URLSearchParams({ gradeLevel: grade, mode });
+          if (tenure) params.set('tenure', tenure);
+
+          const res = await fetch('/api/rates?' + params.toString());
+          const data = await res.json();
+          billingDisplay.textContent = data.billingRate != null ? '$' + data.billingRate.toFixed(2) + '/hr' : '--';
+          payDisplay.textContent = data.payRate != null ? '$' + data.payRate.toFixed(2) + '/hr' : '--';
         }
 
         projectSelect?.addEventListener('change', updateRates);
