@@ -11,8 +11,8 @@ const adminLinks = [
   { href: "/dashboard/projects", label: "Students" },
   { href: "/dashboard/hours", label: "Log Hours" },
   { href: "/dashboard/invoices", label: "Invoices" },
-  { href: "/dashboard/requests", label: "Requests" },
-  { href: "/dashboard/onboarding", label: "Onboarding" },
+  { href: "/dashboard/requests", label: "Tutoring Requests" },
+  { href: "/dashboard/onboarding", label: "Tutor Waitlist" },
 ]
 
 const tutorLinks = [

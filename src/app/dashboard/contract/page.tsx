@@ -1,18 +1,7 @@
 import { prisma } from "@/lib/db"
 import { requireAuth, isTutor, getTutorId } from "@/lib/auth-helpers"
+import { CONTRACT_TYPE_LABELS, TENURE_LABELS } from "@/lib/constants"
 import { redirect } from "next/navigation"
-
-const TYPE_LABELS: Record<string, string> = {
-  PRIVATE_TUTORING: "Private Tutoring",
-  STUDY_HALL: "Study Hall",
-  PROGRAM_SUPERVISOR: "Program Supervisor",
-}
-
-const YEAR_LABELS: Record<string, string> = {
-  "1ST_YEAR": "Year 1",
-  "2ND_YEAR": "Year 2",
-  "3RD_YEAR": "Year 3+",
-}
 
 export default async function ContractPage() {
   const session = await requireAuth()
@@ -55,13 +44,13 @@ export default async function ContractPage() {
               <div className="flex justify-between py-2 border-b border-zinc-100 dark:border-zinc-700/50">
                 <dt className="text-zinc-500">Type</dt>
                 <dd className="text-zinc-900 dark:text-zinc-100 font-medium">
-                  {TYPE_LABELS[contract.type] || contract.type}
+                  {CONTRACT_TYPE_LABELS[contract.type] || contract.type}
                 </dd>
               </div>
               <div className="flex justify-between py-2 border-b border-zinc-100 dark:border-zinc-700/50">
                 <dt className="text-zinc-500">Year Level</dt>
                 <dd className="text-zinc-900 dark:text-zinc-100 font-medium">
-                  {YEAR_LABELS[contract.yearLevel] || contract.yearLevel}
+                  {TENURE_LABELS[contract.yearLevel] || contract.yearLevel}
                 </dd>
               </div>
               <div className="flex justify-between py-2 border-b border-zinc-100 dark:border-zinc-700/50">
@@ -118,7 +107,7 @@ export default async function ContractPage() {
 
           <div className="lg:col-span-2 bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
             <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">
-              Your Pay Rates ({YEAR_LABELS[contract.yearLevel]})
+              Your Pay Rates ({TENURE_LABELS[contract.yearLevel]})
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
               {["ELEMENTARY", "SEC1_2", "SEC3", "SEC4_5", "CEGEP", "UNI"].map((grade) => {

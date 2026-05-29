@@ -1,13 +1,8 @@
 import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin } from "@/lib/auth-helpers"
+import { TENURE_LABELS } from "@/lib/constants"
 import { redirect } from "next/navigation"
 import Link from "next/link"
-
-const TENURE_LABELS: Record<string, string> = {
-  "1ST_YEAR": "Year 1",
-  "2ND_YEAR": "Year 2",
-  "3RD_YEAR": "Year 3+",
-}
 
 export default async function TutorsPage() {
   const session = await requireAuth()

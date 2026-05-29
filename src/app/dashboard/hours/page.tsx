@@ -1,27 +1,6 @@
 import { prisma } from "@/lib/db"
 import { requireAuth, isTutor, getTutorId } from "@/lib/auth-helpers"
-
-const GRADE_LABELS: Record<string, string> = {
-  ELEMENTARY: "Elementary",
-  SEC1_2: "Sec 1-2",
-  SEC3: "Sec 3",
-  SEC4_5: "Sec 4-5",
-  CEGEP: "CEGEP",
-  UNI: "University",
-}
-
-const TENURE_LABELS: Record<string, string> = {
-  "1ST_YEAR": "Year 1",
-  "2ND_YEAR": "Year 2",
-  "3RD_YEAR": "Year 3+",
-}
-
-const STATUS_COLORS: Record<string, string> = {
-  IN_PROGRESS: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-  ON_HOLD: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-  FINISHED: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  CANCELLED: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-}
+import { GRADE_LABELS, TENURE_LABELS, STATUS_COLORS } from "@/lib/constants"
 
 export default async function HoursPage() {
   const session = await requireAuth()
@@ -169,24 +148,25 @@ export default async function HoursPage() {
             <div className="bg-zinc-50 dark:bg-zinc-900 rounded-lg p-3 border border-zinc-200 dark:border-zinc-700">
               {!tutor ? (
                 <>
-                  <div className="mb-2">
-                    <label className="block text-xs text-zinc-500 mb-1">Billing Rate ($/hr)</label>
-                    <input type="number" name="billingRate" required min="0" step="0.01" defaultValue="30"
-                      className="w-full rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <div className="grid grid-cols-2 gap-3 mb-2">
+                    <div>
+                      <label className="block text-xs text-zinc-500 mb-1">Billing Rate ($/hr)</label>
+                      <input type="number" name="billingRate" id="billingRateInput" min="0" step="0.01"
+                        className="w-full rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-zinc-500 mb-1">Tutor Pay Rate ($/hr)</label>
+                      <input type="number" name="tutorPayRate" id="payRateInput" min="0" step="0.01"
+                        className="w-full rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-xs text-zinc-500 mb-1">Tutor Pay Rate ($/hr)</label>
-                    <input type="number" name="tutorPayRate" required min="0" step="0.01" defaultValue="20"
-                      className="w-full rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                  </div>
+                  <p className="text-xs text-zinc-400">Leave blank to auto-calculate from rate tables.</p>
                 </>
               ) : (
-                <>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-zinc-500">Your Pay Rate:</span>
-                    <span className="font-medium text-green-600 dark:text-green-400" id="payRateDisplay">--</span>
-                  </div>
-                </>
+                <div className="flex justify-between text-sm">
+                  <span className="text-zinc-500">Your Pay Rate:</span>
+                  <span className="font-medium text-green-600 dark:text-green-400" id="payRateDisplay">--</span>
+                </div>
               )}
             </div>
             <div>
@@ -243,9 +223,14 @@ export default async function HoursPage() {
               }
             }
 
-            if (billingDisplay) billingDisplay.textContent = billing != null ? '$' + billing.toFixed(2) + '/hr' : '--';
-            if (payDisplay) payDisplay.textContent = pay != null ? '$' + pay.toFixed(2) + '/hr' : '--';
-          }
+          if (billingDisplay) billingDisplay.textContent = billing != null ? '$' + billing.toFixed(2) + '/hr' : '--';
+          if (payDisplay) payDisplay.textContent = pay != null ? '$' + pay.toFixed(2) + '/hr' : '--';
+
+          var billingInput = document.getElementById('billingRateInput');
+          var payInput = document.getElementById('payRateInput');
+          if (billingInput && !billingInput.value) billingInput.placeholder = billing != null ? billing.toFixed(2) : '';
+          if (payInput && !payInput.value) payInput.placeholder = pay != null ? pay.toFixed(2) : '';
+        }
 
           if (projectSelect) projectSelect.addEventListener('change', updateRates);
           if (tutorSelect) tutorSelect.addEventListener('change', updateRates);

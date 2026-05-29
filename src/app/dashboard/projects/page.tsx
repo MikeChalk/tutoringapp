@@ -1,29 +1,7 @@
 import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin, isTutor, getTutorId } from "@/lib/auth-helpers"
+import { GRADE_LABELS, STATUS_LABELS, STATUS_COLORS } from "@/lib/constants"
 import Link from "next/link"
-
-const GRADE_LABELS: Record<string, string> = {
-  ELEMENTARY: "Elementary",
-  SEC1_2: "Sec 1-2",
-  SEC3: "Sec 3",
-  SEC4_5: "Sec 4-5",
-  CEGEP: "CEGEP",
-  UNI: "University",
-}
-
-const STATUS_LABELS: Record<string, string> = {
-  IN_PROGRESS: "In Progress",
-  ON_HOLD: "On Hold",
-  FINISHED: "Finished",
-  CANCELLED: "Cancelled",
-}
-
-const STATUS_COLORS: Record<string, string> = {
-  IN_PROGRESS: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-  ON_HOLD: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-  FINISHED: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  CANCELLED: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-}
 
 export default async function ProjectsPage(props: { searchParams: Promise<{ status?: string }> }) {
   const session = await requireAuth()

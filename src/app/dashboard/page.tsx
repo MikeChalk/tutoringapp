@@ -1,18 +1,7 @@
 import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin, isTutor, getTutorId, isClient, getClientId } from "@/lib/auth-helpers"
+import { CONTRACT_TYPE_LABELS, TENURE_LABELS } from "@/lib/constants"
 import Link from "next/link"
-
-const YEAR_LABELS: Record<string, string> = {
-  "1ST_YEAR": "Year 1",
-  "2ND_YEAR": "Year 2",
-  "3RD_YEAR": "Year 3+",
-}
-
-const TYPE_LABELS: Record<string, string> = {
-  PRIVATE_TUTORING: "Private Tutoring",
-  STUDY_HALL: "Study Hall",
-  PROGRAM_SUPERVISOR: "Program Supervisor",
-}
 
 export default async function DashboardPage() {
   const session = await requireAuth()
@@ -92,7 +81,7 @@ export default async function DashboardPage() {
             <div>
               <p className="text-xs text-zinc-500 uppercase tracking-wide mb-1">Your Contract</p>
               <p className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-                {TYPE_LABELS[contract.type]} &middot; {YEAR_LABELS[contract.yearLevel]}
+                {CONTRACT_TYPE_LABELS[contract.type]} &middot; {TENURE_LABELS[contract.yearLevel]}
               </p>
             </div>
             <div className="flex items-center gap-4 text-sm">
