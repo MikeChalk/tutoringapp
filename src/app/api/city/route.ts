@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db"
 export async function GET() {
   const cities = await prisma.city.findMany({ select: { id: true, name: true } })
   const cookieStore = await cookies()
-  const selected = cookieStore.get("selectedCity")?.value || "all"
+  const selected = cookieStore.get("selectedCity")?.value || cities[0]?.id || "all"
   return NextResponse.json({ selected, cities })
 }
 

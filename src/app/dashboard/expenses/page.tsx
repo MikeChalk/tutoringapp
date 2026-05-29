@@ -1,23 +1,46 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin } from "@/lib/auth-helpers"
+import { requireAuth, isSuperAdmin } from "@/lib/auth-helpers"
 import { redirect } from "next/navigation"
 import { StatusBadge } from "@/components/ui"
+import { cookies } from "next/headers"
 
 export default async function ExpensesPage() {
   const session = await requireAuth()
-  if (!isAdmin(session.user.role)) redirect("/dashboard")
+  const role = session.user.role
+  if (role !== "ADMIN" && role !== "CITY_ADMIN") redirect("/dashboard")
+
+  const superAdmin = isSuperAdmin(role)
+
+  const cookieStore = await cookies()
+  const selectedCity = cookieStore.get("selectedCity")?.value || "all"
+
+  const cities = await prisma.city.findMany({ select: { id: true, name: true } })
+
+  const cityFilter = superAdmin && selectedCity !== "all"
+    ? { project: { cityId: selectedCity } }
+    : {}
+  const expenseCityFilter = superAdmin && selectedCity !== "all"
+    ? { cityId: selectedCity }
+    : {}
+  const invoiceCityFilter = superAdmin && selectedCity !== "all"
+    ? { client: { user: { cityId: selectedCity } } }
+    : {}
 
   const [hourLogs, expenses, invoices] = await Promise.all([
     prisma.hourLog.findMany({
+      where: cityFilter,
       include: {
         tutor: { include: { user: { select: { name: true } } } },
         project: { select: { name: true } },
       },
       orderBy: { date: "desc" },
     }),
-    prisma.expense.findMany({ orderBy: { date: "desc" } }),
+    prisma.expense.findMany({
+      where: expenseCityFilter,
+      orderBy: { date: "desc" },
+    }),
     prisma.invoice.findMany({
-      where: { status: { in: ["SENT", "PAID"] } },
+      where: { status: { in: ["SENT", "PAID"] }, ...invoiceCityFilter },
       select: { totalAmount: true, status: true },
     }),
   ])
@@ -27,12 +50,16 @@ export default async function ExpensesPage() {
   const totalTutorPay = hourLogs.reduce((s, h) => s + h.hours * h.tutorPayRate, 0)
   const totalTutorPaid = hourLogs.filter((h) => h.paidAt).reduce((s, h) => s + h.hours * h.tutorPayRate, 0)
   const totalOtherExpenses = expenses.reduce((s, e) => s + e.amount, 0)
-  const netExpenses = totalTutorPay + totalOtherExpenses
+
+  const cityName = selectedCity !== "all" ? cities.find((c) => c.id === selectedCity)?.name || selectedCity : "All Cities"
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Finance</h2>
+        <div>
+          <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Finance</h2>
+          <p className="text-sm text-zinc-500">{cityName}</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -104,7 +131,7 @@ export default async function ExpensesPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
-          <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Tutor Payments (Subcontractor)</h3>
+          <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Tutor Payments</h3>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -128,11 +155,7 @@ export default async function ExpensesPage() {
                     <td className="px-2 py-2 text-right text-zinc-600 dark:text-zinc-400">${log.tutorPayRate.toFixed(2)}</td>
                     <td className="px-2 py-2 text-right font-medium text-amber-600 dark:text-amber-400">${(log.hours * log.tutorPayRate).toFixed(2)}</td>
                     <td className="px-2 py-2">
-                      {log.paidAt ? (
-                        <StatusBadge status="PAID" />
-                      ) : (
-                        <span className="text-xs text-zinc-400">Unpaid</span>
-                      )}
+                      {log.paidAt ? <StatusBadge status="PAID" /> : <span className="text-xs text-zinc-400">Unpaid</span>}
                     </td>
                   </tr>
                 ))}
@@ -147,19 +170,16 @@ export default async function ExpensesPage() {
             <form action="/api/expenses" method="POST" className="flex flex-col gap-3">
               <div>
                 <label className="block text-xs text-zinc-500 mb-1">Description</label>
-                <input type="text" name="description" required
-                  className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input type="text" name="description" required className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs text-zinc-500 mb-1">Amount ($)</label>
-                  <input type="number" name="amount" required min="0" step="0.01"
-                    className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <input type="number" name="amount" required min="0" step="0.01" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
                 <div>
                   <label className="block text-xs text-zinc-500 mb-1">Category</label>
-                  <select name="category"
-                    className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <select name="category" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="OTHER">Other</option>
                     <option value="SOFTWARE">Software</option>
                     <option value="MARKETING">Marketing</option>
@@ -171,13 +191,9 @@ export default async function ExpensesPage() {
               </div>
               <div>
                 <label className="block text-xs text-zinc-500 mb-1">Date</label>
-                <input type="date" name="date" required defaultValue={new Date().toISOString().split("T")[0]}
-                  className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input type="date" name="date" required defaultValue={new Date().toISOString().split("T")[0]} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
-              <button type="submit"
-                className="w-full rounded-lg bg-zinc-900 dark:bg-white px-4 py-2.5 text-sm font-medium text-white dark:text-zinc-900 hover:opacity-90 transition-opacity">
-                Add Expense
-              </button>
+              <button type="submit" className="w-full rounded-lg bg-zinc-900 dark:bg-white px-4 py-2.5 text-sm font-medium text-white dark:text-zinc-900 hover:opacity-90 transition-opacity">Add Expense</button>
             </form>
           </div>
 
