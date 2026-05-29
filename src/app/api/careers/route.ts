@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { sendCareerApplicationEmail } from "@/lib/email"
 import bcrypt from "bcryptjs"
+import crypto from "crypto"
 
 export async function POST(request: Request) {
   const formData = await request.formData()
@@ -10,12 +11,13 @@ export async function POST(request: Request) {
   const lastName = (formData.get("lastName") as string)?.trim()
   const email = (formData.get("email") as string)?.trim().toLowerCase()
   const phone = (formData.get("phone") as string)?.trim()
+  const cityId = (formData.get("cityId") as string) || null
+  const borough = (formData.get("borough") as string)?.trim()
   const currentStudies = (formData.get("currentStudies") as string)?.trim()
   const highSchool = (formData.get("highSchool") as string)?.trim()
   const subjects = (formData.get("subjects") as string)?.trim()
   const formatOnline = formData.get("formatOnline") === "on"
   const formatInPerson = formData.get("formatInPerson") === "on"
-  const area = (formData.get("area") as string)?.trim()
   const workExperience = (formData.get("workExperience") as string)?.trim()
 
   if (!firstName || !lastName || !email) {
@@ -30,6 +32,7 @@ export async function POST(request: Request) {
   const name = `${firstName} ${lastName}`
   const randomPassword = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)
   const hashed = await bcrypt.hash(randomPassword, 12)
+  const cvToken = crypto.randomBytes(16).toString("hex")
 
   const preferredFormats = []
   if (formatOnline) preferredFormats.push("Online")
@@ -37,10 +40,10 @@ export async function POST(request: Request) {
 
   const bioParts = []
   if (phone) bioParts.push(`Phone: ${phone}`)
+  if (borough) bioParts.push(`Borough: ${borough}`)
   if (currentStudies) bioParts.push(`Current Studies: ${currentStudies}`)
   if (highSchool) bioParts.push(`High School: ${highSchool}`)
   if (preferredFormats.length) bioParts.push(`Preferred Format: ${preferredFormats.join(", ")}`)
-  if (area) bioParts.push(`Area: ${area}`)
   if (workExperience) bioParts.push(`Work Experience: ${workExperience}`)
 
   const user = await prisma.user.create({
@@ -49,6 +52,7 @@ export async function POST(request: Request) {
       email,
       password: hashed,
       role: "TUTOR",
+      cityId,
     },
   })
 
@@ -59,10 +63,13 @@ export async function POST(request: Request) {
       bio: bioParts.join("\n") || null,
       isActive: true,
       onboarded: false,
+      cvToken,
     },
   })
 
-  await sendCareerApplicationEmail(email, firstName)
+  const uploadUrl = `${request.headers.get("origin") || process.env.NEXTAUTH_URL || "http://localhost:3000"}/upload/${cvToken}`
+
+  await sendCareerApplicationEmail(email, firstName, uploadUrl)
 
   return NextResponse.redirect(new URL("/careers?submitted=1", request.url), 303)
 }

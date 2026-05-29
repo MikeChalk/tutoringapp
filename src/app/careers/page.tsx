@@ -1,14 +1,23 @@
 "use client"
 
-import { useState, Suspense } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { SUBJECT_OPTIONS } from "@/lib/constants"
+
+interface City {
+  id: string; name: string
+}
 
 function CareersForm() {
   const searchParams = useSearchParams()
   const submitted = searchParams.get("submitted") === "1"
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([])
   const [otherSubject, setOtherSubject] = useState("")
+  const [cities, setCities] = useState<City[]>([])
+
+  useEffect(() => {
+    fetch("/api/city").then(r => r.json()).then(d => setCities(d.cities || []))
+  }, [])
 
   function toggleSubject(s: string) {
     setSelectedSubjects(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s])
@@ -22,7 +31,7 @@ function CareersForm() {
         <div className="max-w-lg w-full bg-white rounded-xl border border-zinc-200 p-8 text-center">
           <div className="text-4xl mb-4">&#10003;</div>
           <h1 className="text-2xl font-bold text-zinc-900 mb-2">Application Submitted!</h1>
-          <p className="text-zinc-600 mb-4">Thank you for applying. We've sent you an email with next steps — please check your inbox (and spam folder) for instructions to upload your CV and transcript.</p>
+          <p className="text-zinc-600 mb-4">Thank you for applying. We've sent you an email with a link to upload your CV and transcript — please check your inbox (and spam folder).</p>
           <p className="text-sm text-zinc-500">We'll reach out when a matching client is available.</p>
         </div>
       </div>
@@ -57,6 +66,22 @@ function CareersForm() {
             <div>
               <label className="block text-sm font-medium text-zinc-700 mb-1">Phone</label>
               <input type="tel" name="phone" className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">City *</label>
+              <select name="cityId" required className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Select your city</option>
+                {cities.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">Borough / Neighborhood</label>
+              <input type="text" name="borough" placeholder="e.g. NDG, Cote Saint-Luc" className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
           </div>
 
@@ -99,29 +124,6 @@ function CareersForm() {
               <input type="checkbox" name="formatOnline" className="rounded" /> Online tutoring
             </label>
           </fieldset>
-
-          <div>
-            <label className="block text-sm font-medium text-zinc-700 mb-1">What area of Montreal are you located in?</label>
-            <select name="area" className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="">Choose an option</option>
-              <option value="Cote Saint-Luc">Cote Saint-Luc</option>
-              <option value="Hampstead">Hampstead</option>
-              <option value="Montreal West">Montreal West</option>
-              <option value="Snowdon">Snowdon</option>
-              <option value="Cote-des-Neiges">Cote-des-Neiges</option>
-              <option value="NDG">NDG</option>
-              <option value="Westmount">Westmount</option>
-              <option value="Downtown">Downtown</option>
-              <option value="TMR">TMR</option>
-              <option value="Outremont">Outremont</option>
-              <option value="Plateau">Plateau</option>
-              <option value="Mile End">Mile End</option>
-              <option value="Saint-Laurent">Saint-Laurent</option>
-              <option value="DDO">DDO</option>
-              <option value="Pierrefonds">Pierrefonds</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
 
           <div>
             <label className="block text-sm font-medium text-zinc-700 mb-1">Work experience related to tutoring</label>
