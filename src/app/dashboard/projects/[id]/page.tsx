@@ -47,6 +47,15 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
   const totalBilled = project.hourLogs.reduce((sum, h) => sum + h.hours * h.billingRate, 0)
   const totalPay = project.hourLogs.reduce((sum, h) => sum + h.hours * h.tutorPayRate, 0)
 
+  const availableTutors = admin ? await prisma.tutor.findMany({
+    where: {
+      onboarded: true,
+      projectTutors: { none: { projectId: id } },
+    },
+    include: { user: { select: { name: true } } },
+    orderBy: { user: { name: "asc" } },
+  }) : []
+
   const grades = await prisma.billingRate.findMany({
     where: { gradeLevel: project.gradeLevel },
   })
@@ -107,9 +116,9 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Tutors</h3>
           {project.projectTutors.length === 0 ? (
-            <p className="text-sm text-zinc-500">No tutors assigned.</p>
+            <p className="text-sm text-zinc-500 mb-3">No tutors assigned.</p>
           ) : (
-            <ul className="space-y-2">
+            <ul className="space-y-2 mb-3">
               {project.projectTutors.map((pt) => (
                 <li key={pt.id} className="text-sm flex justify-between">
                   <span className="text-zinc-900 dark:text-zinc-100">{pt.tutor.user.name}</span>
@@ -117,6 +126,16 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
                 </li>
               ))}
             </ul>
+          )}
+          {admin && availableTutors.length > 0 && (
+            <form action="/api/projects/assign" method="POST" className="flex gap-2 items-end">
+              <input type="hidden" name="projectId" value={project.id} />
+              <select name="tutorId" required className="flex-1 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Add tutor...</option>
+                {availableTutors.map(t => (<option key={t.id} value={t.id}>{t.user.name}</option>))}
+              </select>
+              <button type="submit" className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">Assign</button>
+            </form>
           )}
         </div>
 

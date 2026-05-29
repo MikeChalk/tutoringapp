@@ -179,6 +179,11 @@ function RequestsContent() {
                   Matched: {req.matchedTutor.user.name}
                 </p>
               )}
+              {req.status === "MATCHED" && isAdmin && (
+                <a href="/dashboard/onboarding" className="inline-block mt-2 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg px-3 py-1.5 transition-colors">
+                  Start Onboarding
+                </a>
+              )}
               <p className="text-xs text-zinc-400 mt-2">
                 {new Date(req.createdAt).toLocaleDateString()}
               </p>
