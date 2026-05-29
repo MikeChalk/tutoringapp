@@ -9,8 +9,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 })
   }
 
-  if (role === "ADMIN") {
-    return NextResponse.json({ error: "Cannot register as admin" }, { status: 403 })
+  if (role === "ADMIN" || role === "CLIENT") {
+    return NextResponse.json({ error: "Cannot register as this role" }, { status: 403 })
   }
 
   const existing = await prisma.user.findUnique({ where: { email } })
