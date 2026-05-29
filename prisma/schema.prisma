@@ -127,19 +127,18 @@ model ProjectTutor {
 }
 
 model HourLog {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   tutorId      String
   projectId    String
   date         DateTime
   hours        Float
-  mode         String   @default("IN_PERSON")
-  billingRate  Float    @default(0)
-  tutorPayRate Float    @default(0)
+  mode         String    @default("IN_PERSON")
+  billingRate  Float     @default(0)
+  tutorPayRate Float     @default(0)
   description  String?
-  status       String   @default("PENDING")
-  tutorPaid    Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  paidAt       DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   tutor        Tutor         @relation(fields: [tutorId], references: [id], onDelete: Cascade)
   project      Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)

@@ -89,7 +89,6 @@ export default async function HoursPage() {
                     {!tutor && <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Bill $/hr</th>}
                     <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Pay $/hr</th>
                     <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Total Pay</th>
-                    <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700/50">
@@ -117,13 +116,6 @@ export default async function HoursPage() {
                       {!tutor && <td className="px-2 py-2 text-right text-zinc-600 dark:text-zinc-400">${log.billingRate.toFixed(2)}</td>}
                       <td className="px-2 py-2 text-right font-medium text-green-600 dark:text-green-400">${log.tutorPayRate.toFixed(2)}</td>
                       <td className="px-2 py-2 text-right font-medium text-green-600 dark:text-green-400">${(log.hours * log.tutorPayRate).toFixed(2)}</td>
-                      <td className="px-2 py-2">
-                        <span className={`inline-flex text-xs font-medium rounded-full px-2 py-0.5 ${
-                          log.status === "APPROVED" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
-                          log.status === "PENDING" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" :
-                          "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                        }`}>{log.status}</span>
-                      </td>
                     </tr>
                   ))}
                 </tbody>

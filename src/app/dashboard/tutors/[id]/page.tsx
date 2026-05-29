@@ -42,7 +42,6 @@ export default async function TutorDetailPage(props: { params: Promise<{ id: str
 
   const totalHours = tutor.hourLogs.reduce((sum, h) => sum + h.hours, 0)
   const totalPay = tutor.hourLogs.reduce((sum, h) => sum + h.hours * h.tutorPayRate, 0)
-  const approvedHours = tutor.hourLogs.filter((h) => h.status === "APPROVED").reduce((sum, h) => sum + h.hours, 0)
 
   const payScales = await prisma.payScale.findMany({
     where: { tenure: tutor.tenure },
@@ -54,14 +53,10 @@ export default async function TutorDetailPage(props: { params: Promise<{ id: str
       <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">{tutor.user.name}</h2>
       <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">{tutor.user.email}</p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
           <p className="text-xs text-zinc-500 uppercase">Total Hours</p>
           <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{totalHours}</p>
-        </div>
-        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
-          <p className="text-xs text-zinc-500 uppercase">Approved Hours</p>
-          <p className="text-2xl font-bold text-green-600 dark:text-green-400">{approvedHours}</p>
         </div>
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
           <p className="text-xs text-zinc-500 uppercase">Total Pay Owed</p>
@@ -159,7 +154,6 @@ export default async function TutorDetailPage(props: { params: Promise<{ id: str
                     <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Hours</th>
                     <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Pay Rate</th>
                     <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Pay</th>
-                    <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Status</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -177,13 +171,6 @@ export default async function TutorDetailPage(props: { params: Promise<{ id: str
                       <td className="px-2 py-2 text-right text-zinc-900 dark:text-zinc-100">{log.hours}</td>
                       <td className="px-2 py-2 text-right text-green-600 dark:text-green-400">${log.tutorPayRate.toFixed(2)}/hr</td>
                       <td className="px-2 py-2 text-right font-medium text-green-600 dark:text-green-400">${(log.hours * log.tutorPayRate).toFixed(2)}</td>
-                      <td className="px-2 py-2">
-                        <span className={`inline-flex text-xs font-medium rounded-full px-2 py-0.5 ${
-                          log.status === "APPROVED" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
-                          log.status === "PENDING" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" :
-                          "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                        }`}>{log.status}</span>
-                      </td>
                     </tr>
                   ))}
                 </tbody>

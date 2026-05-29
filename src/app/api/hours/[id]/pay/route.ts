@@ -20,8 +20,8 @@ export async function POST(
 
   await prisma.hourLog.update({
     where: { id },
-    data: { tutorPaid: !hourLog.tutorPaid },
+    data: { paidAt: hourLog.paidAt ? null : new Date() },
   })
 
-  return NextResponse.redirect(new URL("/dashboard/payments", request.url), 303)
+  return NextResponse.redirect(new URL(request.headers.get("referer") || "/dashboard/payments", request.url), 303)
 }

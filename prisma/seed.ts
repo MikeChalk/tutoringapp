@@ -270,7 +270,6 @@ async function main() {
       billingRate: billingRate.rate,
       tutorPayRate: payScale3rdInPerson.rate,
       description: "Algebra: quadratic equations",
-      status: "APPROVED",
     },
   })
 
@@ -284,7 +283,6 @@ async function main() {
       billingRate: (await prisma.billingRate.findFirst({ where: { gradeLevel: "SEC3", mode: "ONLINE" } }))!.rate,
       tutorPayRate: (await prisma.payScale.findFirst({ where: { tenure: "3RD_YEAR", gradeLevel: "SEC3", mode: "ONLINE" } }))!.rate,
       description: "Geometry review",
-      status: "APPROVED",
     },
   })
 
@@ -298,7 +296,6 @@ async function main() {
       billingRate: (await prisma.billingRate.findFirst({ where: { gradeLevel: "SEC4_5", mode: "IN_PERSON" } }))!.rate,
       tutorPayRate: (await prisma.payScale.findFirst({ where: { tenure: "2ND_YEAR", gradeLevel: "SEC4_5", mode: "IN_PERSON" } }))!.rate,
       description: "Ministry exam practice: functions",
-      status: "APPROVED",
     },
   })
 
@@ -312,7 +309,22 @@ async function main() {
       billingRate: (await prisma.billingRate.findFirst({ where: { gradeLevel: "CEGEP", mode: "ONLINE" } }))!.rate,
       tutorPayRate: (await prisma.payScale.findFirst({ where: { tenure: "3RD_YEAR", gradeLevel: "CEGEP", mode: "ONLINE" } }))!.rate,
       description: "Newton's laws, free-body diagrams",
-      status: "PENDING",
+      paidAt: new Date("2026-05-28"),
+    },
+  })
+
+  // Mark one more as paid
+  await prisma.hourLog.create({
+    data: {
+      tutorId: tutor1.id,
+      projectId: p1.id,
+      date: new Date("2026-05-28"),
+      hours: 1,
+      mode: "IN_PERSON",
+      billingRate: billingRate.rate,
+      tutorPayRate: payScale3rdInPerson.rate,
+      description: "Algebra review",
+      paidAt: new Date("2026-05-29"),
     },
   })
 
