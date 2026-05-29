@@ -28,16 +28,9 @@ export default async function HoursPage() {
   const tutor = isTutor(session.user.role)
 
   let tutorId: string | null = null
-  let currentTutor: { id: string; tenure: string; user: { name: string } } | null = null
 
   if (tutor) {
     tutorId = await getTutorId(session.user.id, session.user.email)
-    currentTutor = tutorId
-      ? await prisma.tutor.findUnique({
-          where: { id: tutorId },
-          include: { user: { select: { name: true } } },
-        })
-      : null
   }
 
   const [hourLogs, projects, tutors] = await Promise.all([
@@ -45,7 +38,7 @@ export default async function HoursPage() {
       where: tutor && tutorId ? { tutorId } : {},
       include: {
         tutor: { include: { user: { select: { name: true } } } },
-        project: { select: { name: true, status: true, client: { select: { user: { select: { name: true } } } } } },
+        project: { select: { name: true, gradeLevel: true, status: true, client: { select: { user: { select: { name: true } } } } } },
       },
       orderBy: { date: "desc" },
       take: 50,
@@ -88,13 +81,14 @@ export default async function HoursPage() {
                 <thead>
                   <tr className="border-b border-zinc-200 dark:border-zinc-700">
                     <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Date</th>
-                    <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Tutor</th>
-                    <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Project</th>
+                    {!tutor && <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Tutor</th>}
+                    <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Student</th>
                     <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Client</th>
                     <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Mode</th>
                     <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Hrs</th>
-                    <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Bill $/hr</th>
+                    {!tutor && <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Bill $/hr</th>}
                     <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Pay $/hr</th>
+                    <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Total Pay</th>
                     <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Status</th>
                   </tr>
                 </thead>
@@ -104,7 +98,7 @@ export default async function HoursPage() {
                       <td className="px-2 py-2 text-zinc-600 dark:text-zinc-400">
                         {new Date(log.date).toLocaleDateString()}
                       </td>
-                      <td className="px-2 py-2 text-zinc-900 dark:text-zinc-100">{log.tutor.user.name}</td>
+                      {!tutor && <td className="px-2 py-2 text-zinc-900 dark:text-zinc-100">{log.tutor.user.name}</td>}
                       <td className="px-2 py-2">
                         <span className="text-zinc-900 dark:text-zinc-100">{log.project.name}</span>
                         <span className={`inline-flex text-xs font-medium rounded-full px-2 py-0.5 ml-2 ${STATUS_COLORS[log.project.status] || "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"}`}>
@@ -120,8 +114,9 @@ export default async function HoursPage() {
                         </span>
                       </td>
                       <td className="px-2 py-2 text-right text-zinc-900 dark:text-zinc-100">{log.hours}</td>
-                      <td className="px-2 py-2 text-right text-zinc-600 dark:text-zinc-400">${log.billingRate.toFixed(2)}</td>
-                      <td className="px-2 py-2 text-right text-zinc-600 dark:text-zinc-400">${log.tutorPayRate.toFixed(2)}</td>
+                      {!tutor && <td className="px-2 py-2 text-right text-zinc-600 dark:text-zinc-400">${log.billingRate.toFixed(2)}</td>}
+                      <td className="px-2 py-2 text-right font-medium text-green-600 dark:text-green-400">${log.tutorPayRate.toFixed(2)}</td>
+                      <td className="px-2 py-2 text-right font-medium text-green-600 dark:text-green-400">${(log.hours * log.tutorPayRate).toFixed(2)}</td>
                       <td className="px-2 py-2">
                         <span className={`inline-flex text-xs font-medium rounded-full px-2 py-0.5 ${
                           log.status === "APPROVED" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
@@ -154,16 +149,11 @@ export default async function HoursPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Tutor</label>
-              <select name="tutorId" required id="tutorSelect"
+              <select name="tutorId" required id="tutorSelect" defaultValue={tutorId ?? ""}
                 className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="">Select tutor</option>
+                <option value="" disabled={!!tutorId}>Select tutor</option>
                 {tutors.map((t) => (
-                  <option
-                    key={t.id}
-                    value={t.id}
-                    data-tenure={t.tenure}
-                    selected={tutor && t.id === tutorId ? true : undefined}
-                  >
+                  <option key={t.id} value={t.id} data-tenure={t.tenure}>
                     {t.user.name} ({TENURE_LABELS[t.tenure] || t.tenure})
                   </option>
                 ))}
@@ -178,12 +168,14 @@ export default async function HoursPage() {
               </select>
             </div>
             <div className="bg-zinc-50 dark:bg-zinc-900 rounded-lg p-3 border border-zinc-200 dark:border-zinc-700">
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-zinc-500">Billing Rate:</span>
-                <span className="font-medium text-zinc-900 dark:text-zinc-100" id="billingRateDisplay">--</span>
-              </div>
+              {!tutor && (
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-zinc-500">Billing Rate:</span>
+                  <span className="font-medium text-zinc-900 dark:text-zinc-100" id="billingRateDisplay">--</span>
+                </div>
+              )}
               <div className="flex justify-between text-sm">
-                <span className="text-zinc-500">Tutor Pay Rate:</span>
+                <span className="text-zinc-500">Your Pay Rate:</span>
                 <span className="font-medium text-green-600 dark:text-green-400" id="payRateDisplay">--</span>
               </div>
             </div>
@@ -211,38 +203,47 @@ export default async function HoursPage() {
       </div>
 
       <script dangerouslySetInnerHTML={{ __html: `
-        const projectSelect = document.getElementById('projectSelect');
-        const tutorSelect = document.getElementById('tutorSelect');
-        const modeSelect = document.getElementById('modeSelect');
-        const billingDisplay = document.getElementById('billingRateDisplay');
-        const payDisplay = document.getElementById('payRateDisplay');
+        document.addEventListener('DOMContentLoaded', function() {
+          const projectSelect = document.getElementById('projectSelect');
+          const tutorSelect = document.getElementById('tutorSelect');
+          const modeSelect = document.getElementById('modeSelect');
+          const billingDisplay = document.getElementById('billingRateDisplay');
+          const payDisplay = document.getElementById('payRateDisplay');
 
-        async function updateRates() {
-          const projectOption = projectSelect?.selectedOptions[0];
-          const tutorOption = tutorSelect?.selectedOptions[0];
-          const grade = projectOption?.dataset.grade;
-          const mode = modeSelect?.value;
-          const tenure = tutorOption?.dataset.tenure;
+          async function updateRates() {
+            const grade = projectSelect?.selectedOptions[0]?.dataset.grade;
+            const mode = modeSelect?.value;
+            const tenure = tutorSelect?.selectedOptions[0]?.dataset.tenure;
 
-          if (!grade || !mode) {
-            billingDisplay.textContent = '--';
-            payDisplay.textContent = '--';
-            return;
+            if (!grade || !mode) {
+              if (billingDisplay) billingDisplay.textContent = '--';
+              if (payDisplay) payDisplay.textContent = '--';
+              return;
+            }
+
+            const params = new URLSearchParams({ gradeLevel: grade, mode });
+            if (tenure) params.set('tenure', tenure);
+
+            try {
+              const res = await fetch('/api/rates?' + params.toString());
+              const data = await res.json();
+              if (billingDisplay) {
+                billingDisplay.textContent = data.billingRate != null ? '$' + data.billingRate.toFixed(2) + '/hr' : '--';
+              }
+              if (payDisplay) {
+                payDisplay.textContent = data.payRate != null ? '$' + data.payRate.toFixed(2) + '/hr' : '--';
+              }
+            } catch(e) {
+              if (billingDisplay) billingDisplay.textContent = '--';
+              if (payDisplay) payDisplay.textContent = '--';
+            }
           }
 
-          const params = new URLSearchParams({ gradeLevel: grade, mode });
-          if (tenure) params.set('tenure', tenure);
-
-          const res = await fetch('/api/rates?' + params.toString());
-          const data = await res.json();
-          billingDisplay.textContent = data.billingRate != null ? '$' + data.billingRate.toFixed(2) + '/hr' : '--';
-          payDisplay.textContent = data.payRate != null ? '$' + data.payRate.toFixed(2) + '/hr' : '--';
-        }
-
-        projectSelect?.addEventListener('change', updateRates);
-        tutorSelect?.addEventListener('change', updateRates);
-        modeSelect?.addEventListener('change', updateRates);
-        updateRates();
+          projectSelect?.addEventListener('change', updateRates);
+          tutorSelect?.addEventListener('change', updateRates);
+          modeSelect?.addEventListener('change', updateRates);
+          updateRates();
+        });
       `}} />
     </div>
   )
