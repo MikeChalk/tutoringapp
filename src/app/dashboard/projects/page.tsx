@@ -107,7 +107,7 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
           <p className="text-sm text-zinc-500 col-span-full">No projects found.</p>
         )}
       </div>
-      {admin && <script dangerouslySetInnerHTML={{ __html: `document.getElementById('statusFilterSelect').addEventListener('change',function(){this.form.requestSubmit()})` }} />}
+      {admin && <script dangerouslySetInnerHTML={{ __html: `document.getElementById('statusFilterSelect')?.addEventListener('change',function(){this.form.submit()})` }} />}
     </div>
   )
 }
