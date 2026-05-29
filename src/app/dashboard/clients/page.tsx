@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin, isTutor, getTutorId } from "@/lib/auth-helpers"
+import { requireAuth, isAdmin, isTutor, getTutorId, isSuperAdmin } from "@/lib/auth-helpers"
+import { cookies } from "next/headers"
 import Link from "next/link"
 
 export default async function ClientsPage() {
@@ -7,11 +8,19 @@ export default async function ClientsPage() {
   const admin = isAdmin(session.user.role)
   const tutor = isTutor(session.user.role)
 
-  let whereClause = {}
+  let whereClause: Record<string, unknown> = {}
   if (tutor) {
     const tutorId = await getTutorId(session.user.id, session.user.email)
     if (tutorId) {
       whereClause = { projects: { some: { projectTutors: { some: { tutorId } } } } }
+    }
+  }
+
+  if (isSuperAdmin(session.user.role)) {
+    const cookieStore = await cookies()
+    const selectedCity = cookieStore.get("selectedCity")?.value
+    if (selectedCity && selectedCity !== "all") {
+      whereClause = { ...whereClause, user: { cityId: selectedCity } }
     }
   }
 

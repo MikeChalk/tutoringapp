@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin, isTutor, getTutorId } from "@/lib/auth-helpers"
+import { requireAuth, isAdmin, isTutor, getTutorId, isSuperAdmin } from "@/lib/auth-helpers"
 import { GRADE_LABELS, STATUS_LABELS, STATUS_COLORS } from "@/lib/constants"
+import { cookies } from "next/headers"
 import Link from "next/link"
 
 export default async function ProjectsPage(props: { searchParams: Promise<{ status?: string; type?: string }> }) {
@@ -22,6 +23,14 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
       whereClause = { ...whereClause, status: statusFilter }
     } else if (!statusFilter) {
       whereClause = { ...whereClause, status: "IN_PROGRESS" }
+    }
+  }
+
+  if (isSuperAdmin(session.user.role)) {
+    const cookieStore = await cookies()
+    const selectedCity = cookieStore.get("selectedCity")?.value
+    if (selectedCity && selectedCity !== "all") {
+      whereClause = { ...whereClause, cityId: selectedCity }
     }
   }
 
