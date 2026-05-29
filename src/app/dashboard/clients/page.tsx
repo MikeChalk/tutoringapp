@@ -1,12 +1,15 @@
 import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin, isTutor, getTutorId, isSuperAdmin } from "@/lib/auth-helpers"
-import { cookies } from "next/headers"
+import { CityFilter } from "@/components/city-filter"
 import Link from "next/link"
 
-export default async function ClientsPage() {
+export default async function ClientsPage(props: { searchParams: Promise<{ city?: string }> }) {
   const session = await requireAuth()
   const admin = isAdmin(session.user.role)
   const tutor = isTutor(session.user.role)
+
+  const { city: cityParam } = await props.searchParams
+  const selectedCity = cityParam || "all"
 
   let whereClause: Record<string, unknown> = {}
   if (tutor) {
@@ -16,12 +19,8 @@ export default async function ClientsPage() {
     }
   }
 
-  if (isSuperAdmin(session.user.role)) {
-    const cookieStore = await cookies()
-    const selectedCity = cookieStore.get("selectedCity")?.value
-    if (selectedCity && selectedCity !== "all") {
-      whereClause = { ...whereClause, user: { cityId: selectedCity } }
-    }
+  if (isSuperAdmin(session.user.role) && selectedCity !== "all") {
+    whereClause = { ...whereClause, user: { cityId: selectedCity } }
   }
 
   const clients = await prisma.client.findMany({

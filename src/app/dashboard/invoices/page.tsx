@@ -1,10 +1,10 @@
 import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin, isTutor, isClient, getClientId, isSuperAdmin } from "@/lib/auth-helpers"
 import { redirect } from "next/navigation"
-import { cookies } from "next/headers"
+import { CityFilter } from "@/components/city-filter"
 import Link from "next/link"
 
-export default async function InvoicesPage() {
+export default async function InvoicesPage(props: { searchParams: Promise<{ city?: string }> }) {
   const session = await requireAuth()
   const admin = isAdmin(session.user.role)
   const tutor = isTutor(session.user.role)
@@ -12,20 +12,17 @@ export default async function InvoicesPage() {
 
   if (tutor) redirect("/dashboard")
 
+  const { city: cityParam } = await props.searchParams
+  const selectedCity = cityParam || "all"
+
   let whereClause: Record<string, unknown> = {}
   if (client) {
     const clientId = await getClientId(session.user.id, session.user.email)
-    if (clientId) {
-      whereClause = { clientId }
-    }
+    if (clientId) { whereClause = { clientId } }
   }
 
-  if (isSuperAdmin(session.user.role)) {
-    const cookieStore = await cookies()
-    const selectedCity = cookieStore.get("selectedCity")?.value
-    if (selectedCity && selectedCity !== "all") {
-      whereClause = { ...whereClause, client: { user: { cityId: selectedCity } } }
-    }
+  if (isSuperAdmin(session.user.role) && selectedCity !== "all") {
+    whereClause = { ...whereClause, client: { user: { cityId: selectedCity } } }
   }
 
   const invoices = await prisma.invoice.findMany({
@@ -38,7 +35,10 @@ export default async function InvoicesPage() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-6">Invoices</h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Invoices</h2>
+        {isSuperAdmin(session.user.role) && <CityFilter selected={selectedCity} />}
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <StatCard

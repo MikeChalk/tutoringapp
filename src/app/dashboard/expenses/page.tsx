@@ -2,17 +2,16 @@ import { prisma } from "@/lib/db"
 import { requireAuth, isSuperAdmin } from "@/lib/auth-helpers"
 import { redirect } from "next/navigation"
 import { StatusBadge } from "@/components/ui"
-import { cookies } from "next/headers"
+import { CityFilter } from "@/components/city-filter"
 
-export default async function ExpensesPage() {
+export default async function ExpensesPage(props: { searchParams: Promise<{ city?: string }> }) {
   const session = await requireAuth()
   const role = session.user.role
   if (role !== "ADMIN" && role !== "CITY_ADMIN") redirect("/dashboard")
 
+  const { city: cityParam } = await props.searchParams
+  const selectedCity = cityParam || "all"
   const superAdmin = isSuperAdmin(role)
-
-  const cookieStore = await cookies()
-  const selectedCity = cookieStore.get("selectedCity")?.value || "all"
 
   const cities = await prisma.city.findMany({ select: { id: true, name: true } })
 
@@ -77,6 +76,7 @@ export default async function ExpensesPage() {
           <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Finance</h2>
           <p className="text-sm text-zinc-500">{cityName}</p>
         </div>
+        {superAdmin && <CityFilter selected={selectedCity} />}
       </div>
 
       {superAdmin && (
