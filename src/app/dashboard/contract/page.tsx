@@ -41,10 +41,6 @@ export default async function ContractPage() {
   const studentPayScales = payScales.filter(p => p.projectType === "STUDENT")
   const studyHallPayScales = payScales.filter(p => p.projectType === "STUDY_HALL")
 
-  const billingRates = await prisma.billingRate.findMany({
-    orderBy: [{ gradeLevel: "asc" }, { mode: "asc" }],
-  })
-
   return (
     <div>
       <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-6">My Contract</h2>

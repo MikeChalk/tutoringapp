@@ -15,7 +15,7 @@ const ONBOARDING_STEPS = [
   "Platform onboarding complete",
 ]
 
-const ADMIN_ADVANCE_STEPS = new Set([0, 2, 3, 4])
+const ADMIN_ADVANCE_STEPS = new Set([2, 3, 4])
 
 export default async function OnboardingPage(props: { searchParams: Promise<{ created?: string; pw?: string; city?: string }> }) {
   const session = await requireAuth()
@@ -174,19 +174,13 @@ export default async function OnboardingPage(props: { searchParams: Promise<{ cr
                     ) : ADMIN_ADVANCE_STEPS.has(step) ? (
                       <div className="border border-zinc-200 dark:border-zinc-700 rounded-lg p-3 space-y-2 max-w-md">
                         <p className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
-                          {step === 0 ? "Send welcome email to tutor" :
-                           step === 2 ? "Notify parent of tutor match" :
-                           step === 3 ? "Create project for this tutor" :
+                            {step === 2 ? "Notify parent of tutor match" :
+                             step === 3 ? "Create project for this tutor" :
                            "Tutor has been assigned to project"}
                         </p>
                         <form action="/api/onboarding" method="POST" className="space-y-2">
                           <input type="hidden" name="_action" value="advance" />
                           <input type="hidden" name="tutorId" value={tutor.id} />
-                          {step === 0 && (
-                            <textarea name="emailMessage" rows={3} placeholder="Custom welcome message for the tutor..."
-                              className="w-full rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                              defaultValue={`Welcome to J.A.S.S.! We're excited to have you on the team.\n\nPlease log in to the platform and sign your contract to get started.`} />
-                          )}
                           {step === 2 && (
                             <>
                               <input type="text" name="parentEmail" placeholder="Parent email" className="w-full rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500" />
@@ -210,8 +204,7 @@ export default async function OnboardingPage(props: { searchParams: Promise<{ cr
                             </>
                           )}
                           <button type="submit" className="w-full rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 transition-colors">
-                            {step === 0 ? "Send Email & Advance" :
-                             step === 2 ? "Send Parent Email & Advance" :
+                            {step === 2 ? "Send Parent Email & Advance" :
                              step === 3 ? "Create Project & Advance" :
                              `Advance to "${ONBOARDING_STEPS[step + 1]}"`}
                           </button>

@@ -50,7 +50,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Email already in use" }, { status: 409 })
   }
 
-  const tempPassword = Math.random().toString(36).slice(2, 10)
+  const tempPassword = crypto.randomBytes(8).toString("hex")
   const hashed = await bcrypt.hash(tempPassword, 12)
   const signupToken = crypto.randomBytes(16).toString("hex")
 
