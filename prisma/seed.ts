@@ -299,6 +299,20 @@ async function main() {
     },
   })
 
+  // School client for Royal West Academy
+  const schoolUser = await prisma.user.create({
+    data: { name: "Royal West Academy", email: "admin@royalwest.qc.ca", password: hash, role: "CLIENT", cityId: montreal.id },
+  })
+  const schoolClient = await prisma.client.create({
+    data: {
+      userId: schoolUser.id,
+      type: "SCHOOL",
+      company: "Royal West Academy",
+      phone: "514-555-0200",
+      address: "189 Rue Easton, Montreal",
+    },
+  })
+
   // Projects (students)
   const p1 = await prisma.project.create({
     data: {
@@ -521,7 +535,7 @@ async function main() {
       projectType: "STUDY_HALL",
       school: "Royal West Academy",
       gradeLevel: "STUDY_HALL",
-      clientId: client1.id,
+      clientId: schoolClient.id,
       cityId: montreal.id,
     },
   })
