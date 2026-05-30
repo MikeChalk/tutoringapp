@@ -10,23 +10,48 @@ const STATUS_TABS = [
   { value: "CONVERTED", label: "Converted" },
 ]
 
-export default async function LeadsPage(props: { searchParams: Promise<{ status?: string }> }) {
+function buildHref(status: string, search: string, page: number) {
+  const params = new URLSearchParams()
+  if (status) params.set("status", status)
+  if (search) params.set("search", search)
+  if (page > 1) params.set("page", String(page))
+  const qs = params.toString()
+  return `/dashboard/leads${qs ? `?${qs}` : ""}`
+}
+
+export default async function LeadsPage(props: { searchParams: Promise<{ status?: string; search?: string; page?: string }> }) {
   const session = await requireAuth()
   if (!isAdmin(session.user.role)) redirect("/dashboard")
 
-  const { status: statusParam } = await props.searchParams
+  const { status: statusParam, search: searchParam, page: pageParam } = await props.searchParams
   const selectedStatus = statusParam || ""
+  const searchQuery = searchParam || ""
+  const page = parseInt(pageParam || "1") || 1
+  const pageSize = 50
 
   const where: Record<string, unknown> = {}
   if (selectedStatus) where.status = selectedStatus
+  if (searchQuery) {
+    where.OR = [
+      { name: { contains: searchQuery } },
+      { email: { contains: searchQuery } },
+      { subject: { contains: searchQuery } },
+    ]
+  }
 
-  const leads = await prisma.lead.findMany({
-    where,
-    include: { city: { select: { name: true } } },
-    orderBy: { createdAt: "desc" },
-  })
+  const [leads, totalCount] = await Promise.all([
+    prisma.lead.findMany({
+      where,
+      include: { city: { select: { name: true } } },
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.lead.count({ where }),
+  ])
+  const totalPages = Math.ceil(totalCount / pageSize)
 
-  const allLeads = selectedStatus ? await prisma.lead.findMany({ select: { status: true } }) : leads
+  const allLeads = await prisma.lead.findMany({ select: { status: true } })
   const newCount = allLeads.filter(l => l.status === "NEW").length
 
   return (
@@ -34,26 +59,39 @@ export default async function LeadsPage(props: { searchParams: Promise<{ status?
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Leads</h2>
-          <p className="text-sm text-zinc-500">{allLeads.length} total · {newCount} new</p>
+          <p className="text-sm text-zinc-500">{totalCount} total &middot; {newCount} new</p>
         </div>
       </div>
 
-      <div className="flex gap-2 mb-4">
-        {STATUS_TABS.map(tab => (
-          <Link
-            key={tab.value}
-            href={`/dashboard/leads${tab.value ? `?status=${tab.value}` : ""}`}
-            className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${
-              selectedStatus === tab.value
-                ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900"
-                : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700 border border-zinc-300 dark:border-zinc-600"
-            }`}
-          >
-            {tab.label}
-            {tab.value === "NEW" && newCount > 0 && <span className="ml-1 text-[10px] opacity-70">({newCount})</span>}
-          </Link>
-        ))}
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        {STATUS_TABS.map(tab => {
+          const params = new URLSearchParams()
+          if (tab.value) params.set("status", tab.value)
+          if (searchQuery) params.set("search", searchQuery)
+          return (
+            <Link
+              key={tab.value}
+              href={`/dashboard/leads?${params.toString()}`}
+              className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${
+                selectedStatus === tab.value
+                  ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900"
+                  : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700 border border-zinc-300 dark:border-zinc-600"
+              }`}
+            >
+              {tab.label}
+              {tab.value === "NEW" && newCount > 0 && <span className="ml-1 text-[10px] opacity-70">({newCount})</span>}
+            </Link>
+          )
+        })}
       </div>
+
+      <form action="/dashboard/leads" method="GET" className="mb-4 flex gap-2">
+        {selectedStatus ? <input type="hidden" name="status" value={selectedStatus} /> : null}
+        <input type="text" name="search" defaultValue={searchQuery} placeholder="Search by name, email, or subject..."
+          className="flex-1 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Search</button>
+        {searchQuery && <Link href={buildHref(selectedStatus, "", 1)} className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700">Clear</Link>}
+      </form>
 
       <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
         <div className="overflow-x-auto">
@@ -79,11 +117,31 @@ export default async function LeadsPage(props: { searchParams: Promise<{ status?
                 </td>
               </tr>
             ))}
+            {leads.length === 0 && (
+              <tr><td colSpan={7} className="px-4 py-8 text-center text-sm text-zinc-500">{searchQuery ? "No leads match your search." : selectedStatus ? `No ${selectedStatus.toLowerCase()} leads.` : "No leads yet."}</td></tr>
+            )}
           </tbody>
         </table>
         </div>
-        {leads.length === 0 && <div className="p-8 text-center text-sm text-zinc-500">{selectedStatus ? `No ${selectedStatus.toLowerCase()} leads.` : "No leads yet."}</div>}
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-4">
+          {page > 1 && (
+            <Link href={buildHref(selectedStatus, searchQuery, page - 1)}
+              className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+              Previous
+            </Link>
+          )}
+          <span className="text-sm text-zinc-500 px-2">Page {page} of {totalPages} ({totalCount} total)</span>
+          {page < totalPages && (
+            <Link href={buildHref(selectedStatus, searchQuery, page + 1)}
+              className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+              Next
+            </Link>
+          )}
+        </div>
+      )}
     </div>
   )
 }

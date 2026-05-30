@@ -11,11 +11,14 @@ const ENTITY_FILTERS = [
   { value: "Project", label: "Projects" },
 ]
 
-export default async function ActivityLogPage(props: { searchParams: Promise<{ entity?: string; user?: string; from?: string; to?: string }> }) {
+export default async function ActivityLogPage(props: { searchParams: Promise<{ entity?: string; user?: string; from?: string; to?: string; search?: string; page?: string }> }) {
   const session = await requireAuth()
   if (!isAdmin(session.user.role)) redirect("/dashboard")
 
-  const { entity: entityFilter, user: userFilter, from: fromDate, to: toDate } = await props.searchParams
+  const { entity: entityFilter, user: userFilter, from: fromDate, to: toDate, search: searchParam, page: pageParam } = await props.searchParams
+  const searchQuery = searchParam || ""
+  const page = parseInt(pageParam || "1") || 1
+  const pageSize = 50
 
   const where: Record<string, unknown> = {}
   if (entityFilter) where.entity = entityFilter
@@ -26,12 +29,24 @@ export default async function ActivityLogPage(props: { searchParams: Promise<{ e
     if (toDate) createdAt.lte = new Date(toDate + "T23:59:59")
     where.createdAt = createdAt
   }
+  if (searchQuery) {
+    where.OR = [
+      { action: { contains: searchQuery } },
+      { details: { contains: searchQuery } },
+      { entity: { contains: searchQuery } },
+    ]
+  }
 
-  const logs = await prisma.activityLog.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-    take: 500,
-  })
+  const [logs, totalCount] = await Promise.all([
+    prisma.activityLog.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.activityLog.count({ where }),
+  ])
+  const totalPages = Math.ceil(totalCount / pageSize)
 
   const userIds = [...new Set(logs.map(l => l.userId))]
   const users = await prisma.user.findMany({
@@ -43,9 +58,9 @@ export default async function ActivityLogPage(props: { searchParams: Promise<{ e
   return (
     <div>
       <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">Activity Log</h2>
-      <p className="text-sm text-zinc-500 mb-4">Track changes across the platform. Latest 500 entries.</p>
+      <p className="text-sm text-zinc-500 mb-4">Track changes across the platform.</p>
 
-      <form action="/dashboard/activity" method="GET" className="mb-6 flex flex-wrap gap-3 items-end bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
+      <form action="/dashboard/activity" method="GET" className="mb-4 flex flex-wrap gap-3 items-end bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
         <div>
           <label className="block text-xs text-zinc-500 mb-1">Entity</label>
           <select name="entity" className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-1.5 text-sm">
@@ -60,8 +75,12 @@ export default async function ActivityLogPage(props: { searchParams: Promise<{ e
           <label className="block text-xs text-zinc-500 mb-1">To</label>
           <input type="date" name="to" defaultValue={toDate || ""} className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-1.5 text-sm" />
         </div>
+        <div className="flex-1">
+          <label className="block text-xs text-zinc-500 mb-1">Search</label>
+          <input type="text" name="search" defaultValue={searchQuery} placeholder="Search action, details, or entity..." className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-1.5 text-sm" />
+        </div>
         <button type="submit" className="rounded-lg bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700">Filter</button>
-        {(entityFilter || fromDate || toDate) && <Link href="/dashboard/activity" className="rounded-lg border border-zinc-300 px-4 py-1.5 text-sm text-zinc-500 hover:bg-zinc-100">Clear</Link>}
+        {(entityFilter || fromDate || toDate || searchQuery) && <Link href="/dashboard/activity" className="rounded-lg border border-zinc-300 px-4 py-1.5 text-sm text-zinc-500 hover:bg-zinc-100">Clear</Link>}
       </form>
 
       <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
@@ -99,13 +118,31 @@ export default async function ActivityLogPage(props: { searchParams: Promise<{ e
                 </td>
               </tr>
             ))}
+            {logs.length === 0 && (
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-sm text-zinc-500">No activity recorded yet.</td></tr>
+            )}
           </tbody>
         </table>
         </div>
-        {logs.length === 0 && (
-          <div className="p-8 text-center text-sm text-zinc-500">No activity recorded yet.</div>
-        )}
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-4">
+          {page > 1 && (
+            <Link href={`/dashboard/activity?page=${page - 1}${entityFilter ? `&entity=${entityFilter}` : ""}${fromDate ? `&from=${fromDate}` : ""}${toDate ? `&to=${toDate}` : ""}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ""}`}
+              className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+              Previous
+            </Link>
+          )}
+          <span className="text-sm text-zinc-500 px-2">Page {page} of {totalPages} ({totalCount} total)</span>
+          {page < totalPages && (
+            <Link href={`/dashboard/activity?page=${page + 1}${entityFilter ? `&entity=${entityFilter}` : ""}${fromDate ? `&from=${fromDate}` : ""}${toDate ? `&to=${toDate}` : ""}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ""}`}
+              className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+              Next
+            </Link>
+          )}
+        </div>
+      )}
     </div>
   )
 }

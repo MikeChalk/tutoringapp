@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin } from "@/lib/auth-helpers"
 import { redirect } from "next/navigation"
+import Link from "next/link"
 
 const TRIGGER_LABELS: Record<string, string> = {
   career_application: "Career Application",
@@ -24,19 +25,46 @@ const TRIGGER_COLORS: Record<string, string> = {
   bulk_email: "bg-zinc-100 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300",
 }
 
-export default async function EmailLogPage() {
+export default async function EmailLogPage(props: { searchParams: Promise<{ search?: string; page?: string }> }) {
   const session = await requireAuth()
   if (!isAdmin(session.user.role)) redirect("/dashboard")
 
-  const logs = await prisma.emailLog.findMany({
-    orderBy: { createdAt: "desc" },
-    take: 200,
-  })
+  const { search: searchParam, page: pageParam } = await props.searchParams
+  const searchQuery = searchParam || ""
+  const page = parseInt(pageParam || "1") || 1
+  const pageSize = 50
+
+  const where: Record<string, unknown> = {}
+  if (searchQuery) {
+    where.OR = [
+      { to: { contains: searchQuery } },
+      { subject: { contains: searchQuery } },
+      { trigger: { contains: searchQuery } },
+    ]
+  }
+
+  const [logs, totalCount] = await Promise.all([
+    prisma.emailLog.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.emailLog.count({ where }),
+  ])
+  const totalPages = Math.ceil(totalCount / pageSize)
 
   return (
     <div>
       <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">Email Log</h2>
-      <p className="text-sm text-zinc-500 mb-6">Every email sent through the platform. Latest 200 entries.</p>
+      <p className="text-sm text-zinc-500 mb-4">Every email sent through the platform.</p>
+
+      <form action="/dashboard/email-log" method="GET" className="mb-4 flex gap-2">
+        <input type="text" name="search" defaultValue={searchQuery} placeholder="Search by recipient, subject, or type..."
+          className="flex-1 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Search</button>
+        {searchQuery && <Link href="/dashboard/email-log" className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700">Clear</Link>}
+      </form>
 
       <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
         <div className="overflow-x-auto">
@@ -69,13 +97,31 @@ export default async function EmailLogPage() {
                 </td>
               </tr>
             ))}
+            {logs.length === 0 && (
+              <tr><td colSpan={4} className="px-4 py-8 text-center text-sm text-zinc-500">{searchQuery ? "No emails match your search." : "No emails sent yet."}</td></tr>
+            )}
           </tbody>
         </table>
         </div>
-        {logs.length === 0 && (
-          <div className="p-8 text-center text-sm text-zinc-500">No emails sent yet.</div>
-        )}
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-4">
+          {page > 1 && (
+            <Link href={`/dashboard/email-log?page=${page - 1}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ""}`}
+              className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+              Previous
+            </Link>
+          )}
+          <span className="text-sm text-zinc-500 px-2">Page {page} of {totalPages} ({totalCount} total)</span>
+          {page < totalPages && (
+            <Link href={`/dashboard/email-log?page=${page + 1}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ""}`}
+              className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+              Next
+            </Link>
+          )}
+        </div>
+      )}
     </div>
   )
 }

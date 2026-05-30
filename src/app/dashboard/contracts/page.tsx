@@ -6,13 +6,16 @@ import { CityFilter } from "@/components/city-filter"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 
-export default async function ContractsPage(props: { searchParams: Promise<{ tab?: string; city?: string; edit?: string }> }) {
+export default async function ContractsPage(props: { searchParams: Promise<{ tab?: string; city?: string; edit?: string; search?: string; page?: string }> }) {
   const session = await requireAuth()
   if (!isAdmin(session.user.role)) redirect("/dashboard")
 
-  const { tab, city: cityParam, edit: editId } = await props.searchParams
+  const { tab, city: cityParam, edit: editId, search: searchParam, page: pageParam } = await props.searchParams
   const activeTab = tab || "contracts"
   const selectedCity = cityParam || "all"
+  const searchQuery = searchParam || ""
+  const page = parseInt(pageParam || "1") || 1
+  const pageSize = 50
   const superAdmin = isSuperAdmin(session.user.role)
   const cityAdminId = isCityAdmin(session.user.role) ? await getActiveCityId(session.user.role, session.user.id) : null
   const effectiveCityId = cityAdminId || (superAdmin && selectedCity !== "all" ? selectedCity : null)
@@ -21,14 +24,28 @@ export default async function ContractsPage(props: { searchParams: Promise<{ tab
   if (effectiveCityId) {
     where.tutor = { user: { cityId: effectiveCityId } }
   }
+  if (searchQuery) {
+    where.tutor = {
+      ...(where.tutor as Record<string, unknown> || {}),
+      OR: [
+        { user: { name: { contains: searchQuery } } },
+        { user: { email: { contains: searchQuery } } },
+      ],
+    }
+  }
 
-  const contracts = await prisma.contract.findMany({
-    where,
-    include: {
-      tutor: { include: { user: { select: { name: true, email: true, city: { select: { name: true } } } } } },
-    },
-    orderBy: { tutor: { user: { name: "asc" } } },
-  })
+  const [contracts, totalCount] = await Promise.all([
+    prisma.contract.findMany({
+      where,
+      include: {
+        tutor: { include: { user: { select: { name: true, email: true, city: { select: { name: true } } } } } },
+      },
+      orderBy: { tutor: { user: { name: "asc" } } },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.contract.count({ where }),
+  ])
 
   const templates = await prisma.contractTemplate.findMany({
     orderBy: [{ type: "asc" }, { name: "asc" }],
@@ -57,6 +74,15 @@ export default async function ContractsPage(props: { searchParams: Promise<{ tab
         {superAdmin && <CityFilter selected={selectedCity} />}
       </div>
 
+      <form action="/dashboard/contracts" method="GET" className="mb-4 flex gap-2">
+        <input type="hidden" name="tab" value={activeTab} />
+        {selectedCity !== "all" ? <input type="hidden" name="city" value={selectedCity} /> : null}
+        <input type="text" name="search" defaultValue={searchQuery} placeholder="Search by tutor name or email..."
+          className="flex-1 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Search</button>
+        {searchQuery && <Link href={`/dashboard/contracts?tab=${activeTab}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`} className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700">Clear</Link>}
+      </form>
+
       <div className="flex gap-2 mb-6">
         {[
           { value: "contracts", label: "Contracts" },
@@ -77,19 +103,25 @@ export default async function ContractsPage(props: { searchParams: Promise<{ tab
       {activeTab === "templates" ? (
         <TemplatesTab templates={templates} editingTemplate={editingTemplate} />
       ) : (
-        <ContractsTab contracts={contracts} tutors={tutors} />
+        <ContractsTab contracts={contracts} tutors={tutors} totalCount={totalCount} page={page} pageSize={pageSize} searchQuery={searchQuery} selectedCity={selectedCity} activeTab={activeTab} />
       )}
     </div>
   )
 }
 
-function ContractsTab({ contracts, tutors }: {
+function ContractsTab({ contracts, tutors, totalCount, page, pageSize, searchQuery, selectedCity, activeTab }: {
   contracts: Array<{
     id: string; tutorId: string; type: string; yearLevel: string;
     startDate: Date; endDate: Date; signed: boolean; signedAt: Date | null; status: string;
     tutor: { user: { name: string; email: string; city: { name: string } | null } };
   }>;
   tutors: Array<{ id: string; user: { name: string } }>;
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  searchQuery: string;
+  selectedCity: string;
+  activeTab: string;
 }) {
   const today = new Date()
   const nextJuly1 = today < new Date(today.getFullYear(), 6, 1)
@@ -225,6 +257,23 @@ function ContractsTab({ contracts, tutors }: {
           </div>
          </div>
       )}
+      {(() => { const tp = Math.ceil(totalCount / pageSize); return tp > 1 ? (
+        <div className="flex items-center justify-center gap-2">
+          {page > 1 && (
+            <Link href={`/dashboard/contracts?page=${page - 1}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}&tab=${activeTab}`}
+              className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+              Previous
+            </Link>
+          )}
+          <span className="text-sm text-zinc-500 px-2">Page {page} of {tp} ({totalCount} total)</span>
+          {page < tp && (
+            <Link href={`/dashboard/contracts?page=${page + 1}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}&tab=${activeTab}`}
+              className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+              Next
+            </Link>
+          )}
+        </div>
+      ) : null })()}
     </div>
   )
 }
@@ -307,7 +356,7 @@ function TemplatesTab({ templates, editingTemplate }: { templates: Array<{
            </table>
           </div>
          </div>
-       )}
-     </div>
-   )
+)}
+      </div>
+    )
 }

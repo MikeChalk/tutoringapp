@@ -6,14 +6,15 @@ import { CreateProjectForm } from "@/components/create-project-form"
 import Link from "next/link"
 import Script from "next/script"
 
-export default async function ProjectsPage(props: { searchParams: Promise<{ status?: string; type?: string; city?: string; page?: string; view?: string }> }) {
+export default async function ProjectsPage(props: { searchParams: Promise<{ status?: string; type?: string; city?: string; page?: string; view?: string; search?: string }> }) {
   const session = await requireAuth()
   const admin = isAdmin(session.user.role)
   const tutor = isTutor(session.user.role)
 
-  const { status: statusFilter, type: typeFilter, city: cityParam, page: pageParam, view: viewParam } = await props.searchParams
+  const { status: statusFilter, type: typeFilter, city: cityParam, page: pageParam, view: viewParam, search: searchParam } = await props.searchParams
   const projectType = typeFilter || "ALL"
   const selectedCity = cityParam || "all"
+  const searchQuery = searchParam || ""
   const page = parseInt(pageParam || "1") || 1
   const pageSize = 50
   const view = viewParam || "grid"
@@ -38,6 +39,16 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
     whereClause = { ...whereClause, cityId: selectedCity }
   } else if (cityAdminId) {
     whereClause = { ...whereClause, cityId: cityAdminId }
+  }
+
+  if (searchQuery) {
+    whereClause = {
+      ...whereClause,
+      OR: [
+        { name: { contains: searchQuery } },
+        { client: { user: { name: { contains: searchQuery } } } },
+      ],
+    }
   }
 
   const [projects, totalCount] = await Promise.all([
@@ -135,6 +146,17 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
           defaultCity={selectedCity}
         />
       )}
+
+      <form action="/dashboard/projects" method="GET" className="mb-4 flex gap-2">
+        {statusFilter && statusFilter !== "ALL" ? <input type="hidden" name="status" value={statusFilter} /> : null}
+        {projectType !== "ALL" ? <input type="hidden" name="type" value={projectType} /> : null}
+        {superAdmin && selectedCity !== "all" ? <input type="hidden" name="city" value={selectedCity} /> : null}
+        {view !== "grid" ? <input type="hidden" name="view" value={view} /> : null}
+        <input type="text" name="search" defaultValue={searchQuery} placeholder="Search by project or client name..."
+          className="flex-1 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Search</button>
+        {searchQuery && <Link href={`/dashboard/projects${projectType !== "ALL" ? `?type=${projectType}` : ""}${statusFilter && statusFilter !== "ALL" ? `${projectType !== "ALL" ? "&" : "?"}status=${statusFilter}` : ""}`} className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700">Clear</Link>}
+      </form>
 
       {view === "list" ? (
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
@@ -237,17 +259,17 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 mt-4">
           {page > 1 && (
-            <a href={`/dashboard/projects?page=${page - 1}${statusFilter && statusFilter !== "ALL" ? `&status=${statusFilter}` : ""}${projectType !== "STUDENT" ? `&type=${projectType}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
+            <Link href={`/dashboard/projects?page=${page - 1}${statusFilter && statusFilter !== "ALL" ? `&status=${statusFilter}` : ""}${projectType !== "STUDENT" ? `&type=${projectType}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ""}`}
               className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
               Previous
-            </a>
+            </Link>
           )}
           <span className="text-sm text-zinc-500 px-2">Page {page} of {totalPages} ({totalCount} total)</span>
           {page < totalPages && (
-            <a href={`/dashboard/projects?page=${page + 1}${statusFilter && statusFilter !== "ALL" ? `&status=${statusFilter}` : ""}${projectType !== "STUDENT" ? `&type=${projectType}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
+            <Link href={`/dashboard/projects?page=${page + 1}${statusFilter && statusFilter !== "ALL" ? `&status=${statusFilter}` : ""}${projectType !== "STUDENT" ? `&type=${projectType}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ""}`}
               className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
               Next
-            </a>
+            </Link>
           )}
         </div>
       )}

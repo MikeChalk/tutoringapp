@@ -1,18 +1,40 @@
 import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin } from "@/lib/auth-helpers"
 import { redirect } from "next/navigation"
+import Link from "next/link"
 
-export default async function DiscountsPage() {
+export default async function DiscountsPage(props: { searchParams: Promise<{ search?: string; page?: string }> }) {
   const session = await requireAuth()
   if (!isAdmin(session.user.role)) redirect("/dashboard")
 
-  const codes = await prisma.discountCode.findMany({ orderBy: { code: "asc" } })
+  const { search: searchParam, page: pageParam } = await props.searchParams
+  const searchQuery = searchParam || ""
+  const page = parseInt(pageParam || "1") || 1
+  const pageSize = 50
+
+  const where: Record<string, unknown> = {}
+  if (searchQuery) {
+    where.OR = [
+      { code: { contains: searchQuery } },
+      { description: { contains: searchQuery } },
+    ]
+  }
+
+  const [codes, totalCount] = await Promise.all([
+    prisma.discountCode.findMany({
+      where,
+      orderBy: { code: "asc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.discountCode.count({ where }),
+  ])
+  const totalPages = Math.ceil(totalCount / pageSize)
 
   return (
     <div>
       <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-6">Discount Codes</h2>
 
-      {/* Create form */}
       <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 mb-6">
         <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Create Code</h3>
         <form action="/api/discounts" method="POST" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
@@ -26,7 +48,13 @@ export default async function DiscountsPage() {
         <p className="text-xs text-zinc-400 mt-3">Use either Discount % or Flat $ Amount — not both. Percentage takes priority.</p>
       </div>
 
-      {/* Codes table */}
+      <form action="/dashboard/discounts" method="GET" className="mb-4 flex gap-2">
+        <input type="text" name="search" defaultValue={searchQuery} placeholder="Search by code or description..."
+          className="flex-1 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Search</button>
+        {searchQuery && <Link href="/dashboard/discounts" className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700">Clear</Link>}
+      </form>
+
       <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
         <div className="overflow-x-auto">
         <table className="w-full">
@@ -67,7 +95,6 @@ export default async function DiscountsPage() {
                 </td>
                 <td className="px-4 py-3 text-center">
                   <div className="flex items-center justify-center gap-2">
-                    {/* Edit modal trigger — we use a details/summary for simplicity */}
                     <details className="relative">
                       <summary className="text-xs text-blue-600 dark:text-blue-400 hover:underline cursor-pointer list-none">Edit</summary>
                       <div className="absolute right-0 top-6 z-10 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl p-4 shadow-lg w-72">
@@ -97,9 +124,27 @@ export default async function DiscountsPage() {
         </table>
         </div>
         {codes.length === 0 && (
-          <div className="p-8 text-center text-sm text-zinc-500">No discount codes yet. Create one above.</div>
+          <div className="p-8 text-center text-sm text-zinc-500">{searchQuery ? "No discount codes match your search." : "No discount codes yet. Create one above."}</div>
         )}
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-4">
+          {page > 1 && (
+            <Link href={`/dashboard/discounts?page=${page - 1}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ""}`}
+              className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+              Previous
+            </Link>
+          )}
+          <span className="text-sm text-zinc-500 px-2">Page {page} of {totalPages} ({totalCount} total)</span>
+          {page < totalPages && (
+            <Link href={`/dashboard/discounts?page=${page + 1}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ""}`}
+              className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+              Next
+            </Link>
+          )}
+        </div>
+      )}
     </div>
   )
 }

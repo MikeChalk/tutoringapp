@@ -6,17 +6,21 @@ import { DeleteHourButton } from "@/components/delete-hour-button"
 import EditHourLog from "@/components/edit-hour-log"
 import Script from "next/script"
 import { Prisma } from "@prisma/client"
+import Link from "next/link"
 
 type TutorWithUser = Prisma.TutorGetPayload<{ include: { user: { select: { name: true } } } }>
 
-export default async function HoursPage(props: { searchParams: Promise<{ city?: string }> }) {
+export default async function HoursPage(props: { searchParams: Promise<{ city?: string; search?: string; page?: string }> }) {
   const session = await requireAuth()
   const tutor = isTutor(session.user.role)
   const superAdmin = isSuperAdmin(session.user.role)
   const admin = isAdmin(session.user.role)
 
-  const { city: cityParam } = await props.searchParams
+  const { city: cityParam, search: searchParam, page: pageParam } = await props.searchParams
   const selectedCity = cityParam || "all"
+  const searchQuery = searchParam || ""
+  const page = parseInt(pageParam || "1") || 1
+  const pageSize = 50
   const cityAdminId = isCityAdmin(session.user.role) ? await getActiveCityId(session.user.role, session.user.id) : null
   const effectiveCityId = cityAdminId || (superAdmin && selectedCity !== "all" ? selectedCity : null)
 
@@ -26,20 +30,37 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
     tutorId = await getTutorId(session.user.id, session.user.email)
   }
 
-  const [hourLogs, projects, tutors] = await Promise.all([
+  let hourLogsWhere: Record<string, unknown> = tutor && tutorId
+      ? { tutorId }
+      : effectiveCityId
+        ? { project: { cityId: effectiveCityId } }
+        : {}
+  if (searchQuery) {
+    hourLogsWhere = {
+      ...hourLogsWhere,
+      OR: [
+        { tutor: { user: { name: { contains: searchQuery } } } },
+        { project: { name: { contains: searchQuery } } },
+        { project: { client: { user: { name: { contains: searchQuery } } } } },
+      ],
+    }
+  }
+
+  const [hourLogs, totalCount] = await Promise.all([
     prisma.hourLog.findMany({
-      where: tutor && tutorId
-        ? { tutorId }
-        : effectiveCityId
-          ? { project: { cityId: effectiveCityId } }
-          : {},
+      where: hourLogsWhere,
       include: {
         tutor: { include: { user: { select: { name: true } } } },
         project: { select: { name: true, gradeLevel: true, status: true, client: { select: { user: { select: { name: true } } } }, city: { select: { name: true } } } },
       },
       orderBy: { date: "desc" },
-      take: 50,
+      skip: (page - 1) * pageSize,
+      take: pageSize,
     }),
+    prisma.hourLog.count({ where: hourLogsWhere }),
+  ])
+
+  const [projects, tutors] = await Promise.all([
     prisma.project.findMany({
       where: tutor && tutorId
         ? { projectTutors: { some: { tutorId } } }
@@ -118,6 +139,13 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Log Hours</h2>
         <div className="flex items-center gap-3">
+          <form action="/dashboard/hours" method="GET" className="flex gap-2">
+            {selectedCity !== "all" ? <input type="hidden" name="city" value={selectedCity} /> : null}
+            <input type="text" name="search" defaultValue={searchQuery} placeholder="Search tutor, project, or client..."
+              className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-1.5 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500 w-56" />
+            <button type="submit" className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700">Search</button>
+            {searchQuery && <a href={`/dashboard/hours${selectedCity !== "all" ? `?city=${selectedCity}` : ""}`} className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700">Clear</a>}
+          </form>
           <a href="/api/export?type=hours" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Export CSV</a>
           {superAdmin && <CityFilter selected={selectedCity} />}
         </div>
@@ -459,6 +487,24 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
           filterProjects();
         })();
       `}</Script>
+
+      {totalCount > pageSize && (
+        <div className="flex items-center justify-center gap-2 mt-4">
+          {page > 1 && (
+            <Link href={`/dashboard/hours?page=${page - 1}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
+              className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+              Previous
+            </Link>
+          )}
+          <span className="text-sm text-zinc-500 px-2">Page {page} of {Math.ceil(totalCount / pageSize)} ({totalCount} total)</span>
+          {page < Math.ceil(totalCount / pageSize) && (
+            <Link href={`/dashboard/hours?page=${page + 1}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
+              className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+              Next
+            </Link>
+          )}
+        </div>
+      )}
     </div>
   )
 }
