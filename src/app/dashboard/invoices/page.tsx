@@ -13,7 +13,7 @@ const STATUS_TABS = [
   { value: "OVERDUE", label: "Overdue" },
 ]
 
-export default async function InvoicesPage(props: { searchParams: Promise<{ city?: string; status?: string; search?: string }> }) {
+export default async function InvoicesPage(props: { searchParams: Promise<{ city?: string; status?: string; search?: string; page?: string }> }) {
   const session = await requireAuth()
   const admin = isAdmin(session.user.role)
   const tutor = isTutor(session.user.role)
@@ -21,10 +21,12 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
 
   if (tutor) redirect("/dashboard")
 
-  const { city: cityParam, status: statusParam, search: searchParam } = await props.searchParams
+  const { city: cityParam, status: statusParam, search: searchParam, page: pageParam } = await props.searchParams
   const selectedCity = cityParam || "all"
   const selectedStatus = statusParam || ""
   const searchQuery = searchParam || ""
+  const page = parseInt(pageParam || "1") || 1
+  const pageSize = 50
   const cityAdminId = isCityAdmin(session.user.role) ? await getActiveCityId(session.user.role, session.user.id) : null
   const effectiveCityId = cityAdminId || (isSuperAdmin(session.user.role) && selectedCity !== "all" ? selectedCity : null)
 
@@ -52,14 +54,20 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
     }
   }
 
-  const invoices = await prisma.invoice.findMany({
-    where: whereClause,
-    include: {
-      client: { include: { user: { select: { name: true, city: { select: { name: true } } } } } },
-    },
-    orderBy: { createdAt: "desc" },
-    ...(searchQuery ? {} : { take: 100 }),
-  })
+  const [invoices, totalCount] = await Promise.all([
+    prisma.invoice.findMany({
+      where: whereClause,
+      include: {
+        client: { include: { user: { select: { name: true, city: { select: { name: true } } } } } },
+      },
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.invoice.count({ where: whereClause }),
+  ])
+
+  const totalPages = Math.ceil(totalCount / pageSize)
 
   // Always fetch all for stats
   const statsWhere = { ...whereClause }
@@ -241,6 +249,24 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-4">
+          {page > 1 && (
+            <a href={`/dashboard/invoices?page=${page - 1}${selectedStatus ? `&status=${selectedStatus}` : ""}${searchQuery ? `&search=${searchQuery}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
+              className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-700">
+              Previous
+            </a>
+          )}
+          <span className="text-sm text-zinc-500">Page {page} of {totalPages} ({totalCount} total)</span>
+          {page < totalPages && (
+            <a href={`/dashboard/invoices?page=${page + 1}${selectedStatus ? `&status=${selectedStatus}` : ""}${searchQuery ? `&search=${searchQuery}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
+              className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-700">
+              Next
+            </a>
+          )}
+        </div>
+      )}
     </div>
   )
 }

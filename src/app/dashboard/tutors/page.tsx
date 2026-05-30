@@ -22,14 +22,16 @@ function buildHref(typeValue: string, cityValue: string) {
   return `/dashboard/tutors${qs ? `?${qs}` : ""}`
 }
 
-export default async function TutorsPage(props: { searchParams: Promise<{ type?: string; city?: string; search?: string }> }) {
+export default async function TutorsPage(props: { searchParams: Promise<{ type?: string; city?: string; search?: string; page?: string }> }) {
   const session = await requireAuth()
   if (!isAdmin(session.user.role)) redirect("/dashboard")
 
-  const { type, city: cityParam, search: searchParam } = await props.searchParams
+  const { type, city: cityParam, search: searchParam, page: pageParam } = await props.searchParams
   const filter = type || "ALL"
   const selectedCity = cityParam || "all"
   const searchQuery = searchParam || ""
+  const page = parseInt(pageParam || "1") || 1
+  const pageSize = 50
   const superAdmin = isSuperAdmin(session.user.role)
   const cityAdminId = isCityAdmin(session.user.role) ? await getActiveCityId(session.user.role, session.user.id) : null
   const effectiveCityId = cityAdminId || (superAdmin && selectedCity !== "all" ? selectedCity : null)
@@ -97,14 +99,21 @@ export default async function TutorsPage(props: { searchParams: Promise<{ type?:
 
   const cities = await prisma.city.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } })
 
-  const tutors = await prisma.tutor.findMany({
-    where: baseWhere,
-    include: {
-      user: { select: { name: true, email: true, city: { select: { name: true } } } },
-      contract: { select: { type: true } },
-    },
-    orderBy: { createdAt: "desc" },
-  })
+  const [tutors, totalCount] = await Promise.all([
+    prisma.tutor.findMany({
+      where: baseWhere,
+      include: {
+        user: { select: { name: true, email: true, city: { select: { name: true } } } },
+        contract: { select: { type: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.tutor.count({ where: baseWhere }),
+  ])
+
+  const totalPages = Math.ceil(totalCount / pageSize)
 
   return (
     <div>
@@ -168,6 +177,24 @@ export default async function TutorsPage(props: { searchParams: Promise<{ type?:
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-4">
+          {page > 1 && (
+            <a href={`/dashboard/tutors?page=${page - 1}${filter !== "ALL" ? `&type=${filter}` : ""}${searchQuery ? `&search=${searchQuery}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
+              className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+              Previous
+            </a>
+          )}
+          <span className="text-sm text-zinc-500 px-2">Page {page} of {totalPages} ({totalCount} total)</span>
+          {page < totalPages && (
+            <a href={`/dashboard/tutors?page=${page + 1}${filter !== "ALL" ? `&type=${filter}` : ""}${searchQuery ? `&search=${searchQuery}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
+              className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+              Next
+            </a>
+          )}
+        </div>
+      )}
     </div>
   )
 }

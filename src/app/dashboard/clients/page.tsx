@@ -19,14 +19,16 @@ function buildHref(typeValue: string, cityValue: string) {
   return `/dashboard/clients${qs ? `?${qs}` : ""}`
 }
 
-export default async function ClientsPage(props: { searchParams: Promise<{ type?: string; city?: string }> }) {
+export default async function ClientsPage(props: { searchParams: Promise<{ type?: string; city?: string; page?: string }> }) {
   const session = await requireAuth()
   const admin = isAdmin(session.user.role)
   const tutor = isTutor(session.user.role)
 
-  const { type: typeParam, city: cityParam } = await props.searchParams
+  const { type: typeParam, city: cityParam, page: pageParam } = await props.searchParams
   const typeFilter = typeParam || "ALL"
   const selectedCity = cityParam || "all"
+  const page = parseInt(pageParam || "1") || 1
+  const pageSize = 50
   const cityAdminId = isCityAdmin(session.user.role) ? await getActiveCityId(session.user.role, session.user.id) : null
   const effectiveCityId = cityAdminId || (isSuperAdmin(session.user.role) && selectedCity !== "all" ? selectedCity : null)
 
@@ -46,15 +48,20 @@ export default async function ClientsPage(props: { searchParams: Promise<{ type?
     whereClause = { ...whereClause, user: { cityId: effectiveCityId } }
   }
 
-  const clients = await prisma.client.findMany({
-    where: whereClause,
-    include: {
-      user: { select: { name: true, email: true, city: { select: { name: true } } } },
-      _count: { select: { projects: true, invoices: true } },
-    },
-    orderBy: { createdAt: "desc" },
-    take: 100,
-  })
+  const [clients, totalCount] = await Promise.all([
+    prisma.client.findMany({
+      where: whereClause,
+      include: {
+        user: { select: { name: true, email: true, city: { select: { name: true } } } },
+        _count: { select: { projects: true, invoices: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.client.count({ where: whereClause }),
+  ])
+  const totalPages = Math.ceil(totalCount / pageSize)
 
   return (
     <div>
@@ -132,6 +139,24 @@ export default async function ClientsPage(props: { searchParams: Promise<{ type?
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-4">
+          {page > 1 && (
+            <a href={`/dashboard/clients?page=${page - 1}${typeFilter !== "ALL" ? `&type=${typeFilter}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
+              className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+              Previous
+            </a>
+          )}
+          <span className="text-sm text-zinc-500 px-2">Page {page} of {totalPages} ({totalCount} total)</span>
+          {page < totalPages && (
+            <a href={`/dashboard/clients?page=${page + 1}${typeFilter !== "ALL" ? `&type=${typeFilter}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
+              className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+              Next
+            </a>
+          )}
+        </div>
+      )}
     </div>
   )
 }

@@ -26,14 +26,16 @@ const CATEGORY_LABELS: Record<string, string> = {
   OTHER: "Other",
 }
 
-export default async function ExpensesPage(props: { searchParams: Promise<{ city?: string; category?: string; search?: string }> }) {
+export default async function ExpensesPage(props: { searchParams: Promise<{ city?: string; category?: string; search?: string; page?: string }> }) {
   const session = await requireAuth()
   if (!isAdmin(session.user.role)) redirect("/dashboard")
 
-  const { city: cityParam, category: catParam, search: searchParam } = await props.searchParams
+  const { city: cityParam, category: catParam, search: searchParam, page: pageParam } = await props.searchParams
   const selectedCity = cityParam || "all"
   const selectedCategory = catParam || "ALL"
   const searchQuery = searchParam || ""
+  const page = parseInt(pageParam || "1") || 1
+  const pageSize = 50
   const superAdmin = isSuperAdmin(session.user.role)
   const cityAdminId = isCityAdmin(session.user.role) ? await getActiveCityId(session.user.role, session.user.id) : null
   const effectiveCityId = cityAdminId || (superAdmin && selectedCity !== "all" ? selectedCity : null)
@@ -54,7 +56,7 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
     ]
   }
 
-  const [expenses, clients] = await Promise.all([
+  const [expenses, clients, totalCount] = await Promise.all([
     prisma.expense.findMany({
       where,
       include: {
@@ -62,14 +64,18 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
         hourLog: { select: { paidAt: true } },
       },
       orderBy: { date: "desc" },
-      ...(searchQuery ? {} : { take: 200 }),
+      skip: (page - 1) * pageSize,
+      take: pageSize,
     }),
     prisma.client.findMany({
       where: effectiveCityId ? { user: { cityId: effectiveCityId } } : {},
       include: { user: { select: { name: true } } },
       orderBy: { user: { name: "asc" } },
     }),
+    prisma.expense.count({ where }),
   ])
+
+  const totalPages = Math.ceil(totalCount / pageSize)
 
   const totalAmount = expenses.reduce((s, e) => s + e.amount, 0)
 
@@ -175,6 +181,24 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
           <div className="p-8 text-center text-sm text-zinc-500">No expenses found.</div>
         )}
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-4">
+          {page > 1 && (
+            <a href={`/dashboard/expenses-only?page=${page - 1}${selectedCategory !== "ALL" ? `&category=${selectedCategory}` : ""}${searchQuery ? `&search=${searchQuery}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
+              className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+              Previous
+            </a>
+          )}
+          <span className="text-sm text-zinc-500 px-2">Page {page} of {totalPages} ({totalCount} total)</span>
+          {page < totalPages && (
+            <a href={`/dashboard/expenses-only?page=${page + 1}${selectedCategory !== "ALL" ? `&category=${selectedCategory}` : ""}${searchQuery ? `&search=${searchQuery}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
+              className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+              Next
+            </a>
+          )}
+        </div>
+      )}
     </div>
   )
 }

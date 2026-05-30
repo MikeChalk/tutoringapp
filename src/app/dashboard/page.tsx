@@ -37,7 +37,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ cit
             prisma.tutor.findUnique({ where: { id: tutorId }, select: { onboardingStep: true } }),
             prisma.hourLog.aggregate({ where: { tutorId }, _sum: { hours: true }, _count: true }),
           ])
-          const logs = await prisma.hourLog.findMany({ where: { tutorId }, select: { hours: true, tutorPayRate: true, paidAt: true }, take: 500, orderBy: { date: "desc" } })
+          const logs = await prisma.hourLog.findMany({ where: { tutorId }, select: { hours: true, tutorPayRate: true, paidAt: true } })
           return {
             tc, cc, pc, nc, ct, onboardingStep: tt?.onboardingStep ?? 6,
             totalHours: logs.reduce((s, h) => s + h.hours, 0),
