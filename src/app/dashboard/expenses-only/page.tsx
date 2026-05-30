@@ -5,7 +5,7 @@ import { CityFilter } from "@/components/city-filter"
 import AddExpenseSection from "@/components/add-expense-section"
 import Link from "next/link"
 
-const CATEGORIES = ["ALL", "TUTOR_PAY", "SOFTWARE", "MARKETING", "SUPPLIES", "RENT", "TRAVEL", "OTHER"]
+const CATEGORIES = ["ALL", "TUTOR_PAY", "SOFTWARE", "MARKETING", "SUPPLIES", "RENT", "TRAVEL", "OFFICE_SUPPLIES", "UTILITIES", "INSURANCE", "ADVERTISING", "PROFESSIONAL_FEES", "BANK_FEES", "EQUIPMENT", "MEALS", "SUBSCRIPTIONS", "OTHER"]
 const CATEGORY_LABELS: Record<string, string> = {
   ALL: "All",
   TUTOR_PAY: "Tutor Payments",
@@ -14,6 +14,15 @@ const CATEGORY_LABELS: Record<string, string> = {
   SUPPLIES: "Supplies",
   RENT: "Rent",
   TRAVEL: "Travel",
+  OFFICE_SUPPLIES: "Office Supplies",
+  UTILITIES: "Utilities",
+  INSURANCE: "Insurance",
+  ADVERTISING: "Advertising",
+  PROFESSIONAL_FEES: "Professional Fees",
+  BANK_FEES: "Bank Fees",
+  EQUIPMENT: "Equipment",
+  MEALS: "Meals",
+  SUBSCRIPTIONS: "Subscriptions",
   OTHER: "Other",
 }
 

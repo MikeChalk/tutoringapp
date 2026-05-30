@@ -27,6 +27,15 @@ export default function AddExpenseForm({ clients }: { clients: Client[] }) {
               <option value="SUPPLIES">Supplies</option>
               <option value="RENT">Rent</option>
               <option value="TRAVEL">Travel</option>
+              <option value="OFFICE_SUPPLIES">Office Supplies</option>
+              <option value="UTILITIES">Utilities</option>
+              <option value="INSURANCE">Insurance</option>
+              <option value="ADVERTISING">Advertising</option>
+              <option value="PROFESSIONAL_FEES">Professional Fees</option>
+              <option value="BANK_FEES">Bank Fees</option>
+              <option value="EQUIPMENT">Equipment</option>
+              <option value="MEALS">Meals & Entertainment</option>
+              <option value="SUBSCRIPTIONS">Subscriptions</option>
             </select>
           </div>
         </div>
