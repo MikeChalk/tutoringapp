@@ -41,7 +41,7 @@ export default async function TutorDetailPage(props: { params: Promise<{ id: str
     <div>
       <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">{tutor.user.name}</h2>
       <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-1">{tutor.user.email}</p>
-      <form action="/api/tutors/deactivate" method="POST" className="mb-4" onSubmit={e => { if (!confirm("Deactivate this tutor?")) e.preventDefault() }}>
+      <form action="/api/tutors/deactivate" method="POST" className="mb-4" data-confirm={tutor.isActive ? "Deactivate this tutor?" : "Reactivate this tutor?"}>
         <input type="hidden" name="tutorId" value={tutor.id} />
         <button type="submit" className="text-xs text-red-600 dark:text-red-400 hover:underline">
           {tutor.isActive ? "Deactivate Tutor" : "Activate Tutor"}

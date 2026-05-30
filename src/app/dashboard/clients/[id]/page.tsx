@@ -64,7 +64,7 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
       <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-1">{client.user.email}</p>
       <p className="text-xs text-zinc-400 dark:text-zinc-500 mb-6">Client since {new Date(client.createdAt).toLocaleDateString()}</p>
       {admin && (
-        <form action="/api/clients" method="POST" className="mb-6" onSubmit={(e) => { if (!confirm("Permanently delete this client and all associated data?")) e.preventDefault() }}>
+        <form action="/api/clients" method="POST" className="mb-6" data-confirm="Permanently delete this client and all associated data?">
           <input type="hidden" name="_action" value="delete" />
           <input type="hidden" name="id" value={client.id} />
           <button type="submit" className="text-sm text-red-600 dark:text-red-400 hover:underline">Delete Client</button>
