@@ -48,17 +48,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Project or tutor not found" }, { status: 400 })
   }
 
-  let billingRate: number
-  let tutorPayRate: number
+  let billingRate = 0
+  let tutorPayRate = 0
 
   if (manualBilling && manualPay) {
     billingRate = parseFloat(manualBilling)
     tutorPayRate = parseFloat(manualPay)
   } else {
+    // Get rates from the tutor's active contract first, fall back to PayScale
+    const contract = await prisma.contract.findFirst({
+      where: { tutorId, status: "ACTIVE" },
+      select: { rates: true, yearLevel: true },
+    })
+
     const stdGrades = ["ELEMENTARY", "SEC1_2", "SEC3", "SEC4_5", "CEGEP", "UNI"]
     let lookupGrade: string
     if (project.projectType === "STUDY_HALL" && category) {
-      // Use the selected category as the grade level for rate lookup
       lookupGrade = category
     } else if (project.projectType === "STUDY_HALL" && stdGrades.includes(project.gradeLevel)) {
       lookupGrade = "STUDY_HALL_TUTOR"
@@ -66,17 +71,29 @@ export async function POST(request: Request) {
       lookupGrade = project.gradeLevel
     }
 
-    const br = await prisma.billingRate.findFirst({
-      where: { gradeLevel: lookupGrade, mode, projectType: project.projectType },
-    })
-    const ps = await prisma.payScale.findFirst({
-      where: { tenure: tutor.tenure, gradeLevel: lookupGrade, mode, projectType: project.projectType },
-    })
-    if (!br || !ps) {
-      return NextResponse.json({ error: "Rate not found" }, { status: 400 })
+    // Try contract rates first
+    if (contract?.rates) {
+      const contractRates = JSON.parse(contract.rates) as Record<string, number>
+      if (contractRates[lookupGrade] !== undefined) {
+        tutorPayRate = contractRates[lookupGrade]
+        billingRate = 0 // Study hall billing is flat fee, not per-hour
+      }
     }
-    billingRate = br.rate
-    tutorPayRate = ps.rate
+
+    // Fall back to PayScale if contract rate not found
+    if (tutorPayRate === 0 || billingRate === 0) {
+      const br = await prisma.billingRate.findFirst({
+        where: { gradeLevel: lookupGrade, mode, projectType: project.projectType },
+      })
+      const ps = await prisma.payScale.findFirst({
+        where: { tenure: tutor.tenure, gradeLevel: lookupGrade, mode, projectType: project.projectType },
+      })
+      if (!ps) {
+        return NextResponse.json({ error: "Rate not found for this category and tenure" }, { status: 400 })
+      }
+      billingRate = br?.rate ?? 0
+      tutorPayRate = ps.rate
+    }
   }
 
   const hourLog = await prisma.hourLog.create({

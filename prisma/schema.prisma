@@ -270,6 +270,7 @@ model Contract {
   type      String    @default("PRIVATE_TUTORING")
   yearLevel String    @default("1ST_YEAR")
   terms     String    @default("")
+  rates     String    @default("{}")
   startDate DateTime
   endDate   DateTime
   signed    Boolean   @default(false)

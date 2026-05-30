@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db"
 import { requireAuth, isTutor, getTutorId, isClient, getClientId } from "@/lib/auth-helpers"
-import { CONTRACT_TYPE_LABELS, TENURE_LABELS, STUDENT_GRADES, TUTOR_STUDY_HALL_GRADES, SUPERVISOR_GRADES } from "@/lib/constants"
+import { CONTRACT_TYPE_LABELS, TENURE_LABELS, GRADE_LABELS, TUTOR_STUDY_HALL_GRADES, SUPERVISOR_GRADES } from "@/lib/constants"
 import { redirect } from "next/navigation"
 import Script from "next/script"
 
@@ -92,19 +92,6 @@ export default async function ContractPage(props: { searchParams: Promise<{ filt
   const expired = allContracts.filter(c => c.status === "EXPIRED" || (!c.signed && c.status === "EXPIRED"))
 
   const latestActive = active[0]
-
-  const allPayScales = await prisma.payScale.findMany({
-    orderBy: [{ gradeLevel: "asc" }, { mode: "asc" }, { projectType: "asc" }],
-  })
-
-  function getRates(yearLevel: string) {
-    const scales = allPayScales.filter(p => p.tenure === yearLevel)
-    const student = scales.filter(p => p.projectType === "STUDENT")
-    const studyHall = scales.filter(p => p.projectType === "STUDY_HALL")
-    return { student, studyHall }
-  }
-
-  // Fetch pay scales for all year levels once
 
   return (
     <div>
@@ -235,7 +222,7 @@ export default async function ContractPage(props: { searchParams: Promise<{ filt
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-green-600 dark:text-green-400">Active ({active.length})</h3>
               {active.map(c => (
-                <ContractCard key={c.id} contract={c} rates={getRates(c.yearLevel)} />
+                <ContractCard key={c.id} contract={c} />
               ))}
             </div>
           )}
@@ -255,11 +242,13 @@ export default async function ContractPage(props: { searchParams: Promise<{ filt
   )
 }
 
-function ContractCard({ contract, showSign, rates }: {
-  contract: { id: string; type: string; yearLevel: string; startDate: Date; endDate: Date; signed: boolean; signedAt: Date | null; status: string; terms: string }
+function ContractCard({ contract, showSign }: {
+  contract: { id: string; type: string; yearLevel: string; startDate: Date; endDate: Date; signed: boolean; signedAt: Date | null; status: string; terms: string; rates: string }
   showSign?: boolean
-  rates?: { student: Array<{ gradeLevel: string; mode: string; rate: number; projectType: string }>; studyHall: Array<{ gradeLevel: string; mode: string; rate: number; projectType: string }> }
 }) {
+  const ratesMap: Record<string, number> = (() => { try { return JSON.parse(contract.rates) } catch { return {} } })()
+  const grades = contract.type === "PROGRAM_SUPERVISOR" ? SUPERVISOR_GRADES : TUTOR_STUDY_HALL_GRADES
+
   return (
     <details className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 group">
       <summary className="p-6 cursor-pointer list-none flex items-center justify-between">
@@ -308,38 +297,16 @@ function ContractCard({ contract, showSign, rates }: {
         )}
         {!contract.terms && <p className="text-sm text-zinc-400">No terms specified.</p>}
 
-        {rates && rates.student.length > 0 && (
+        {grades.length > 0 && (
           <div>
-            <p className="text-xs text-zinc-500 mb-2">Private Tutoring Rates</p>
-            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-              {STUDENT_GRADES.map((grade) => {
-                const online = rates.student.find(p => p.gradeLevel === grade && p.mode === "ONLINE")
-                const inPerson = rates.student.find(p => p.gradeLevel === grade && p.mode === "IN_PERSON")
+            <p className="text-xs text-zinc-500 mb-2">{contract.type === "PROGRAM_SUPERVISOR" ? "Supervisor Rates" : "Rates"}</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {grades.map((grade) => {
+                const rate = ratesMap[grade]
                 return (
                   <div key={grade} className="bg-zinc-50 dark:bg-zinc-900 rounded-lg p-2 text-center">
-                    <p className="text-[10px] text-zinc-500 mb-1">{grade.replace(/_/g, " ").replace("SEC", "Sec ")}</p>
-                    <p className="text-[10px] text-purple-600 dark:text-purple-400">O ${online?.rate?.toFixed(0) || "-"}</p>
-                    <p className="text-[10px] text-cyan-600 dark:text-cyan-400">IP ${inPerson?.rate?.toFixed(0) || "-"}</p>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {rates && rates.studyHall.length > 0 && (
-          <div>
-            <p className="text-xs text-zinc-500 mb-2">{contract.type === "PROGRAM_SUPERVISOR" ? "Study Hall / Supervisor Rates" : "Study Hall Rates"}</p>
-            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-              {(contract.type === "PROGRAM_SUPERVISOR" ? SUPERVISOR_GRADES : TUTOR_STUDY_HALL_GRADES).map((grade) => {
-                const online = rates.studyHall.find(p => p.gradeLevel === grade && p.mode === "ONLINE")
-                const inPerson = rates.studyHall.find(p => p.gradeLevel === grade && p.mode === "IN_PERSON")
-                if (!online && !inPerson) return null
-                return (
-                  <div key={grade} className="bg-zinc-50 dark:bg-zinc-900 rounded-lg p-2 text-center">
-                    <p className="text-[10px] text-zinc-500 mb-1">{grade.replace(/_/g, " ").replace("SEC", "Sec ")}</p>
-                    <p className="text-[10px] text-purple-600 dark:text-purple-400">O ${online?.rate?.toFixed(0) || "-"}</p>
-                    <p className="text-[10px] text-cyan-600 dark:text-cyan-400">IP ${inPerson?.rate?.toFixed(0) || "-"}</p>
+                    <p className="text-[10px] text-zinc-500 mb-1">{GRADE_LABELS[grade] || grade}</p>
+                    <p className="text-xs font-medium text-zinc-700 dark:text-zinc-300">${rate !== undefined ? rate.toFixed(0) : "—"}/hr</p>
                   </div>
                 )
               })}

@@ -26,12 +26,20 @@ export async function POST(request: Request) {
     data: { status: "EXPIRED" },
   })
 
+  // Populate default rates from PayScale for the contract's year level
+  const payScales = await prisma.payScale.findMany({ where: { tenure: yearLevel } })
+  const ratesMap: Record<string, number> = {}
+  for (const ps of payScales) {
+    ratesMap[ps.gradeLevel] = ps.rate
+  }
+
   await prisma.contract.create({
     data: {
       tutorId,
       type,
       yearLevel,
       terms: terms || `${type.replace(/_/g, " ")} contract — Year ${yearLevel === "1ST_YEAR" ? "1" : yearLevel === "2ND_YEAR" ? "2" : "3"}`,
+      rates: JSON.stringify(ratesMap),
       startDate: new Date(startDate),
       endDate: new Date(endDate),
     },
