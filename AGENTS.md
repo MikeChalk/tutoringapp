@@ -14,6 +14,11 @@ Start-Process -FilePath "node_modules\.bin\next.cmd" -ArgumentList "dev" -Workin
 ```
 
 Wait 5 seconds, then verify it responds with `Invoke-WebRequest -Uri "http://localhost:3000" -UseBasicParsing -TimeoutSec 10`.
+
+**IMPORTANT**: After running `prisma db push` or `prisma generate`, the dev server MUST be restarted. These commands kill node.exe to free the Prisma DLL lock. Always chain:
+```powershell
+taskkill /F /IM node.exe 2>$null; npx prisma db push; if ($?) { npx prisma generate }; Start-Process -FilePath "node_modules\.bin\next.cmd" -ArgumentList "dev" -WindowStyle Normal -PassThru
+```
 <!-- END:project-setup -->
 
 <!-- BEGIN:troubleshooting -->
