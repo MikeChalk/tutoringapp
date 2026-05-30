@@ -19,6 +19,7 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
   const { id } = await props.params
 
   let hasAccess = true
+  let projectFilter: Record<string, unknown> = {}
   if (tutor) {
     const tutorId = await getTutorId(session.user.id, session.user.email)
     if (!tutorId) {
@@ -28,6 +29,7 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
         where: { clientId: id, projectTutors: { some: { tutorId } } },
       })
       hasAccess = projectCount > 0
+      projectFilter = { projectTutors: { some: { tutorId } } }
     }
   }
 
@@ -38,6 +40,7 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
     include: {
       user: { select: { name: true, email: true, city: { select: { name: true } } } },
       projects: {
+        where: projectFilter,
         include: {
           projectTutors: {
             include: { tutor: { include: { user: { select: { name: true } } } } },
