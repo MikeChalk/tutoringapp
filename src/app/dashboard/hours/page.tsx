@@ -285,14 +285,11 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
 
       <Script id="hourLogFormScript" strategy="afterInteractive">{`
         (function() {
-          var RATES = ${ratesJson};
           var ASSIGN = ${assignJson};
           var projectSelect = document.getElementById('projectSelect');
           var tutorSelect = document.getElementById('tutorSelect');
           var modeSelect = document.getElementById('modeSelect');
-          var payDisplay = document.getElementById('payRateDisplay');
           var typeSelect = document.getElementById('projectTypeSelect');
-          var categoryGroup = document.getElementById('categoryGroup');
           var categorySelect = document.getElementById('categorySelect');
 
           function filterProjects() {
@@ -303,26 +300,23 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
               if (type === 'STUDY_HALL') {
                 modeField.style.display = 'none';
                 modeSelectEl.value = 'IN_PERSON';
-                modeSelectEl.required = false;
               } else {
                 modeField.style.display = '';
-                modeSelectEl.required = true;
               }
             }
-            // Populate category options based on project type
             if (categorySelect) {
               categorySelect.innerHTML = '<option value="">--</option>';
               if (type === 'STUDY_HALL') {
-                var opts = ['Study Hall Tutor','In-Person Program Management','Online Program Management','Supervision','Marketing'];
-                var vals = ['STUDY_HALL_TUTOR','IN_PERSON_MGMT','ONLINE_MGMT','SUPERVISION','MARKETING'];
-                for (var i = 0; i < opts.length; i++) {
-                  categorySelect.innerHTML += '<option value="' + vals[i] + '">' + opts[i] + '</option>';
+                var mgmtOpts = ['Study Hall Tutor','In-Person Program Management','Online Program Management','Supervision','Marketing'];
+                var mgmtVals = ['STUDY_HALL_TUTOR','IN_PERSON_MGMT','ONLINE_MGMT','SUPERVISION','MARKETING'];
+                for (var i = 0; i < mgmtOpts.length; i++) {
+                  categorySelect.innerHTML += '<option value="'+mgmtVals[i]+'">'+mgmtOpts[i]+'</option>';
                 }
               } else {
-                var grades = ['Elementary','SEC 1-2','SEC 3','SEC 4-5','CEGEP','UNIVERSITY'];
-                var gvals = ['ELEMENTARY','SEC1_2','SEC3','SEC4_5','CEGEP','UNI'];
+                var grades = ['ELEMENTARY','SEC1_2','SEC3','SEC4_5','CEGEP','UNI'];
+                var labels = ['Elementary','SEC 1-2','SEC 3','SEC 4-5','CEGEP','UNIVERSITY'];
                 for (var j = 0; j < grades.length; j++) {
-                  categorySelect.innerHTML += '<option value="' + gvals[j] + '">' + grades[j] + '</option>';
+                  categorySelect.innerHTML += '<option value="'+grades[j]+'">'+labels[j]+'</option>';
                 }
               }
             }
@@ -340,56 +334,10 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
               if (show && !hasVisible) { hasVisible = true; opts[i].selected = true; }
             }
             if (!hasVisible) projectSelect.value = '';
-            updateRates();
           }
 
-          function updateRates() {
-            var grade = projectSelect && projectSelect.value ? (projectSelect.querySelector('option[value="' + projectSelect.value.replace(/"/g, '\\\\"') + '"]') || {}).dataset.grade : null;
-            var mode = modeSelect && modeSelect.value;
-            var tenure = tutorSelect && tutorSelect.value ? (tutorSelect.querySelector('option[value="' + tutorSelect.value.replace(/"/g, '\\\\"') + '"]') || {}).dataset.tenure : null;
-            var ptype = projectSelect && projectSelect.value ? (projectSelect.querySelector('option[value="' + projectSelect.value.replace(/"/g, '\\\\"') + '"]') || {}).dataset.type : null;
-
-            var selectedType = typeSelect && typeSelect.value;
-            if (categoryGroup) {
-              categoryGroup.classList.toggle('hidden', selectedType !== 'STUDY_HALL');
-            }
-
-            if (!grade || !mode) {
-              if (payDisplay) payDisplay.textContent = '--';
-              return;
-            }
-
-            var lookupGrade = grade;
-            var stdGrades = ['ELEMENTARY','SEC1_2','SEC3','SEC4_5','CEGEP','UNI'];
-            var lookupPtype = ptype;
-            if (ptype === 'STUDY_HALL') {
-              lookupGrade = 'STUDY_HALL';
-              lookupPtype = 'STUDY_HALL';
-            }
-
-            var billing = null;
-            var pay = null;
-            for (var i = 0; i < RATES.billing.length; i++) {
-              if (RATES.billing[i].g === lookupGrade && RATES.billing[i].m === mode && RATES.billing[i].p === lookupPtype) { billing = RATES.billing[i].r; break; }
-            }
-            if (tenure) {
-              for (var j = 0; j < RATES.pay.length; j++) {
-                if (RATES.pay[j].t === tenure && RATES.pay[j].g === lookupGrade && RATES.pay[j].m === mode && RATES.pay[j].p === lookupPtype) { pay = RATES.pay[j].r; break; }
-              }
-            }
-
-            if (payDisplay) payDisplay.textContent = pay != null ? '$' + pay.toFixed(2) + '/hr' : '--';
-
-            var billingInput = document.getElementById('billingRateInput');
-            var payInput = document.getElementById('payRateInput');
-            if (billingInput && !billingInput.value) billingInput.placeholder = billing != null ? billing.toFixed(2) : '';
-            if (payInput && !payInput.value) payInput.placeholder = pay != null ? pay.toFixed(2) : '';
-          }
-
-          if (projectSelect) projectSelect.addEventListener('change', updateRates);
-          if (tutorSelect) tutorSelect.addEventListener('change', filterProjects);
-          if (modeSelect) modeSelect.addEventListener('change', updateRates);
           if (typeSelect) typeSelect.addEventListener('change', filterProjects);
+          if (tutorSelect) tutorSelect.addEventListener('change', filterProjects);
           filterProjects();
         })();
       `}</Script>
