@@ -36,6 +36,7 @@ Before answering "does X exist" or creating new records/accounts:
 1. **Read the seed file** (`prisma/seed.ts`) — it's the source of truth for test data. Over 500 lines. Check it before assuming something doesn't exist.
 2. **Check the database** — if unsure, query with `prisma db execute` or read the schema relations.
 3. **Never create duplicates** — if a user asks "is there an account for X", verify before creating. Pierre Lavoie (pierre@tutoring.com) is the existing program supervisor.
+4. **Never run `prisma db seed` without explicit user confirmation** — it wipes all data. Use targeted `prisma db execute --stdin` for changes. Ask "This will reset all data. Confirm?" before running.
 
 # Shared Constants
 
