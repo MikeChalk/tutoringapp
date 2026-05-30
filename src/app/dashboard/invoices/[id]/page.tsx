@@ -106,13 +106,13 @@ export default async function InvoiceDetailPage(props: { params: Promise<{ id: s
                   <tr key={item.id} className="text-sm border-b border-zinc-100 dark:border-zinc-700/50">
                     <td className="px-2 py-2 text-zinc-900 dark:text-zinc-100">{item.description}</td>
                     <td className="px-2 py-2 text-zinc-600 dark:text-zinc-400">
-                      {item.hourLog ? (item.hourLog.tutor as any)?.user?.name : "-"}
+                      {item.hourLog?.tutor?.user?.name ?? "-"}
                     </td>
                     <td className="px-2 py-2 text-zinc-600 dark:text-zinc-400">
                       {item.hourLog ? new Date(item.hourLog.date).toLocaleDateString() : "-"}
                     </td>
                     <td className="px-2 py-2 text-zinc-600 dark:text-zinc-400">
-                      {item.hourLog ? (item.hourLog as any).project?.name : item.description}
+                      {item.hourLog?.project?.name ?? item.description}
                     </td>
                     <td className="px-2 py-2 text-right text-zinc-600 dark:text-zinc-400">{item.hours > 0 ? item.hours : "-"}</td>
                     <td className="px-2 py-2 text-right text-zinc-600 dark:text-zinc-400">{item.rate > 0 ? `$${item.rate.toFixed(2)}` : "-"}</td>

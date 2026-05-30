@@ -81,7 +81,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ cit
     }
   }
 
-  const daysUntilExpiry = contract ? Math.ceil((new Date(contract.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 0
+  const daysUntilExpiry = contract ? Math.ceil((new Date(contract.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 0
 
   return (
     <div>

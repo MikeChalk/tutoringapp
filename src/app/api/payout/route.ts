@@ -39,8 +39,9 @@ export async function POST(request: Request) {
       where: { tutorId, paidAt: null },
       data: { paidAt: now },
     })
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : "Payout failed"
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 
   return NextResponse.redirect(new URL("/dashboard/payments-admin", request.url), 303)

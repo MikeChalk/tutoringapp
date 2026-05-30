@@ -15,7 +15,8 @@ export async function POST(request: Request) {
   try {
     const session = await createCheckoutSession(invoice)
     return NextResponse.json({ url: session.url })
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : "Checkout failed"
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

@@ -38,8 +38,8 @@ function CareersForm() {
         <div className="max-w-lg w-full bg-white rounded-xl border border-zinc-200 p-8 text-center">
           <div className="text-4xl mb-4">&#10003;</div>
           <h1 className="text-2xl font-bold text-zinc-900 mb-2">Application Submitted!</h1>
-          <p className="text-zinc-600 mb-4">Thank you for applying. We've sent you an email with a link to upload your CV and transcript — please check your inbox (and spam folder).</p>
-          <p className="text-sm text-zinc-500">We'll reach out when a matching client is available.</p>
+          <p className="text-zinc-600 mb-4">Thank you for applying. We&apos;ve sent you an email with a link to upload your CV and transcript — please check your inbox (and spam folder).</p>
+          <p className="text-sm text-zinc-500">We&apos;ll reach out when a matching client is available.</p>
         </div>
       </div>
     )

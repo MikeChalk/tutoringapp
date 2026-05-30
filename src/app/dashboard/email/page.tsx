@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, Suspense } from "react"
+import { useState, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import RichTextEditor from "@/components/rich-text-editor"
 
@@ -13,7 +13,7 @@ const GROUPS = [
 
 function MassEmailContent() {
   const searchParams = useSearchParams()
-  const [group, setGroup] = useState("waitlist")
+  const [group, setGroup] = useState(() => searchParams.get("group") || "waitlist")
   const [subject, setSubject] = useState("")
   const [message, setMessage] = useState("")
   const [sending, setSending] = useState(false)
@@ -22,11 +22,6 @@ function MassEmailContent() {
   const [testEmail, setTestEmail] = useState("")
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState("")
-
-  useEffect(() => {
-    const g = searchParams.get("group") || "waitlist"
-    setGroup(g)
-  }, [searchParams])
 
   async function handlePreview() {
     setResult("Counting...")

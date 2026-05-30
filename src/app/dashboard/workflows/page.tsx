@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
 import RichTextEditor from "@/components/rich-text-editor"
 import { EMAIL_TRIGGERS, getEmailTrigger, getEmailTriggerVars } from "@/lib/constants"
 
@@ -37,16 +37,25 @@ export default function WorkflowsPage() {
     isActive: true,
   })
 
-  const fetchTemplates = useCallback(async () => {
+  useEffect(() => {
+    let ignore = false
+    async function load() {
+      const res = await fetch("/api/workflows/templates")
+      const data = await res.json()
+      if (!ignore) {
+        setTemplates(data.templates || [])
+        setLoading(false)
+      }
+    }
+    load()
+    return () => { ignore = true }
+  }, [])
+
+  async function refreshTemplates() {
     const res = await fetch("/api/workflows/templates")
     const data = await res.json()
     setTemplates(data.templates || [])
-    setLoading(false)
-  }, [])
-
-  useEffect(() => {
-    fetchTemplates()
-  }, [fetchTemplates])
+  }
 
   function startEdit(tpl: EmailTemplate) {
     setEditingId(tpl.id)
@@ -72,7 +81,7 @@ export default function WorkflowsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editForm),
       })
-      await fetchTemplates()
+      await refreshTemplates()
       setEditingId(null)
     } finally {
       setSaving(false)
@@ -85,7 +94,7 @@ export default function WorkflowsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isActive: !tpl.isActive }),
     })
-    await fetchTemplates()
+    await refreshTemplates()
   }
 
   async function sendTest(id: string) {
@@ -114,7 +123,7 @@ export default function WorkflowsPage() {
   async function deleteTemplate(id: string) {
     if (!confirm("Delete this template?")) return
     await fetch(`/api/workflows/templates/${id}`, { method: "DELETE" })
-    await fetchTemplates()
+    await refreshTemplates()
   }
 
   async function createTemplate() {
@@ -139,7 +148,7 @@ export default function WorkflowsPage() {
       } else {
         setNewTemplate({ name: "", trigger: "", subject: "", htmlBody: "", customTrigger: "" })
         setCreating(false)
-        await fetchTemplates()
+        await refreshTemplates()
       }
     } finally {
       setSaving(false)

@@ -17,6 +17,7 @@ export function CreateInvoiceForm({ clients }: { clients: Client[] }) {
   const [discountCode, setDiscountCode] = useState("")
   const [discountPct, setDiscountPct] = useState(0)
   const [discountAmt, setDiscountAmt] = useState(0)
+  const [defaultDueDate] = useState(() => new Date(Date.now() + 3 * 86400000).toISOString().split("T")[0])
   const [codes, setCodes] = useState<Array<{ code: string; discountPct: number; discountAmt: number }>>([])
 
   useEffect(() => {
@@ -46,8 +47,8 @@ export function CreateInvoiceForm({ clients }: { clients: Client[] }) {
       if (field === "hours" || field === "rate") {
         next[idx][field] = parseFloat(value) || 0
         next[idx].amount = next[idx].hours * next[idx].rate
-      } else {
-        ;(next[idx] as any)[field] = value
+      } else if (field === "description") {
+        next[idx].description = value
       }
       return next
     })
@@ -95,7 +96,7 @@ export function CreateInvoiceForm({ clients }: { clients: Client[] }) {
           </div>
           <div>
             <label className="block text-xs text-zinc-500 mb-1">Due Date</label>
-            <input type="date" name="dueDate" defaultValue={new Date(Date.now() + 3 * 86400000).toISOString().split("T")[0]} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <input type="date" name="dueDate" defaultValue={defaultDueDate} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
         </div>
 

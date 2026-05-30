@@ -227,8 +227,7 @@ function FormatHelp({ type }: { type: string }) {
   if (type === "team") return (
     <div className="space-y-2 text-sm">
       <p className="text-zinc-500">CSV columns (header row required):</p>
-      <code className="block bg-zinc-50 dark:bg-zinc-900 rounded p-3 text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">name, email, tenure, subjects, grade_levels, city, onboarded
-Sarah Chen, sarah@email.com, 1ST_YEAR, "Math, Physics", "ELEMENTARY, SEC3", Montreal, true</code>
+      <code className="block bg-zinc-50 dark:bg-zinc-900 rounded p-3 text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">{"name, email, tenure, subjects, grade_levels, city, onboarded\nSarah Chen, sarah@email.com, 1ST_YEAR, \"Math, Physics\", \"ELEMENTARY, SEC3\", Montreal, true"}</code>
       <div className="text-xs text-zinc-400 space-y-1 mt-2">
         <p><strong>name</strong> — required</p>
         <p><strong>email</strong> — required, unique</p>

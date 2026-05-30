@@ -20,7 +20,7 @@ export async function POST(request: Request) {
   }
 
   if (event.type === "checkout.session.completed") {
-    const session = event.data.object as any
+    const session = event.data.object as { metadata?: { invoiceId?: string }; client_reference_id?: string }
     const invoiceId = session.metadata?.invoiceId || session.client_reference_id
     if (invoiceId) {
       await prisma.invoice.update({
