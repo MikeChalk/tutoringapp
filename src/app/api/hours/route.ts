@@ -96,6 +96,7 @@ export async function POST(request: Request) {
       category: "TUTOR_PAY",
       date: new Date(date),
       clientId: project.clientId,
+      cityId: project.cityId,
       hourLogId: hourLog.id,
     },
   })

@@ -54,7 +54,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     // Sync the corresponding expense
     const log = await prisma.hourLog.findUnique({
       where: { id },
-      include: { tutor: { include: { user: { select: { name: true } } } }, project: { select: { name: true, clientId: true } } },
+      include: { tutor: { include: { user: { select: { name: true } } } }, project: { select: { name: true, clientId: true, cityId: true } } },
     })
     if (log) {
       const expenseAmount = hours * tutorPayRate
@@ -66,12 +66,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           category: "TUTOR_PAY",
           date: new Date(date),
           clientId: log.project.clientId,
+          cityId: log.project.cityId,
           hourLogId: id,
         },
         update: {
           description: `Tutor: ${log.tutor.user.name} — ${log.project.name} (${hours}h)`,
           amount: expenseAmount,
           date: new Date(date),
+          clientId: log.project.clientId,
+          cityId: log.project.cityId,
         },
       })
     }
