@@ -239,6 +239,7 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
     links: [
       { href: "/dashboard/import", label: "Import" },
       { href: "/dashboard/email", label: "Mass Email" },
+      { href: "/dashboard/email-log", label: "Email Log" },
     ],
   },
   {

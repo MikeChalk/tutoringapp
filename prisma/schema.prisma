@@ -397,3 +397,13 @@ model EmailTemplate {
 
   @@map("email_templates")
 }
+
+model EmailLog {
+  id        String   @id @default(cuid())
+  to        String
+  subject   String
+  trigger   String
+  createdAt DateTime @default(now())
+
+  @@map("email_logs")
+}

@@ -63,7 +63,13 @@ export async function POST(request: Request) {
 
   for (const r of recipients) {
     const ok = await sendOne(r.email, r.name, subject, message)
-    if (ok) sent++; else failed++
+    if (ok) {
+      sent++
+      // Log each sent email
+      try { await prisma.emailLog.create({ data: { to: r.email, subject, trigger: "bulk_email" } }) } catch {}
+    } else {
+      failed++
+    }
   }
 
   return NextResponse.json({ sent, failed: failed || undefined })
