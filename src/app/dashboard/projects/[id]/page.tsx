@@ -1,8 +1,9 @@
 import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin, isTutor, getTutorId } from "@/lib/auth-helpers"
-import { GRADE_LABELS, STATUS_LABELS, STATUS_COLORS } from "@/lib/constants"
+import { GRADE_LABELS } from "@/lib/constants"
 import { notFound } from "next/navigation"
 import { EditProjectForm } from "@/components/edit-project-form"
+import { ModeBadge, StatusBadge } from "@/components/ui"
 
 export default async function ProjectDetailPage(props: { params: Promise<{ id: string }> }) {
   const session = await requireAuth()
@@ -72,9 +73,7 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
       </p>
 
       <div className="flex flex-wrap gap-2 mb-6">
-        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[project.status] || "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"}`}>
-          {STATUS_LABELS[project.status] || project.status}
-        </span>
+        <StatusBadge status={project.status} />
         {subjectList.map((subject) => (
           <span key={subject} className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
             {subject}
@@ -152,9 +151,7 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
                       </td>
                       <td className="px-2 py-2 text-zinc-900 dark:text-zinc-100">{log.tutor.user.name}</td>
                       <td className="px-2 py-2">
-                        <span className={`text-xs px-1.5 py-0.5 rounded ${
-                          log.mode === "ONLINE" ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" : "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400"
-                        }`}>{log.mode === "ONLINE" ? "Online" : "In Person"}</span>
+                        <ModeBadge mode={log.mode} />
                       </td>
                       <td className="px-2 py-2 text-right text-zinc-900 dark:text-zinc-100">{log.hours}</td>
                       <td className="px-2 py-2 text-right text-zinc-600 dark:text-zinc-400">${(log.hours * log.billingRate).toFixed(2)}</td>

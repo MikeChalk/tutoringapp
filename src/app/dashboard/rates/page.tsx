@@ -1,13 +1,11 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin } from "@/lib/auth-helpers"
+import { requireAdmin } from "@/lib/auth-helpers"
 import { GRADE_LABELS, TENURE_LABELS } from "@/lib/constants"
-import { redirect } from "next/navigation"
 import Link from "next/link"
 import { EditableRate } from "@/components/editable-rate"
 
 export default async function RatesPage(props: { searchParams: Promise<{ tab?: string }> }) {
-  const session = await requireAuth()
-  if (!isAdmin(session.user.role)) redirect("/dashboard")
+  await requireAdmin()
 
   const { tab } = await props.searchParams
   const activeTab = tab || "cities"

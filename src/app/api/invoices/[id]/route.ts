@@ -15,6 +15,8 @@ export async function POST(request: Request, props: { params: Promise<{ id: stri
   const formData = await request.formData()
   const action = formData.get("_action") as string
   const redirectTo = (formData.get("redirectTo") as string) || `/dashboard/invoices/${id}`
+  // Prevent open redirect — only allow relative paths
+  const safeRedirect = redirectTo.startsWith("/") ? redirectTo : `/dashboard/invoices/${id}`
 
   if (action === "markSent") {
     await prisma.invoice.update({ where: { id }, data: { status: "SENT", sentAt: new Date() } })
@@ -44,5 +46,5 @@ export async function POST(request: Request, props: { params: Promise<{ id: stri
     }
   }
 
-  return NextResponse.redirect(new URL(redirectTo, request.url), 303)
+  return NextResponse.redirect(new URL(safeRedirect, request.url), 303)
 }

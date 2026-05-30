@@ -18,13 +18,20 @@ export async function POST(request: Request) {
 
   const getString = (key: string) => (formData.get(key) as string)?.trim() || undefined
 
+  // Secret fields: only update if a non-empty value is provided (don't overwrite with blanks)
   const secretFields = {
     twilioSid: getString("twilioSid"),
     twilioToken: getString("twilioToken"),
-    twilioFrom: getString("twilioFrom"),
     openaiKey: getString("openaiKey"),
     stripeKey: getString("stripeKey"),
     resendKey: getString("resendKey"),
+  }
+
+  const processedSecrets: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(secretFields)) {
+    if (value !== undefined && value !== "") {
+      processedSecrets[key] = value
+    }
   }
 
   const updateData: Record<string, unknown> = {
@@ -38,7 +45,8 @@ export async function POST(request: Request) {
     invoiceNotes: getString("invoiceNotes"),
     defaultTaxRate,
     stripeEnabled, smsEnabled, openaiEnabled, emailEnabled,
-    ...secretFields,
+    twilioFrom: getString("twilioFrom"),
+    ...processedSecrets,
   }
 
   await prisma.companySettings.upsert({
@@ -57,8 +65,10 @@ export async function POST(request: Request) {
       stripeEnabled, smsEnabled, openaiEnabled, emailEnabled,
       twilioSid: secretFields.twilioSid || "",
       twilioToken: secretFields.twilioToken || "",
-      twilioFrom: secretFields.twilioFrom || "",
+      twilioFrom: getString("twilioFrom") || "",
       openaiKey: secretFields.openaiKey || "",
+      stripeKey: secretFields.stripeKey || "",
+      resendKey: secretFields.resendKey || "",
     },
     update: updateData,
   })

@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin, isTutor, getTutorId, isClient, getClientId, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
+import { requireAuth, isAdmin, isTutor, isClient, getClientId, getTutorId, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
 import { CONTRACT_TYPE_LABELS, TENURE_LABELS } from "@/lib/constants"
 import { CityFilter } from "@/components/city-filter"
+import { StatCard } from "@/components/ui"
 import Link from "next/link"
 
 export default async function DashboardPage(props: { searchParams: Promise<{ city?: string }> }) {
@@ -21,7 +22,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ cit
   let stats = { tutorCount: 0, clientCount: 0, projectCount: 0, totalHours: 0, pendingInvoices: 0, newRequests: 0, totalEarned: 0, totalPaid: 0 }
   let contract: { type: string; yearLevel: string; endDate: Date; signed: boolean } | null = null
   let recentInvoices: Array<{ id: string; number: string; status: string; totalAmount: number; dueDate: Date }> = []
-  let onboardingStep = 6
+  let onboardingStep = 7
 
   if (tutor) {
     const tutorId = await getTutorId(session.user.id, session.user.email)
@@ -38,7 +39,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ cit
           ])
           const logs = await prisma.hourLog.findMany({ where: { tutorId }, select: { hours: true, tutorPayRate: true, paidAt: true } })
           return {
-            tc, cc, pc, nc, ct, onboardingStep: tt?.onboardingStep ?? 6,
+            tc, cc, pc, nc, ct, onboardingStep: tt?.onboardingStep ?? 7,
             totalHours: logs.reduce((s, h) => s + h.hours, 0),
             totalEarned: logs.reduce((s, h) => s + h.hours * h.tutorPayRate, 0),
             totalPaid: logs.filter(h => h.paidAt).reduce((s, h) => s + h.hours * h.tutorPayRate, 0),
@@ -62,9 +63,9 @@ export default async function DashboardPage(props: { searchParams: Promise<{ cit
         where: { status: { in: ["SENT", "OVERDUE"] }, ...(effectiveCityId ? { client: { user: { cityId: effectiveCityId } } } : {}) },
         _sum: { totalAmount: true },
       }),
-      prisma.tutoringRequest.count({ where: { status: "NEW" } }),
+      prisma.tutoringRequest.count({ where: { status: "NEW", ...(effectiveCityId ? { cityId: effectiveCityId } : {}) } }),
     ])
-    const hAgg = await prisma.hourLog.aggregate({ _sum: { hours: true } })
+    const hAgg = await prisma.hourLog.aggregate({ where: effectiveCityId ? { project: { cityId: effectiveCityId } } : {}, _sum: { hours: true } })
     stats = { tutorCount: tc, clientCount: cc, projectCount: pc, pendingInvoices: outstandingInvoices._sum.totalAmount || 0, newRequests: nr, totalHours: hAgg._sum.hours || 0, totalEarned: 0, totalPaid: 0 }
   } else if (client) {
     const clientId = await getClientId(session.user.id, session.user.email)
@@ -93,10 +94,10 @@ export default async function DashboardPage(props: { searchParams: Promise<{ cit
         {superAdmin && <CityFilter selected={selectedCity} />}
       </div>
 
-      {tutor && onboardingStep < 6 && (
+      {tutor && onboardingStep < 7 && (
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-300 dark:border-blue-700 rounded-xl p-4 mb-6">
           <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
-            Onboarding in progress — Step {onboardingStep + 1} of 7
+            Onboarding in progress — Step {onboardingStep + 1} of 8
           </p>
           <Link href="/dashboard/onboarding" className="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1 inline-block">
             View onboarding progress →
@@ -165,22 +166,4 @@ export default async function DashboardPage(props: { searchParams: Promise<{ cit
   )
 }
 
-function StatCard({ label, value, href, highlight, green }: {
-  label: string; value: string | number; href: string; highlight?: boolean; green?: boolean
-}) {
-  return (
-    <Link href={href}
-      className={`rounded-xl border p-6 transition-colors hover:border-zinc-400 dark:hover:border-zinc-500 ${
-        highlight ? "border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20"
-        : green ? "border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20"
-        : "border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800"
-      }`}>
-      <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">{label}</p>
-      <p className={`text-3xl font-bold mt-1 ${
-        highlight ? "text-amber-600 dark:text-amber-400"
-        : green ? "text-green-600 dark:text-green-400"
-        : "text-zinc-900 dark:text-zinc-100"
-      }`}>{value}</p>
-    </Link>
-  )
-}
+

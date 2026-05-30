@@ -2,17 +2,11 @@ import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin, isTutor, isClient, getClientId, getTutorId, isSuperAdmin } from "@/lib/auth-helpers"
 import { notFound } from "next/navigation"
 import Link from "next/link"
-import { CLIENT_TYPE_LABELS, INVOICE_STATUS_COLORS } from "@/lib/constants"
+import { CLIENT_TYPE_LABELS } from "@/lib/constants"
 import ClientDetailEdit from "@/components/client-detail-edit"
+import { StatusBadge } from "@/components/ui"
 import SendInviteButton from "@/components/send-invite-button"
 import ImpersonateButton from "@/components/impersonate-button"
-
-const STATUS_COLORS: Record<string, string> = {
-  IN_PROGRESS: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-  ON_HOLD: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-  FINISHED: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  CANCELLED: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-}
 
 export default async function ClientDetailPage(props: { params: Promise<{ id: string }> }) {
   const session = await requireAuth()
@@ -146,10 +140,6 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
             <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Details</h3>
             <dl className="space-y-3 text-sm">
               <div className="flex justify-between">
-                <dt className="text-zinc-500">Company</dt>
-                <dd className="text-zinc-900 dark:text-zinc-100">{client.company || "-"}</dd>
-              </div>
-              <div className="flex justify-between">
                 <dt className="text-zinc-500">Phone</dt>
                 <dd className="text-zinc-900 dark:text-zinc-100">{client.phone || "-"}</dd>
               </div>
@@ -181,9 +171,7 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
                   >
                     {project.name}
                   </Link>
-                  <span className={`inline-flex text-xs font-medium rounded-full px-2 py-0.5 ml-2 ${STATUS_COLORS[project.status] || "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"}`}>
-                    {project.status}
-                  </span>
+                  <span className="ml-2"><StatusBadge status={project.status} /></span>
                   <p className="text-xs text-zinc-500 mt-1">
                     Started: {new Date(project.createdAt).toLocaleDateString()}
                   </p>
@@ -236,7 +224,7 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
                   <td className="px-2 py-2 text-zinc-900 dark:text-zinc-100">
                     ${invoice.totalAmount.toFixed(2)}
                   </td>
-                  <td className="px-2 py-2">{invoiceStatusBadge(invoice.status)}</td>
+                  <td className="px-2 py-2"><StatusBadge status={invoice.status} /></td>
                   <td className="px-2 py-2 text-zinc-600 dark:text-zinc-400">
                     {new Date(invoice.dueDate).toLocaleDateString()}
                   </td>
@@ -286,10 +274,3 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
    )
 }
 
-function invoiceStatusBadge(status: string) {
-  return (
-    <span className={`inline-flex text-xs font-medium rounded-full px-2 py-0.5 ${INVOICE_STATUS_COLORS[status] || "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"}`}>
-      {status}
-    </span>
-  )
-}

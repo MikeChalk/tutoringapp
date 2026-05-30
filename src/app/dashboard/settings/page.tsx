@@ -1,12 +1,11 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin } from "@/lib/auth-helpers"
-import { redirect } from "next/navigation"
+import { requireAdmin } from "@/lib/auth-helpers"
 import Link from "next/link"
 import { getAdminFlatLinks, TUTOR_NAV_LINKS, CLIENT_NAV_LINKS, TOP_LEVEL_LINKS } from "@/lib/constants"
+import Manage2FA from "@/components/manage-2fa"
 
 export default async function SettingsPage(props: { searchParams: Promise<{ saved?: string }> }) {
-  const session = await requireAuth()
-  if (!isAdmin(session.user.role)) redirect("/dashboard")
+  const session = await requireAdmin()
 
   const { saved } = await props.searchParams
 
@@ -14,6 +13,8 @@ export default async function SettingsPage(props: { searchParams: Promise<{ save
   if (!settings) {
     settings = await prisma.companySettings.create({ data: { id: "main" } })
   }
+
+  const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { totpEnabled: true } })
 
   const adminLinks = getAdminFlatLinks()
 
@@ -67,7 +68,7 @@ export default async function SettingsPage(props: { searchParams: Promise<{ save
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
-              <div><label className="block text-xs text-zinc-500 mb-1">Twilio Account SID</label><input type="text" name="twilioSid" defaultValue={settings.twilioSid} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
+              <div><label className="block text-xs text-zinc-500 mb-1">Twilio Account SID</label><input type="password" name="twilioSid" defaultValue="" placeholder={settings.twilioSid ? "••••••••" : "AC..."} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
               <div><label className="block text-xs text-zinc-500 mb-1">Twilio Auth Token</label><input type="password" name="twilioToken" defaultValue="" placeholder={settings.twilioToken ? "••••••••" : "Enter auth token"} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
               <div><label className="block text-xs text-zinc-500 mb-1">Twilio Phone Number</label><input type="text" name="twilioFrom" defaultValue={settings.twilioFrom} placeholder="+1234567890" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
             </div>
@@ -79,6 +80,8 @@ export default async function SettingsPage(props: { searchParams: Promise<{ save
             </div>
           </div>
         </div>
+
+        <Manage2FA initiallyEnabled={user?.totpEnabled ?? false} />
 
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Email Templates</h3>

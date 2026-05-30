@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin, isCityAdmin, getActiveCityId, isSuperAdmin } from "@/lib/auth-helpers"
-import { redirect } from "next/navigation"
+import { requireAdmin, isCityAdmin, getActiveCityId, isSuperAdmin } from "@/lib/auth-helpers"
 import { CityFilter } from "@/components/city-filter"
 import { EXPENSE_CATEGORIES } from "@/lib/constants"
 import AddExpenseSection from "@/components/add-expense-section"
@@ -20,8 +19,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 }
 
 export default async function ExpensesPage(props: { searchParams: Promise<{ city?: string; category?: string; search?: string; page?: string }> }) {
-  const session = await requireAuth()
-  if (!isAdmin(session.user.role)) redirect("/dashboard")
+  const session = await requireAdmin()
 
   const { city: cityParam, category: catParam, search: searchParam, page: pageParam } = await props.searchParams
   const selectedCity = cityParam || "all"

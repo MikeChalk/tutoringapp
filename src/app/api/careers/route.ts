@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { sendCareerApplicationEmail } from "@/lib/email"
+import { rateLimitByIp } from "@/lib/rate-limit"
 import bcrypt from "bcryptjs"
 import crypto from "crypto"
 
 export async function POST(request: Request) {
+  const { allowed } = rateLimitByIp(request)
+  if (!allowed) return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 })
+
   const formData = await request.formData()
 
   const firstName = (formData.get("firstName") as string)?.trim()

@@ -3,6 +3,9 @@ import { prisma } from "@/lib/db"
 import { writeFile, mkdir } from "fs/promises"
 import path from "path"
 
+const ALLOWED_EXTENSIONS = ["pdf", "doc", "docx", "jpg", "jpeg", "png"]
+const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+
 export async function POST(request: Request, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
 
@@ -17,6 +20,19 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
 
   if (!cv && !transcript) {
     return NextResponse.json({ error: "Please upload at least one file." }, { status: 400 })
+  }
+
+  // Validate file types and sizes
+  for (const file of [cv, transcript]) {
+    if (file && file.size > 0) {
+      if (file.size > MAX_FILE_SIZE) {
+        return NextResponse.json({ error: `File "${file.name}" exceeds 10MB limit.` }, { status: 400 })
+      }
+      const ext = file.name.split(".").pop()?.toLowerCase() || ""
+      if (!ALLOWED_EXTENSIONS.includes(ext)) {
+        return NextResponse.json({ error: `File type ".${ext}" not allowed. Accepted: ${ALLOWED_EXTENSIONS.join(", ")}.` }, { status: 400 })
+      }
+    }
   }
 
   const uploadDir = path.join(process.cwd(), "uploads", token)

@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Email already in use" }, { status: 409 })
   }
 
-  const tempPassword = crypto.randomBytes(6).toString("base64url").slice(0, 10)
+  const tempPassword = crypto.randomBytes(12).toString("base64url").slice(0, 16)
   const hashed = await bcrypt.hash(tempPassword, 12)
 
   const user = await prisma.user.create({

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin, isTutor, getTutorId, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
-import { GRADE_LABELS, STATUS_LABELS, STATUS_COLORS } from "@/lib/constants"
+import { GRADE_LABELS } from "@/lib/constants"
+import { StatusBadge } from "@/components/ui"
 import { CityFilter } from "@/components/city-filter"
 import { CreateProjectForm } from "@/components/create-project-form"
 import Link from "next/link"
@@ -192,9 +193,7 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
                       {project.projectType === "STUDY_HALL" ? "—" : (GRADE_LABELS[project.gradeLevel] || project.gradeLevel)}
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`inline-flex text-xs font-medium rounded-full px-2 py-0.5 ${STATUS_COLORS[project.status] || ""}`}>
-                        {STATUS_LABELS[project.status] || project.status}
-                      </span>
+                      <StatusBadge status={project.status} />
                     </td>
                     <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{totalHours}h</td>
                     <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
@@ -238,9 +237,7 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
                 {subjectList.map((s) => (
                   <span key={s} className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">{s}</span>
                 ))}
-                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[project.status] || ""}`}>
-                  {STATUS_LABELS[project.status] || project.status}
-                </span>
+                <StatusBadge status={project.status} />
               </div>
               <div className="flex items-center justify-between mt-4 text-sm">
                 <span className="text-zinc-600 dark:text-zinc-400">{totalHours}h logged</span>

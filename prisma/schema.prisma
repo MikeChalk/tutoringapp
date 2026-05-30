@@ -17,6 +17,10 @@ model User {
   signupToken       String?  @unique
   emailNotifications Boolean @default(true)
   smsNotifications  Boolean  @default(false)
+  resetToken        String?  @unique
+  resetTokenExpiry  DateTime?
+  totpSecret        String?
+  totpEnabled       Boolean  @default(false)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -82,6 +86,7 @@ model Tutor {
   activity            String    @default("Active")
   cvUploaded          Boolean   @default(false)
   transcriptUploaded  Boolean   @default(false)
+  videoWatched        Boolean   @default(false)
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
@@ -360,6 +365,8 @@ model CompanySettings {
   twilioToken     String  @default("")
   twilioFrom      String  @default("")
   openaiKey       String  @default("")
+  stripeKey       String  @default("")
+  resendKey       String  @default("")
 
   @@map("company_settings")
 }

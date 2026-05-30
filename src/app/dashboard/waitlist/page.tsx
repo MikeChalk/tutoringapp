@@ -1,13 +1,11 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
-import { redirect } from "next/navigation"
+import { requireAdmin, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
 import { CityFilter } from "@/components/city-filter"
 import WaitlistTable from "@/components/waitlist-table"
 import Link from "next/link"
 
 export default async function WaitlistPage(props: { searchParams: Promise<{ city?: string; search?: string; page?: string }> }) {
-  const session = await requireAuth()
-  if (!isAdmin(session.user.role)) redirect("/dashboard")
+  const session = await requireAdmin()
 
   const { city: cityParam, search: searchParam, page: pageParam } = await props.searchParams
   const selectedCity = cityParam || "all"

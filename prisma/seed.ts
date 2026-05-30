@@ -151,6 +151,8 @@ async function main() {
       isActive: true,
       onboarded: true,
       onboardedAt: new Date("2023-09-01"),
+      onboardingStep: 7,
+      videoWatched: true,
     },
   })
 
@@ -167,6 +169,8 @@ async function main() {
       isActive: true,
       onboarded: true,
       onboardedAt: new Date("2024-06-15"),
+      onboardingStep: 7,
+      videoWatched: true,
     },
   })
 
@@ -182,6 +186,7 @@ async function main() {
       tenure: "1ST_YEAR",
       isActive: true,
       onboarded: false,
+      onboardingStep: 0,
     },
   })
 
@@ -198,6 +203,8 @@ async function main() {
       isActive: true,
       onboarded: true,
       onboardedAt: new Date("2024-01-15"),
+      onboardingStep: 7,
+      videoWatched: true,
     },
   })
 
@@ -214,6 +221,8 @@ async function main() {
       isActive: true,
       onboarded: true,
       onboardedAt: new Date("2025-11-01"),
+      onboardingStep: 7,
+      videoWatched: true,
     },
   })
 
@@ -500,6 +509,8 @@ async function main() {
       isActive: true,
       onboarded: true,
       onboardedAt: new Date("2025-06-01"),
+      onboardingStep: 7,
+      videoWatched: true,
     },
   })
 

@@ -1,12 +1,10 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin } from "@/lib/auth-helpers"
+import { requireAdmin } from "@/lib/auth-helpers"
 import { GRADE_LABELS, STUDENT_GRADES, GRADE_ADVANCE } from "@/lib/constants"
-import { redirect } from "next/navigation"
 import Link from "next/link"
 
 export default async function DataHealthPage(props: { searchParams: Promise<{ advanced?: string }> }) {
-  const session = await requireAuth()
-  if (!isAdmin(session.user.role)) redirect("/dashboard")
+  await requireAdmin()
 
   const { advanced } = await props.searchParams
 

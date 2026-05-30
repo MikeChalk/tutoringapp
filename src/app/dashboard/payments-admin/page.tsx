@@ -1,11 +1,9 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin } from "@/lib/auth-helpers"
-import { redirect } from "next/navigation"
+import { requireAdmin } from "@/lib/auth-helpers"
 import Link from "next/link"
 
 export default async function PayoutsPage() {
-  const session = await requireAuth()
-  if (!isAdmin(session.user.role)) redirect("/dashboard")
+  await requireAdmin()
 
   const expenses = await prisma.expense.findMany({
     where: { category: "TUTOR_PAY" },

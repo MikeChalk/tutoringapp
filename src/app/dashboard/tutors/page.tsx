@@ -1,10 +1,9 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
+import { requireAdmin, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
 import { TENURE_LABELS, CONTRACT_TYPE_LABELS, GRADE_LABELS } from "@/lib/constants"
 import { CityFilter } from "@/components/city-filter"
 import { AddTutorForm } from "@/components/add-tutor-form"
 import ImpersonateButton from "@/components/impersonate-button"
-import { redirect } from "next/navigation"
 import Link from "next/link"
 
 const TYPE_FILTERS = [
@@ -23,8 +22,7 @@ function buildHref(typeValue: string, cityValue: string) {
 }
 
 export default async function TutorsPage(props: { searchParams: Promise<{ type?: string; city?: string; search?: string; page?: string }> }) {
-  const session = await requireAuth()
-  if (!isAdmin(session.user.role)) redirect("/dashboard")
+  const session = await requireAdmin()
 
   const { type, city: cityParam, search: searchParam, page: pageParam } = await props.searchParams
   const filter = type || "ALL"

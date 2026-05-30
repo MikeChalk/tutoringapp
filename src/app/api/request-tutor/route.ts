@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { validateDiscountCode } from "@/lib/discounts"
+import { rateLimitByIp } from "@/lib/rate-limit"
 
 export async function POST(request: Request) {
+  const { allowed } = rateLimitByIp(request)
+  if (!allowed) return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 })
+
   const formData = await request.formData()
 
   const name = (formData.get("name") as string)?.trim()

@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin, isTutor, getTutorId, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
-import { GRADE_LABELS, STATUS_LABELS, STATUS_COLORS } from "@/lib/constants"
+import { GRADE_LABELS } from "@/lib/constants"
 import { CityFilter } from "@/components/city-filter"
+import { StatusBadge } from "@/components/ui"
 import { CreateProjectForm } from "@/components/create-project-form"
 import Link from "next/link"
 import Script from "next/script"
@@ -102,9 +103,7 @@ export default async function OtherProjectsPage(props: { searchParams: Promise<{
                 <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
                   {GRADE_LABELS[project.gradeLevel] || project.gradeLevel}
                 </span>
-                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[project.status] || ""}`}>
-                  {STATUS_LABELS[project.status] || project.status}
-                </span>
+                <StatusBadge status={project.status} />
               </div>
               <div className="flex items-center gap-4 mt-4 text-sm">
                 <span className="text-zinc-600 dark:text-zinc-400">{totalHours}h logged</span>

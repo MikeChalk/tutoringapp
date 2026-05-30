@@ -10,7 +10,7 @@ interface ClientRow {
   city: string
   type: string
   typeLabel: string
-  company: string
+  phone: string
   projects: number
   invoices: number
 }
@@ -77,7 +77,7 @@ export default function ClientsTable({ data, showAdminColumns }: ClientsTablePro
               <th onClick={() => handleSort("email")} className="text-left px-4 py-3 text-xs font-medium text-zinc-500 cursor-pointer select-none hover:text-zinc-700 dark:hover:text-zinc-300 uppercase">Email {sortKey === "email" && <span className="text-[10px] ml-0.5">{sortDir === "asc" ? "▲" : "▼"}</span>}</th>
               <th onClick={() => handleSort("city")} className="text-left px-4 py-3 text-xs font-medium text-zinc-500 cursor-pointer select-none hover:text-zinc-700 dark:hover:text-zinc-300 uppercase">City {sortKey === "city" && <span className="text-[10px] ml-0.5">{sortDir === "asc" ? "▲" : "▼"}</span>}</th>
               <th onClick={() => handleSort("type")} className="text-left px-4 py-3 text-xs font-medium text-zinc-500 cursor-pointer select-none hover:text-zinc-700 dark:hover:text-zinc-300 uppercase">Type {sortKey === "type" && <span className="text-[10px] ml-0.5">{sortDir === "asc" ? "▲" : "▼"}</span>}</th>
-              {showAdminColumns && <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Company</th>}
+              {showAdminColumns && <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Phone</th>}
               {showAdminColumns && <th onClick={() => handleSort("projects")} className="text-left px-4 py-3 text-xs font-medium text-zinc-500 cursor-pointer select-none hover:text-zinc-700 dark:hover:text-zinc-300 uppercase">Projects {sortKey === "projects" && <span className="text-[10px] ml-0.5">{sortDir === "asc" ? "▲" : "▼"}</span>}</th>}
               {showAdminColumns && <th onClick={() => handleSort("invoices")} className="text-left px-4 py-3 text-xs font-medium text-zinc-500 cursor-pointer select-none hover:text-zinc-700 dark:hover:text-zinc-300 uppercase">Invoices {sortKey === "invoices" && <span className="text-[10px] ml-0.5">{sortDir === "asc" ? "▲" : "▼"}</span>}</th>}
             </tr>
@@ -102,7 +102,7 @@ export default function ClientsTable({ data, showAdminColumns }: ClientsTablePro
                       {client.typeLabel}
                     </span>
                   </td>
-                  {showAdminColumns && <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{client.company}</td>}
+                  {showAdminColumns && <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{client.phone}</td>}
                   {showAdminColumns && <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{client.projects}</td>}
                   {showAdminColumns && <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{client.invoices}</td>}
                 </tr>

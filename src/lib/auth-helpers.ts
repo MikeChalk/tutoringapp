@@ -14,6 +14,12 @@ export async function requireAuth() {
   return session
 }
 
+export async function requireAdmin() {
+  const session = await requireAuth()
+  if (!isAdmin(session.user.role)) redirect("/dashboard")
+  return session
+}
+
 export async function getTutorId(userId: string, email: string) {
   const byId = await prisma.tutor.findUnique({ where: { userId } })
   if (byId) return byId.id

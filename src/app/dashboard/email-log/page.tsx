@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin } from "@/lib/auth-helpers"
-import { redirect } from "next/navigation"
+import { requireAdmin } from "@/lib/auth-helpers"
 import Link from "next/link"
 
 const TRIGGER_LABELS: Record<string, string> = {
@@ -26,8 +25,7 @@ const TRIGGER_COLORS: Record<string, string> = {
 }
 
 export default async function EmailLogPage(props: { searchParams: Promise<{ search?: string; page?: string }> }) {
-  const session = await requireAuth()
-  if (!isAdmin(session.user.role)) redirect("/dashboard")
+  await requireAdmin()
 
   const { search: searchParam, page: pageParam } = await props.searchParams
   const searchQuery = searchParam || ""

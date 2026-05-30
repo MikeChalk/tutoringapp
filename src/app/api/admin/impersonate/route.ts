@@ -38,7 +38,7 @@ export async function POST(request: Request) {
   const response = NextResponse.json({ success: true, redirect: "/dashboard" })
   response.cookies.set("authjs.session-token", token, {
     httpOnly: true,
-    secure: false,
+    secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
     maxAge: 3600,

@@ -5,10 +5,11 @@ import { GRADE_LABELS, ONBOARDING_STEPS } from "@/lib/constants"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { AddTutorForm } from "@/components/add-tutor-form"
+import TimeLoggingVideo from "@/components/time-logging-video"
 
 const ADMIN_ADVANCE_STEPS = new Set([2, 3, 4])
 
-export default async function OnboardingPage(props: { searchParams: Promise<{ created?: string; pw?: string; city?: string }> }) {
+export default async function OnboardingPage(props: { searchParams: Promise<{ created?: string; city?: string }> }) {
   const session = await requireAuth()
   const admin = isAdmin(session.user.role)
   const tutor = isTutor(session.user.role)
@@ -26,7 +27,7 @@ export default async function OnboardingPage(props: { searchParams: Promise<{ cr
       <div>
         <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-6">My Onboarding</h2>
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
-          {step >= 6 ? (
+          {step >= 7 ? (
             <div className="text-center py-4">
               <div className="text-3xl mb-2">&#10003;</div>
               <p className="text-lg font-medium text-green-600 dark:text-green-400">Onboarding Complete</p>
@@ -59,12 +60,13 @@ export default async function OnboardingPage(props: { searchParams: Promise<{ cr
               </form>
             </div>
           )}
+          {step === 6 && <TimeLoggingVideo />}
         </div>
       </div>
     )
   }
 
-  const { created, pw, city: cityParam } = await props.searchParams
+  const { created, city: cityParam } = await props.searchParams
   const selectedCity = cityParam || "all"
   const superAdmin = isSuperAdmin(session.user.role)
   const cityAdminId = isCityAdmin(session.user.role) ? await getActiveCityId(session.user.role, session.user.id) : null
@@ -78,7 +80,7 @@ export default async function OnboardingPage(props: { searchParams: Promise<{ cr
   const cityFilter = effectiveCityId ? { user: { cityId: effectiveCityId } } : {}
 
   const pendingTutors = await prisma.tutor.findMany({
-    where: { isActive: true, onboardingStep: { lt: 6 }, ...cityFilter },
+    where: { isActive: true, onboardingStep: { lt: 7 }, ...cityFilter },
     include: { user: { select: { name: true, email: true } } },
     orderBy: { createdAt: "asc" },
   })
@@ -102,13 +104,13 @@ export default async function OnboardingPage(props: { searchParams: Promise<{ cr
         <div className="flex items-center gap-4">{superAdmin && <CityFilter selected={selectedCity} />}</div>
       </div>
 
-      {created && pw && (
+      {created && (
         <div className="bg-green-50 dark:bg-green-900/20 border border-green-300 dark:border-green-700 rounded-xl p-4 mb-6">
           <p className="text-sm font-medium text-green-800 dark:text-green-300">
             Team member created: <strong>{created}</strong>
           </p>
           <p className="text-sm text-green-700 dark:text-green-400 mt-1">
-            Temporary password: <code className="bg-green-100 dark:bg-green-900/40 px-2 py-0.5 rounded text-xs font-mono">{pw}</code>
+            A temporary password has been sent to their email address.
           </p>
         </div>
       )}
@@ -227,6 +229,7 @@ export default async function OnboardingPage(props: { searchParams: Promise<{ cr
                       <span className="text-xs text-zinc-400">
                         {step === 1 ? "Waiting for tutor to sign contract" :
                          step === 5 ? "Waiting for tutor to contact client" :
+                         step === 6 ? "Waiting for tutor to complete time logging video" :
                          "Waiting for tutor to complete onboarding"}
                       </span>
                     )}

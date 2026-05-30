@@ -4,6 +4,7 @@ import { INVOICE_STATUS_COLORS } from "@/lib/constants"
 import { redirect } from "next/navigation"
 import { CityFilter } from "@/components/city-filter"
 import { CreateInvoiceForm } from "@/components/create-invoice-form"
+import { StatCard } from "@/components/ui"
 import Link from "next/link"
 
 const STATUS_TABS = [
@@ -285,11 +286,4 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
   )
 }
 
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
-      <p className="text-xs text-zinc-500 uppercase">{label}</p>
-      <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{value}</p>
-    </div>
-  )
-}
+

@@ -1,5 +1,7 @@
 "use client"
 
+import Link from "next/link"
+
 export function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, string> = {
     IN_PROGRESS: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
@@ -20,6 +22,8 @@ export function StatusBadge({ status }: { status: string }) {
 
   const labels: Record<string, string> = {
     IN_PROGRESS: "In Progress", ON_HOLD: "On Hold", FINISHED: "Finished", CANCELLED: "Cancelled",
+    ACTIVE: "Active", DRAFT: "Draft", SENT: "Sent", PAID: "Paid", OVERDUE: "Overdue",
+    ACCEPTED: "Accepted", MATCHED: "Matched", NEW: "New", REJECTED: "Rejected", COMPLETED: "Completed",
   }
 
   return (
@@ -39,21 +43,31 @@ export function ModeBadge({ mode }: { mode: string }) {
   )
 }
 
-export function StatCard({ label, value, href, highlight, green }: {
-  label: string; value: string | number; href: string; highlight?: boolean; green?: boolean
+export function StatCard({ label, value, href, highlight, green, amber }: {
+  label: string; value: string | number; href?: string; highlight?: boolean; green?: boolean; amber?: boolean
 }) {
-  return (
-    <a href={href} className={`rounded-xl border p-6 transition-colors hover:border-zinc-400 dark:hover:border-zinc-500 ${
-      highlight ? "border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20"
-      : green ? "border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20"
-      : "border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800"
-    }`}>
+  const content = (
+    <>
       <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">{label}</p>
       <p className={`text-3xl font-bold mt-1 ${
         highlight ? "text-amber-600 dark:text-amber-400"
         : green ? "text-green-600 dark:text-green-400"
+        : amber ? "text-amber-600 dark:text-amber-400"
         : "text-zinc-900 dark:text-zinc-100"
       }`}>{value}</p>
-    </a>
+    </>
   )
+
+  const className = `rounded-xl border p-6 transition-colors hover:border-zinc-400 dark:hover:border-zinc-500 ${
+    highlight ? "border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20"
+    : green ? "border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20"
+    : amber ? "border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20"
+    : "border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800"
+  }`
+
+  if (href) {
+    return <Link href={href} className={className}>{content}</Link>
+  }
+
+  return <div className={className}>{content}</div>
 }

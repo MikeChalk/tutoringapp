@@ -4,17 +4,23 @@ import { prisma } from "@/lib/db"
 import { isAdmin } from "@/lib/auth-helpers"
 
 export async function GET(request: Request) {
+  const session = await auth()
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   const { searchParams } = new URL(request.url)
   const gradeLevel = searchParams.get("gradeLevel")
   const mode = searchParams.get("mode")
   const tenure = searchParams.get("tenure")
+  const projectType = searchParams.get("projectType") || "STUDENT"
 
   const [billingRate, payScale] = await Promise.all([
     gradeLevel && mode
-      ? prisma.billingRate.findFirst({ where: { gradeLevel, mode } })
+      ? prisma.billingRate.findFirst({ where: { gradeLevel, mode, projectType } })
       : null,
     tenure && gradeLevel && mode
-      ? prisma.payScale.findFirst({ where: { tenure, gradeLevel, mode } })
+      ? prisma.payScale.findFirst({ where: { tenure, gradeLevel, mode, projectType } })
       : null,
   ])
 
@@ -70,5 +76,10 @@ export async function POST(request: Request) {
     if (id && !isNaN(rate)) await prisma.payScale.update({ where: { id }, data: { rate } })
   }
 
-  return NextResponse.redirect(new URL(`/dashboard/rates?tab=${type.startsWith("delete") ? (type === "deleteBilling" ? "billing" : "payscales") : type === "city" ? "cities" : type === "billing" ? "billing" : "payscales"}`, request.url), 303)
+  const tab = type.startsWith("delete") ? (type === "deleteBilling" ? "billing" : "payscales")
+    : type === "city" ? "cities"
+    : type === "billing" || type === "updateBilling" ? "billing"
+    : "payscales"
+
+  return NextResponse.redirect(new URL(`/dashboard/rates?tab=${tab}`, request.url), 303)
 }

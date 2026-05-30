@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db"
 import { requireAuth, isTutor, getTutorId } from "@/lib/auth-helpers"
 import { redirect } from "next/navigation"
+import { StatCard, ModeBadge } from "@/components/ui"
 
 export default async function PaymentsPage() {
   const session = await requireAuth()
@@ -110,7 +111,7 @@ export default async function PaymentsPage() {
                 <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{new Date(log.date).toLocaleDateString()}</td>
                 <td className="px-4 py-3 text-zinc-900 dark:text-zinc-100">{log.project.name}</td>
                 <td className="px-4 py-3">
-                  <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${log.mode === "ONLINE" ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" : "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400"}`}>{log.mode === "ONLINE" ? "Online" : "In Person"}</span>
+                  <ModeBadge mode={log.mode} />
                 </td>
                 <td className="px-4 py-3 text-right text-zinc-900 dark:text-zinc-100">{log.hours}</td>
                 <td className="px-4 py-3 text-right text-zinc-600 dark:text-zinc-400">${log.tutorPayRate.toFixed(2)}/hr</td>
@@ -140,11 +141,4 @@ export default async function PaymentsPage() {
   )
 }
 
-function StatCard({ label, value, green, amber }: { label: string; value: string; green?: boolean; amber?: boolean }) {
-  return (
-    <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
-      <p className="text-xs text-zinc-500 uppercase">{label}</p>
-      <p className={`text-2xl font-bold ${green ? "text-green-600 dark:text-green-400" : amber ? "text-amber-600 dark:text-amber-400" : "text-zinc-900 dark:text-zinc-100"}`}>{value}</p>
-    </div>
-  )
-}
+

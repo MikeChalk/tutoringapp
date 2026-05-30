@@ -15,25 +15,34 @@ export default function ProfileClient({ emailNotifications, smsNotifications }: 
   const [newPassword, setNewPassword] = useState("")
   const [message, setMessage] = useState("")
   const [error, setError] = useState("")
+  const [confirmPasswordForEmail, setConfirmPasswordForEmail] = useState("")
 
   async function handleProfile(e: React.FormEvent) {
     e.preventDefault()
     setMessage(""); setError("")
+    const params: Record<string, string> = { name, email, _action: "profile" }
+    if (email !== (session?.user?.email || "")) {
+      if (!confirmPasswordForEmail) {
+        setError("Please confirm your password to change your email")
+        return
+      }
+      params.currentPassword = confirmPasswordForEmail
+    }
     const res = await fetch("/api/profile", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ name, email, _action: "profile" }),
+      body: new URLSearchParams(params),
     })
     const data = await res.json()
     if (data.error) setError(data.error)
-    else { setMessage("Profile updated"); router.refresh() }
+    else { setMessage("Profile updated"); setConfirmPasswordForEmail(""); router.refresh() }
   }
 
   async function handlePassword(e: React.FormEvent) {
     e.preventDefault()
     setMessage(""); setError("")
-    if (!currentPassword || !newPassword || newPassword.length < 6) {
-      setError("Password must be at least 6 characters")
+    if (!currentPassword || !newPassword || newPassword.length < 8) {
+      setError("Password must be at least 8 characters")
       return
     }
     const res = await fetch("/api/profile", {
@@ -67,6 +76,13 @@ export default function ProfileClient({ emailNotifications, smsNotifications }: 
               <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
                 className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
+            {email !== (session?.user?.email || "") && (
+              <div>
+                <label className="block text-xs text-zinc-500 mb-1">Confirm Password (required to change email)</label>
+                <input type="password" value={confirmPasswordForEmail} onChange={e => setConfirmPasswordForEmail(e.target.value)} required
+                  className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+            )}
             <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">Save</button>
           </form>
         </div>
@@ -81,7 +97,7 @@ export default function ProfileClient({ emailNotifications, smsNotifications }: 
             </div>
             <div>
               <label className="block text-xs text-zinc-500 mb-1">New Password</label>
-              <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} required minLength={6}
+              <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} required minLength={8}
                 className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
             <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">Change Password</button>

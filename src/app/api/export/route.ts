@@ -149,7 +149,7 @@ export async function GET(request: Request) {
     }
   }
 
-  const csv = [headers.join(","), ...rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(","))].join("\n")
+  const csv = [headers.join(","), ...rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""').replace(/^=+/, "'=")}""`).join(","))].join("\n")
 
   return new NextResponse(csv, {
     headers: {

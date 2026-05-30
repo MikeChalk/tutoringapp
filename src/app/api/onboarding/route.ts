@@ -26,7 +26,7 @@ export async function POST(request: Request) {
 
     const currentStep = tutor.onboardingStep
 
-    // Only allow admin to advance steps 0, 2, 3, 4 (1 and 5 are tutor-only)
+    // Only allow admin to advance steps 0, 2, 3, 4 (1, 5, and 6 are tutor-only)
     if (![0, 2, 3, 4].includes(currentStep)) {
       return NextResponse.json({ error: `Step ${currentStep} cannot be advanced by admin` }, { status: 400 })
     }
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const nextStep = Math.min(currentStep + 1, 6)
+    const nextStep = Math.min(currentStep + 1, 7)
 
     // Step 3→4: Notify tutor they've been assigned to a project
     if (currentStep === 3 && nextStep === 4) {
@@ -78,8 +78,8 @@ export async function POST(request: Request) {
       await sendOnboardingEmail(tutor.user.email, tutor.user.name, msg, "tutor_assigned")
     }
 
-    // Step 5→6: Notify tutor onboarding is complete
-    if (nextStep >= 6) {
+    // Step 6→7: Notify tutor onboarding is complete
+    if (nextStep >= 7) {
       const msg = `<p>Congratulations! Your onboarding is complete. You're now ready to receive clients and start tutoring.</p>`
       await sendOnboardingEmail(tutor.user.email, tutor.user.name, msg, "onboarding_complete")
     }
@@ -87,8 +87,8 @@ export async function POST(request: Request) {
       where: { id: tutorId },
       data: {
         onboardingStep: nextStep,
-        onboarded: nextStep >= 6,
-        onboardedAt: nextStep >= 6 ? new Date() : tutor.onboardedAt,
+        onboarded: nextStep >= 7,
+        onboardedAt: nextStep >= 7 ? new Date() : tutor.onboardedAt,
       },
     })
 

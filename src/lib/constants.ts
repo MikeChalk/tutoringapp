@@ -142,6 +142,7 @@ export const ONBOARDING_STEPS = [
   "Project created",
   "Tutor assigned to project",
   "Tutor contacts client",
+  "Learn how to log your time",
   "Platform onboarding complete",
 ] as const
 
@@ -221,7 +222,7 @@ export const EMAIL_TRIGGERS: EmailTrigger[] = [
   {
     value: "onboarding_complete",
     label: "Onboarding completed",
-    step: "Onboarding — Step 7",
+    step: "Onboarding — Step 8",
     description: "Sent when a tutor completes the full onboarding process. Confirms they are ready to receive clients.",
     vars: ["name", "message"],
   },

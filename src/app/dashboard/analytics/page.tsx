@@ -1,14 +1,13 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin } from "@/lib/auth-helpers"
-import { redirect } from "next/navigation"
+import { requireAdmin } from "@/lib/auth-helpers"
+import { StatCard } from "@/components/ui"
 
 export default async function AnalyticsPage() {
-  const session = await requireAuth()
-  if (!isAdmin(session.user.role)) redirect("/dashboard")
+  await requireAdmin()
 
   const [
     totalTutors, totalClients, totalProjects,
-    totalRevenue, totalPaid, totalTutorPay, totalExpenses,
+    totalRevenue, totalPaid, totalHoursAgg, totalExpenses,
     invoiceCounts, monthlyData, cityData
   ] = await Promise.all([
     prisma.tutor.count({ where: { onboarded: true } }),
@@ -46,7 +45,7 @@ export default async function AnalyticsPage() {
   const totalExpensesAmount = totalExpenses._sum.amount || 0
   const profit = totalPaidAmount - totalExpensesAmount
 
-  const totalTutorHours = totalTutorPay._sum.hours || 0
+  const totalTutorHours = totalHoursAgg._sum.hours || 0
   const totalInvoiceCount = invoiceCounts.sent + invoiceCounts.paid + invoiceCounts.draft + invoiceCounts.overdue
   const maxHours = Math.max(...monthlyData.map(([, h]) => h), 1)
 
@@ -57,7 +56,7 @@ export default async function AnalyticsPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard label="Total Revenue" value={`$${totalRevenueAmount.toFixed(0)}`} />
         <StatCard label="Paid" value={`$${totalPaidAmount.toFixed(0)}`} green />
-        <StatCard label="Profit" value={`$${profit.toFixed(0)}`} green={profit > 0} />
+        <StatCard label="Profit" value={`${profit < 0 ? "-" : ""}$${Math.abs(profit).toFixed(0)}`} green={profit > 0} amber={profit < 0} />
         <StatCard label={`${totalTutors} Tutors · ${totalClients} Clients`} value={`${totalProjects} Projects`} />
       </div>
 
@@ -105,14 +104,7 @@ export default async function AnalyticsPage() {
   )
 }
 
-function StatCard({ label, value, green }: { label: string; value: string; green?: boolean }) {
-  return (
-    <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
-      <p className="text-xs text-zinc-500 uppercase">{label}</p>
-      <p className={`text-2xl font-bold ${green ? "text-green-600 dark:text-green-400" : "text-zinc-900 dark:text-zinc-100"}`}>{value}</p>
-    </div>
-  )
-}
+
 
 function StatusBar({ label, count, total, color }: { label: string; count: number; total: number; color: string }) {
   return (

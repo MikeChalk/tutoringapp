@@ -76,7 +76,7 @@ export default async function ClientsPage(props: { searchParams: Promise<{ type?
     city: c.user.city?.name || "-",
     type: c.type,
     typeLabel: CLIENT_TYPE_LABELS[c.type] || c.type,
-    company: c.company || "-",
+    phone: c.phone || "-",
     projects: c._count.projects,
     invoices: c._count.invoices,
   }))

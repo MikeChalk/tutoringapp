@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin } from "@/lib/auth-helpers"
-import { redirect } from "next/navigation"
+import { requireAdmin } from "@/lib/auth-helpers"
 import Link from "next/link"
 
 const STATUS_TABS = [
@@ -20,8 +19,7 @@ function buildHref(status: string, search: string, page: number) {
 }
 
 export default async function LeadsPage(props: { searchParams: Promise<{ status?: string; search?: string; page?: string }> }) {
-  const session = await requireAuth()
-  if (!isAdmin(session.user.role)) redirect("/dashboard")
+  await requireAdmin()
 
   const { status: statusParam, search: searchParam, page: pageParam } = await props.searchParams
   const selectedStatus = statusParam || ""

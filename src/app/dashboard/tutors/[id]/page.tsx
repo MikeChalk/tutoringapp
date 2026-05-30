@@ -1,14 +1,14 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin, isSuperAdmin } from "@/lib/auth-helpers"
+import { requireAdmin, isSuperAdmin } from "@/lib/auth-helpers"
 import { GRADE_LABELS } from "@/lib/constants"
-import { redirect, notFound } from "next/navigation"
+import { notFound } from "next/navigation"
 import ImpersonateButton from "@/components/impersonate-button"
+import { ModeBadge, StatusBadge } from "@/components/ui"
 import SendInviteButton from "@/components/send-invite-button"
 import TutorDetailEdit from "@/components/tutor-detail-edit"
 
 export default async function TutorDetailPage(props: { params: Promise<{ id: string }> }) {
-  const session = await requireAuth()
-  if (!isAdmin(session.user.role)) redirect("/dashboard")
+  const session = await requireAdmin()
 
   const { id } = await props.params
 
@@ -145,13 +145,7 @@ export default async function TutorDetailPage(props: { params: Promise<{ id: str
                   <span className="text-zinc-900 dark:text-zinc-100">{pt.project.name}</span>
                   <div className="flex gap-2 items-center">
                     <span className="text-xs text-zinc-500">{GRADE_LABELS[pt.project.gradeLevel]}</span>
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                      pt.project.status === "IN_PROGRESS" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
-                      pt.project.status === "ON_HOLD" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" :
-                      pt.project.status === "FINISHED" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" :
-                      pt.project.status === "CANCELLED" ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" :
-                      "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"
-                    }`}>{pt.project.status}</span>
+                    <StatusBadge status={pt.project.status} />
                   </div>
                 </li>
               ))}
@@ -184,9 +178,7 @@ export default async function TutorDetailPage(props: { params: Promise<{ id: str
                       </td>
                       <td className="px-2 py-2 text-zinc-900 dark:text-zinc-100">{log.project.name}</td>
                       <td className="px-2 py-2">
-                        <span className={`text-xs px-1.5 py-0.5 rounded ${
-                          log.mode === "ONLINE" ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" : "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400"
-                        }`}>{log.mode === "ONLINE" ? "Online" : "In Person"}</span>
+                        <ModeBadge mode={log.mode} />
                       </td>
                       <td className="px-2 py-2 text-right text-zinc-900 dark:text-zinc-100">{log.hours}</td>
                       <td className="px-2 py-2 text-right text-green-600 dark:text-green-400">${log.tutorPayRate.toFixed(2)}/hr</td>

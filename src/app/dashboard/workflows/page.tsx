@@ -22,6 +22,7 @@ export default function WorkflowsPage() {
   const [testEmail, setTestEmail] = useState("")
   const [testResult, setTestResult] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [newTemplate, setNewTemplate] = useState({
     name: "",
     trigger: "",
@@ -40,11 +41,22 @@ export default function WorkflowsPage() {
   useEffect(() => {
     let ignore = false
     async function load() {
-      const res = await fetch("/api/workflows/templates")
-      const data = await res.json()
-      if (!ignore) {
-        setTemplates(data.templates || [])
-        setLoading(false)
+      try {
+        const res = await fetch("/api/workflows/templates")
+        const data = await res.json()
+        if (!ignore) {
+          if (!res.ok) {
+            setError(data.error || "Failed to load templates")
+          } else {
+            setTemplates(data.templates || [])
+          }
+          setLoading(false)
+        }
+      } catch {
+        if (!ignore) {
+          setError("Network error loading templates")
+          setLoading(false)
+        }
       }
     }
     load()
@@ -52,9 +64,18 @@ export default function WorkflowsPage() {
   }, [])
 
   async function refreshTemplates() {
-    const res = await fetch("/api/workflows/templates")
-    const data = await res.json()
-    setTemplates(data.templates || [])
+    setError(null)
+    try {
+      const res = await fetch("/api/workflows/templates")
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || "Failed to refresh templates")
+      } else {
+        setTemplates(data.templates || [])
+      }
+    } catch {
+      setError("Network error refreshing templates")
+    }
   }
 
   function startEdit(tpl: EmailTemplate) {
@@ -75,26 +96,44 @@ export default function WorkflowsPage() {
 
   async function saveEdit(id: string) {
     setSaving(true)
+    setError(null)
     try {
-      await fetch(`/api/workflows/templates/${id}`, {
+      const res = await fetch(`/api/workflows/templates/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editForm),
       })
-      await refreshTemplates()
-      setEditingId(null)
+      if (!res.ok) {
+        const data = await res.json()
+        setError(data.error || "Failed to save template")
+      } else {
+        await refreshTemplates()
+        setEditingId(null)
+      }
+    } catch {
+      setError("Network error saving template")
     } finally {
       setSaving(false)
     }
   }
 
   async function toggleActive(tpl: EmailTemplate) {
-    await fetch(`/api/workflows/templates/${tpl.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ isActive: !tpl.isActive }),
-    })
-    await refreshTemplates()
+    setError(null)
+    try {
+      const res = await fetch(`/api/workflows/templates/${tpl.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: !tpl.isActive }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        setError(data.error || "Failed to toggle template")
+      } else {
+        await refreshTemplates()
+      }
+    } catch {
+      setError("Network error toggling template")
+    }
   }
 
   async function sendTest(id: string) {
@@ -122,8 +161,18 @@ export default function WorkflowsPage() {
 
   async function deleteTemplate(id: string) {
     if (!confirm("Delete this template?")) return
-    await fetch(`/api/workflows/templates/${id}`, { method: "DELETE" })
-    await refreshTemplates()
+    setError(null)
+    try {
+      const res = await fetch(`/api/workflows/templates/${id}`, { method: "DELETE" })
+      if (!res.ok) {
+        const data = await res.json()
+        setError(data.error || "Failed to delete template")
+      } else {
+        await refreshTemplates()
+      }
+    } catch {
+      setError("Network error deleting template")
+    }
   }
 
   async function createTemplate() {
@@ -185,6 +234,13 @@ export default function WorkflowsPage() {
           {creating ? "Cancel" : "New Template"}
         </button>
       </div>
+
+      {error && (
+        <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-lg p-3 text-sm text-red-700 dark:text-red-300 flex items-center justify-between">
+          <span>{error}</span>
+          <button onClick={() => setError(null)} className="text-red-500 hover:text-red-700 ml-2">&times;</button>
+        </div>
+      )}
 
       {/* Test email bar */}
       <div className="mb-6 flex items-center gap-3 bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">

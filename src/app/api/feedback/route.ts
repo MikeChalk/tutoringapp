@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { sendOnboardingEmail } from "@/lib/email"
+import { rateLimitByIp } from "@/lib/rate-limit"
 
 export async function POST(request: Request) {
+  const { allowed } = rateLimitByIp(request)
+  if (!allowed) return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 })
   const session = await auth()
   const { name, email, message } = await request.json()
   if (!message) return NextResponse.json({ error: "Message required" }, { status: 400 })

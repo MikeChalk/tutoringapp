@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin } from "@/lib/auth-helpers"
-import { redirect } from "next/navigation"
+import { requireAdmin } from "@/lib/auth-helpers"
 import Link from "next/link"
 
 const ENTITY_FILTERS = [
@@ -12,8 +11,7 @@ const ENTITY_FILTERS = [
 ]
 
 export default async function ActivityLogPage(props: { searchParams: Promise<{ entity?: string; user?: string; from?: string; to?: string; search?: string; page?: string }> }) {
-  const session = await requireAuth()
-  if (!isAdmin(session.user.role)) redirect("/dashboard")
+  await requireAdmin()
 
   const { entity: entityFilter, user: userFilter, from: fromDate, to: toDate, search: searchParam, page: pageParam } = await props.searchParams
   const searchQuery = searchParam || ""

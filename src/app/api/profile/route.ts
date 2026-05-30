@@ -18,6 +18,15 @@ export async function POST(request: Request) {
     if (email !== session.user.email) {
       const existing = await prisma.user.findUnique({ where: { email } })
       if (existing) return NextResponse.json({ error: "Email already in use" }, { status: 409 })
+      // Require password confirmation for email change
+      const currentPassword = (formData.get("currentPassword") as string) || ""
+      if (!currentPassword) {
+        return NextResponse.json({ error: "Password required to change email" }, { status: 400 })
+      }
+      const userForCheck = await prisma.user.findUnique({ where: { id: session.user.id }, select: { password: true } })
+      if (!userForCheck) return NextResponse.json({ error: "User not found" }, { status: 404 })
+      const pwValid = await bcrypt.compare(currentPassword, userForCheck.password)
+      if (!pwValid) return NextResponse.json({ error: "Incorrect password" }, { status: 400 })
     }
 
     await prisma.user.update({ where: { id: session.user.id }, data: { name, email } })
@@ -27,7 +36,7 @@ export async function POST(request: Request) {
   if (action === "password") {
     const current = formData.get("currentPassword") as string
     const newPass = formData.get("newPassword") as string
-    if (!current || !newPass || newPass.length < 6) return NextResponse.json({ error: "Invalid password" }, { status: 400 })
+    if (!current || !newPass || newPass.length < 8) return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 })
 
     const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { password: true } })
     if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 })
