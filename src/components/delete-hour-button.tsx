@@ -11,7 +11,9 @@ export function DeleteHourButton({ id }: { id: string }) {
     if (!confirm("Delete this log entry?")) return
     setLoading(true)
     try {
-      const res = await fetch(`/api/hours/${id}`, { method: "POST" })
+      const fd = new FormData()
+      fd.append("_action", "delete")
+      const res = await fetch(`/api/hours/${id}`, { method: "POST", body: fd })
       if (!res.ok) {
         const data = await res.json().catch(() => ({ error: "Failed to delete" }))
         alert(data.error || "Failed to delete")
