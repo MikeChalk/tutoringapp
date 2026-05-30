@@ -6,13 +6,15 @@ import { CreateProjectForm } from "@/components/create-project-form"
 import Link from "next/link"
 import Script from "next/script"
 
-export default async function OtherProjectsPage(props: { searchParams: Promise<{ status?: string; city?: string }> }) {
+export default async function OtherProjectsPage(props: { searchParams: Promise<{ status?: string; city?: string; page?: string }> }) {
   const session = await requireAuth()
   const admin = isAdmin(session.user.role)
   const tutor = isTutor(session.user.role)
 
-  const { status: statusFilter, city: cityParam } = await props.searchParams
+  const { status: statusFilter, city: cityParam, page: pageParam } = await props.searchParams
   const selectedCity = cityParam || "all"
+  const page = parseInt(pageParam || "1") || 1
+  const pageSize = 50
   const superAdmin = isSuperAdmin(session.user.role)
   const cityAdminId = isCityAdmin(session.user.role) ? await getActiveCityId(session.user.role, session.user.id) : null
   const effectiveCityId = cityAdminId || (superAdmin && selectedCity !== "all" ? selectedCity : null)
@@ -35,17 +37,23 @@ export default async function OtherProjectsPage(props: { searchParams: Promise<{
     whereClause = { ...whereClause, cityId: effectiveCityId }
   }
 
-  const projects = await prisma.project.findMany({
-    where: whereClause,
-    include: {
-      city: { select: { name: true } },
-      projectTutors: {
-        include: { tutor: { include: { user: { select: { name: true } } } } },
+  const [projects, totalCount] = await Promise.all([
+    prisma.project.findMany({
+      where: whereClause,
+      include: {
+        city: { select: { name: true } },
+        projectTutors: {
+          include: { tutor: { include: { user: { select: { name: true } } } } },
+        },
+        hourLogs: { select: { hours: true } },
       },
-      hourLogs: { select: { hours: true } },
-    },
-    orderBy: { createdAt: "desc" },
-  })
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.project.count({ where: whereClause }),
+  ])
+  const totalPages = Math.ceil(totalCount / pageSize)
 
   const clients = admin ? await prisma.client.findMany({
     where: effectiveCityId ? { user: { cityId: effectiveCityId } } : {},
@@ -109,6 +117,24 @@ export default async function OtherProjectsPage(props: { searchParams: Promise<{
         })}
         {projects.length === 0 && <p className="text-sm text-zinc-500 col-span-full">No other projects yet.</p>}
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-4">
+          {page > 1 && (
+            <a href={`/dashboard/other-projects?page=${page - 1}${statusFilter && statusFilter !== "ALL" ? `&status=${statusFilter}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
+              className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+              Previous
+            </a>
+          )}
+          <span className="text-sm text-zinc-500 px-2">Page {page} of {totalPages} ({totalCount} total)</span>
+          {page < totalPages && (
+            <a href={`/dashboard/other-projects?page=${page + 1}${statusFilter && statusFilter !== "ALL" ? `&status=${statusFilter}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
+              className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+              Next
+            </a>
+          )}
+        </div>
+      )}
       {admin && <Script id="statusFormScript" strategy="afterInteractive">{`document.getElementById('statusFilterSelect')?.addEventListener('change',function(){this.form.submit()})`}</Script>}
     </div>
   )
