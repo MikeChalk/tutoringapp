@@ -26,7 +26,7 @@ export async function POST(request: Request) {
   if (!stripe) return NextResponse.json({ error: "Stripe not configured" }, { status: 500 })
 
   try {
-    await stripe.transfers.create({
+    const transfer = await stripe.transfers.create({
       amount: Math.round(amount * 100),
       currency: "cad",
       destination: tutor.stripeConnectId,
@@ -38,6 +38,13 @@ export async function POST(request: Request) {
     await prisma.hourLog.updateMany({
       where: { tutorId, paidAt: null },
       data: { paidAt: now },
+    })
+
+    // Store receipt URL on the corresponding expenses
+    const transferUrl = `https://dashboard.stripe.com/connect/transfers/${transfer.id}`
+    await prisma.expense.updateMany({
+      where: { hourLog: { tutorId, paidAt: now }, receiptUrl: null },
+      data: { receiptUrl: transferUrl },
     })
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "Payout failed"

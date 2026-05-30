@@ -13,7 +13,7 @@ export default async function PaymentsPage() {
 
   const hourLogs = await prisma.hourLog.findMany({
     where: { tutorId },
-    include: { project: { select: { name: true } } },
+    include: { project: { select: { name: true } }, expense: { select: { receiptUrl: true } } },
     orderBy: { date: "desc" },
   })
 
@@ -60,14 +60,14 @@ export default async function PaymentsPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard label="Total Hours" value={totalHours.toString()} />
-        <StatCard label="Total Pay Owed" value={`$${totalPayOwed.toFixed(2)}`} />
-        <StatCard label="Total Paid" value={`$${totalPaid.toFixed(2)}`} green />
-        <StatCard label="Total Unpaid" value={`$${totalUnpaid.toFixed(2)}`} amber />
+        <StatCard label="Total Earned" value={`$${totalPayOwed.toFixed(2)}`} />
+        <StatCard label="Paid to Date" value={`$${totalPaid.toFixed(2)}`} green />
+        <StatCard label="Unpaid" value={`$${totalUnpaid.toFixed(2)}`} amber />
       </div>
 
       {Object.keys(monthlyGrouped).length > 0 && (
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 mb-6">
-          <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Payment Periods</h3>
+          <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Monthly Payment Periods</h3>
           <table className="w-full">
             <thead>
               <tr className="border-b border-zinc-200 dark:border-zinc-700">
@@ -114,8 +114,16 @@ export default async function PaymentsPage() {
                 <td className="px-4 py-3 text-right text-zinc-600 dark:text-zinc-400">${log.tutorPayRate.toFixed(2)}/hr</td>
                 <td className="px-4 py-3 text-right font-medium text-green-600 dark:text-green-400">${(log.hours * log.tutorPayRate).toFixed(2)}</td>
                 <td className="px-4 py-3">
-                  {log.paidAt ? <span className="text-xs font-medium rounded-full px-2 py-0.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Paid {new Date(log.paidAt).toLocaleDateString()}</span>
-                  : <span className="text-xs text-zinc-400">Unpaid</span>}
+                  {log.paidAt ? (
+                    <div>
+                      <span className="text-xs font-medium rounded-full px-2 py-0.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Paid {new Date(log.paidAt).toLocaleDateString()}</span>
+                      {log.expense?.receiptUrl && (
+                        <a href={log.expense.receiptUrl} target="_blank" rel="noopener noreferrer" className="block text-xs text-blue-600 dark:text-blue-400 hover:underline mt-0.5">
+                          View Receipt
+                        </a>
+                      )}
+                    </div>
+                  ) : <span className="text-xs text-zinc-400">Unpaid</span>}
                 </td>
               </tr>
             ))}
