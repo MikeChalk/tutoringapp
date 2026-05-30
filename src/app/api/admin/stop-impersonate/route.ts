@@ -1,13 +1,8 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
-import { SignJWT } from "jose"
+import { encode } from "next-auth/jwt"
 import { logActivity } from "@/lib/activity"
-
-function getSecret(): Uint8Array {
-  if (!process.env.AUTH_SECRET) throw new Error("AUTH_SECRET environment variable is not set")
-  return new TextEncoder().encode(process.env.AUTH_SECRET)
-}
 
 export async function POST() {
   const session = await auth()
@@ -18,16 +13,17 @@ export async function POST() {
   const admin = await prisma.user.findUnique({ where: { id: session.user.impersonatedBy } })
   if (!admin) return NextResponse.json({ error: "Admin not found" }, { status: 404 })
 
-  const token = await new SignJWT({
-    id: admin.id,
-    email: admin.email,
-    name: admin.name,
-    role: admin.role,
+  const token = await encode({
+    token: {
+      id: admin.id,
+      email: admin.email,
+      name: admin.name,
+      role: admin.role,
+    },
+    salt: "authjs.session-token",
+    secret: process.env.AUTH_SECRET!,
+    maxAge: 86400,
   })
-    .setProtectedHeader({ alg: "HS256" })
-    .setIssuedAt()
-    .setExpirationTime("24h")
-    .sign(getSecret())
 
   const response = NextResponse.json({ success: true, redirect: "/dashboard" })
 

@@ -61,7 +61,7 @@ export default async function TutorDetailPage(props: { params: Promise<{ id: str
       <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">{tutor.user.name}</h2>
       <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-1">{tutor.user.email}</p>
       <div className="flex items-center gap-3 mb-4">
-        {superAdmin && <ImpersonateButton userId={tutor.user.id} />}
+        {superAdmin && tutor.onboarded && <ImpersonateButton userId={tutor.user.id} />}
         <SendInviteButton userId={tutor.user.id} label={tutor.user.signupToken ? "Resend Invite" : "Send Invite"} />
         <form action="/api/tutors/deactivate" method="POST" data-confirm={tutor.isActive ? "Deactivate this tutor?" : "Reactivate this tutor?"}>
           <input type="hidden" name="tutorId" value={tutor.id} />
