@@ -212,18 +212,24 @@ model InvoiceItem {
 }
 
 model TutoringRequest {
-  id                String    @id @default(cuid())
-  name              String
-  email             String
-  phone             String?
-  subject           String
-  description       String?
-  preferredSchedule String?
-  status            String    @default("NEW")
-  matchedTutorId    String?
-  clientId          String?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id                 String    @id @default(cuid())
+  name               String
+  email              String
+  phone              String?
+  subject            String
+  description        String?
+  preferredSchedule  String?
+  studentName        String?
+  gradeLevel         String?
+  school             String?
+  tutoringPreference String?
+  address            String?
+  discountCode       String?
+  status             String    @default("NEW")
+  matchedTutorId     String?
+  clientId           String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   matchedTutor Tutor?  @relation("MatchedTutor", fields: [matchedTutorId], references: [id], onDelete: SetNull)
   client       Client? @relation("RequestClient", fields: [clientId], references: [id], onDelete: SetNull)

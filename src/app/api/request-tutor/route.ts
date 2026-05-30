@@ -1,0 +1,77 @@
+import { NextResponse } from "next/server"
+import { prisma } from "@/lib/db"
+
+export async function POST(request: Request) {
+  const formData = await request.formData()
+
+  const name = (formData.get("name") as string)?.trim()
+  const studentName = (formData.get("studentName") as string)?.trim()
+  const email = (formData.get("email") as string)?.trim().toLowerCase()
+  const phone = (formData.get("phone") as string)?.trim()
+  const gradeLevel = (formData.get("gradeLevel") as string) || null
+  const school = (formData.get("school") as string)?.trim()
+  const subject = (formData.get("subject") as string)?.trim()
+  const description = (formData.get("description") as string)?.trim()
+  const discountCode = (formData.get("discountCode") as string)?.trim() || null
+  const address = (formData.get("address") as string)?.trim() || null
+  const prefInPerson = formData.get("prefInPerson") === "on"
+  const prefOnline = formData.get("prefOnline") === "on"
+
+  let tutoringPreference: string | null = null
+  if (prefInPerson && prefOnline) tutoringPreference = "Both"
+  else if (prefInPerson) tutoringPreference = "In-Person"
+  else if (prefOnline) tutoringPreference = "Online"
+
+  if (!name || !email || !phone) {
+    return NextResponse.json({ error: "Parent name, email, and phone are required." }, { status: 400 })
+  }
+
+  // Build a descriptive subject from selected subjects
+  const subjectField = subject || "General tutoring"
+
+  // Build description with all details
+  const parts: string[] = []
+  if (studentName) parts.push(`Student: ${studentName}`)
+  if (gradeLevel) parts.push(`Grade: ${gradeLevel}`)
+  if (school) parts.push(`School: ${school}`)
+  if (tutoringPreference) parts.push(`Preference: ${tutoringPreference}`)
+  if (address) parts.push(`Address: ${address}`)
+  if (discountCode) parts.push(`Discount Code: ${discountCode}`)
+  if (description) parts.push(`Details: ${description}`)
+
+  const fullDescription = parts.join("\n")
+
+  await prisma.tutoringRequest.create({
+    data: {
+      name,
+      email,
+      phone: phone || null,
+      subject: subjectField,
+      description: fullDescription || null,
+      studentName: studentName || null,
+      gradeLevel,
+      school: school || null,
+      tutoringPreference,
+      address,
+      discountCode,
+      status: "NEW",
+    },
+  })
+
+  // Also create a lead
+  const existingLead = await prisma.lead.findFirst({ where: { email } })
+  if (!existingLead) {
+    await prisma.lead.create({
+      data: {
+        name,
+        email,
+        phone: phone || null,
+        subject: subjectField,
+        notes: fullDescription || null,
+        status: "NEW",
+      },
+    })
+  }
+
+  return NextResponse.redirect(new URL("/request-tutor?submitted=1", request.url), 303)
+}

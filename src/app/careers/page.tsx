@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { SUBJECT_OPTIONS, STUDENT_GRADE_OPTIONS } from "@/lib/constants"
+import CopyLinkButton from "@/components/copy-link-button"
 
 interface City {
   id: string; name: string
@@ -53,6 +54,9 @@ function CareersForm() {
         </div>
 
         <form action="/api/careers" method="POST" className="bg-white rounded-xl border border-zinc-200 p-6 space-y-4">
+          <div className="flex items-center justify-end">
+            <CopyLinkButton />
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-zinc-700 mb-1">First name *</label>
