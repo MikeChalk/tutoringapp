@@ -17,7 +17,7 @@ export async function POST(request: Request) {
   const target = await prisma.user.findUnique({ where: { id: userId } })
   if (!target) return NextResponse.json({ error: "User not found" }, { status: 404 })
 
-  const secret = process.env.AUTH_SECRET
+  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET
   if (typeof secret !== "string") return NextResponse.json({ error: "Secret not configured" }, { status: 500 })
 
   const token = await encode({
