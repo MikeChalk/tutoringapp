@@ -228,10 +228,10 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
               <select name="category" id="categorySelect"
                 className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="">--</option>
-                <option value="in_person_mgmt">In-Person Program Management</option>
-                <option value="online_mgmt">Online Program Management</option>
-                <option value="supervision">Supervision</option>
-                <option value="marketing">Marketing</option>
+                <option value="IN_PERSON_MGMT">In-Person Program Management</option>
+                <option value="ONLINE_MGMT">Online Program Management</option>
+                <option value="SUPERVISION">Supervision</option>
+                <option value="MARKETING">Marketing</option>
               </select>
             </div>
             <div className="bg-zinc-50 dark:bg-zinc-900 rounded-lg p-3 border border-zinc-200 dark:border-zinc-700">
