@@ -331,18 +331,10 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
             var mode = modeSelect && modeSelect.value;
             var tenure = tutorSelect && tutorSelect.value ? (tutorSelect.querySelector('option[value="' + tutorSelect.value.replace(/"/g, '\\\\"') + '"]') || {}).dataset.tenure : null;
             var ptype = projectSelect && projectSelect.value ? (projectSelect.querySelector('option[value="' + projectSelect.value.replace(/"/g, '\\\\"') + '"]') || {}).dataset.type : null;
-            var clientType = projectSelect && projectSelect.value ? (projectSelect.querySelector('option[value="' + projectSelect.value.replace(/"/g, '\\\\"') + '"]') || {}).dataset.clientType : '';
 
-            var isStudyHall = ptype === 'STUDY_HALL';
-            var isSchool = clientType === 'SCHOOL';
-
+            var selectedType = typeSelect && typeSelect.value;
             if (categoryGroup) {
-              if (isStudyHall && isSchool) {
-                categoryGroup.classList.remove('hidden');
-              } else {
-                categoryGroup.classList.add('hidden');
-                if (categorySelect) categorySelect.value = '';
-              }
+              categoryGroup.classList.toggle('hidden', selectedType !== 'STUDY_HALL');
             }
 
             if (!grade || !mode) {
