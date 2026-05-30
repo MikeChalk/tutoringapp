@@ -134,6 +134,13 @@ export const EMAIL_TRIGGERS: EmailTrigger[] = [
     description: "Sent when a tutor completes the full onboarding process. Confirms they are ready to receive clients.",
     vars: ["name", "message"],
   },
+  {
+    value: "feedback_received",
+    label: "Feedback received confirmation",
+    step: "Support — Auto-Reply",
+    description: "Sent automatically when a user submits feedback through the Help bubble. Confirms receipt.",
+    vars: ["name", "message"],
+  },
 ]
 
 export const EMAIL_TRIGGER_DEFAULTS: Record<string, { name: string; subject: string; htmlBody: string }> = {
@@ -181,6 +188,11 @@ export const EMAIL_TRIGGER_DEFAULTS: Record<string, { name: string; subject: str
     name: "Onboarding Completed",
     subject: "Onboarding Complete — Welcome to J.A.S.S.!",
     htmlBody: `<p>Hi {{name}},</p>{{message}}<p style="margin-top:16px">— J.A.S.S. Tutors</p>`,
+  },
+  feedback_received: {
+    name: "Feedback Received",
+    subject: "We received your message — J.A.S.S.",
+    htmlBody: `<p>Hi {{name}},</p><p>Thank you for reaching out! We&apos;ve received your message and our team will get back to you as soon as possible.</p>{{message}}<p style="margin-top:16px">— J.A.S.S. Tutors</p>`,
   },
 }
 

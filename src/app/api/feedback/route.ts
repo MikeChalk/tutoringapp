@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
+import { sendOnboardingEmail } from "@/lib/email"
 
 export async function POST(request: Request) {
   const session = await auth()
@@ -11,6 +12,7 @@ export async function POST(request: Request) {
 
   console.log(`[FEEDBACK] From: ${senderName} <${senderEmail}>\nMessage: ${message}`)
 
+  // Send to admin
   if (process.env.RESEND_API_KEY) {
     try {
       const { Resend } = await import("resend")
@@ -23,6 +25,12 @@ export async function POST(request: Request) {
         text: `From: ${senderName} (${senderEmail})\n\n${message}`,
       })
     } catch { /* email failed silently */ }
+  }
+
+  // Send confirmation to the user
+  if (senderEmail) {
+    const confirmMsg = `<p>Here&apos;s a copy of your message:</p><p style="background:#f4f4f4;padding:12px;border-radius:8px;margin:12px 0">${message.replace(/\n/g, "<br>")}</p>`
+    await sendOnboardingEmail(senderEmail, senderName, confirmMsg, "feedback_received")
   }
 
   return NextResponse.json({ success: true })

@@ -53,7 +53,7 @@ export async function sendCareerApplicationEmail(to: string, name: string, uploa
   })
 }
 
-export async function sendOnboardingEmail(to: string, name: string, message: string, trigger: "onboarding_welcome" | "contract_signed" = "onboarding_welcome") {
+export async function sendOnboardingEmail(to: string, name: string, message: string, trigger = "onboarding_welcome") {
   const template = await getTemplate(trigger)
   const subject = template?.subject || (trigger === "contract_signed" ? "Contract Signed — Welcome to J.A.S.S." : "Welcome to J.A.S.S. — Next Steps")
   const html = template
