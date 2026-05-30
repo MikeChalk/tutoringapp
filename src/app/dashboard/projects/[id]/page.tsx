@@ -53,8 +53,6 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
   const allInvoices = [...project.invoices, ...clientInvoices]
 
   const totalHours = project.hourLogs.reduce((sum, h) => sum + h.hours, 0)
-  const totalBilled = project.hourLogs.reduce((sum, h) => sum + h.hours * h.billingRate, 0)
-  const totalPay = project.hourLogs.reduce((sum, h) => sum + h.hours * h.tutorPayRate, 0)
 
   const availableTutors = admin ? await prisma.tutor.findMany({
     where: {
@@ -100,14 +98,6 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
           <p className="text-xs text-zinc-500 uppercase">Total Hours</p>
           <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{totalHours}</p>
-        </div>
-        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
-          <p className="text-xs text-zinc-500 uppercase">Total Billed</p>
-          <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">${totalBilled.toFixed(2)}</p>
-        </div>
-        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
-          <p className="text-xs text-zinc-500 uppercase">Tutor Pay Owed</p>
-          <p className="text-2xl font-bold text-green-600 dark:text-green-400">${totalPay.toFixed(2)}</p>
         </div>
       </div>
 
