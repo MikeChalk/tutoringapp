@@ -1,17 +1,38 @@
 import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin } from "@/lib/auth-helpers"
 import { redirect } from "next/navigation"
+import Link from "next/link"
 
-export default async function ActivityLogPage() {
+const ENTITY_FILTERS = [
+  { value: "", label: "All" },
+  { value: "Invoice", label: "Invoices" },
+  { value: "HourLog", label: "Hour Logs" },
+  { value: "Expense", label: "Expenses" },
+  { value: "Project", label: "Projects" },
+]
+
+export default async function ActivityLogPage(props: { searchParams: Promise<{ entity?: string; user?: string; from?: string; to?: string }> }) {
   const session = await requireAuth()
   if (!isAdmin(session.user.role)) redirect("/dashboard")
 
+  const { entity: entityFilter, user: userFilter, from: fromDate, to: toDate } = await props.searchParams
+
+  const where: Record<string, unknown> = {}
+  if (entityFilter) where.entity = entityFilter
+  if (userFilter) where.userId = userFilter
+  if (fromDate || toDate) {
+    const createdAt: Record<string, Date> = {}
+    if (fromDate) createdAt.gte = new Date(fromDate)
+    if (toDate) createdAt.lte = new Date(toDate + "T23:59:59")
+    where.createdAt = createdAt
+  }
+
   const logs = await prisma.activityLog.findMany({
+    where,
     orderBy: { createdAt: "desc" },
-    take: 300,
+    take: 500,
   })
 
-  // Get user names in bulk
   const userIds = [...new Set(logs.map(l => l.userId))]
   const users = await prisma.user.findMany({
     where: { id: { in: userIds } },
@@ -22,7 +43,26 @@ export default async function ActivityLogPage() {
   return (
     <div>
       <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">Activity Log</h2>
-      <p className="text-sm text-zinc-500 mb-6">Tracks changes across the platform. Latest 300 entries.</p>
+      <p className="text-sm text-zinc-500 mb-4">Track changes across the platform. Latest 500 entries.</p>
+
+      <form action="/dashboard/activity" method="GET" className="mb-6 flex flex-wrap gap-3 items-end bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
+        <div>
+          <label className="block text-xs text-zinc-500 mb-1">Entity</label>
+          <select name="entity" className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-1.5 text-sm">
+            {ENTITY_FILTERS.map(f => <option key={f.value} value={f.value} selected={entityFilter === f.value}>{f.label}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs text-zinc-500 mb-1">From</label>
+          <input type="date" name="from" defaultValue={fromDate || ""} className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-1.5 text-sm" />
+        </div>
+        <div>
+          <label className="block text-xs text-zinc-500 mb-1">To</label>
+          <input type="date" name="to" defaultValue={toDate || ""} className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-1.5 text-sm" />
+        </div>
+        <button type="submit" className="rounded-lg bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700">Filter</button>
+        {(entityFilter || fromDate || toDate) && <Link href="/dashboard/activity" className="rounded-lg border border-zinc-300 px-4 py-1.5 text-sm text-zinc-500 hover:bg-zinc-100">Clear</Link>}
+      </form>
 
       <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
         <table className="w-full">

@@ -13,7 +13,7 @@ const STATUS_TABS = [
   { value: "OVERDUE", label: "Overdue" },
 ]
 
-export default async function InvoicesPage(props: { searchParams: Promise<{ city?: string; status?: string; search?: string; page?: string }> }) {
+export default async function InvoicesPage(props: { searchParams: Promise<{ city?: string; status?: string; search?: string; page?: string; generated?: string; reminded?: string }> }) {
   const session = await requireAuth()
   const admin = isAdmin(session.user.role)
   const tutor = isTutor(session.user.role)
@@ -21,7 +21,7 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
 
   if (tutor) redirect("/dashboard")
 
-  const { city: cityParam, status: statusParam, search: searchParam, page: pageParam } = await props.searchParams
+  const { city: cityParam, status: statusParam, search: searchParam, page: pageParam, generated: generatedParam, reminded: remindedParam } = await props.searchParams
   const selectedCity = cityParam || "all"
   const selectedStatus = statusParam || ""
   const searchQuery = searchParam || ""
@@ -89,10 +89,10 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Invoices</h2>
         <div className="flex items-center gap-3">
-          <form action="/api/cron?action=generate" method="POST">
+          <form action="/api/cron?action=generate" method="POST" onSubmit="return confirm('Generate invoices for all clients with unbilled hours?')">
             <button type="submit" className="text-xs text-green-600 dark:text-green-400 hover:underline">Generate Invoices</button>
           </form>
-          <form action="/api/cron?action=remind" method="POST">
+          <form action="/api/cron?action=remind" method="POST" onSubmit="return confirm('Send payment reminders to all overdue clients?')">
             <button type="submit" className="text-xs text-amber-600 dark:text-amber-400 hover:underline">Send Reminders</button>
           </form>
           <a href="/api/export?type=invoices" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Export CSV</a>
@@ -110,6 +110,13 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
           <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Search</button>
           {searchQuery && <a href={`/dashboard/invoices${selectedStatus ? `?status=${selectedStatus}` : ""}`} className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-500 hover:bg-zinc-100">Clear</a>}
         </form>
+      )}
+
+      {(generatedParam || remindedParam) && (
+        <div className="mb-4 bg-green-50 dark:bg-green-900/20 border border-green-300 dark:border-green-700 rounded-lg p-3 text-sm text-green-700 dark:text-green-300">
+          {generatedParam && `Generated ${generatedParam} invoice${generatedParam === "1" ? "" : "s"}.`}
+          {remindedParam && `Sent ${remindedParam} reminder${remindedParam === "1" ? "" : "s"}.`}
+        </div>
       )}
 
       {admin && <CreateInvoiceForm clients={clients} />}
@@ -137,7 +144,7 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
       {/* Bulk send drafts button */}
       {(selectedStatus === "DRAFT" || !selectedStatus) && draftCount > 0 && admin && (
         <div className="mb-4">
-          <form action="/api/invoices/send-all" method="POST" className="inline">
+          <form action="/api/invoices/send-all" method="POST" className="inline" onSubmit="return confirm('Send ALL draft invoices to clients?')">
             <button type="submit" className="text-xs px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors">
               Send All Drafts ({draftCount})
             </button>

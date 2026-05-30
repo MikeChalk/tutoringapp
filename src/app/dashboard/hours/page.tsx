@@ -187,7 +187,7 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
 
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Log New Hours</h3>
-          <form action="/api/hours" method="POST" className="flex flex-col gap-4" id="hourLogForm">
+          <form action="/api/hours" method="POST" className="flex flex-col gap-4" id="hourLogForm" onSubmit="return confirm('Submit this time log?')">
             <div>
               <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Team Member</label>
               <select name="tutorId" required id="tutorSelect" defaultValue={tutorId ?? ""}
