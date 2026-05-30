@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin, isTutor, getTutorId } from "@/lib/auth-helpers"
+import { requireAuth, isAdmin, isTutor, isClient, getClientId, getTutorId } from "@/lib/auth-helpers"
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import { CLIENT_TYPE_LABELS } from "@/lib/constants"
@@ -15,6 +15,7 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
   const session = await requireAuth()
   const admin = isAdmin(session.user.role)
   const tutor = isTutor(session.user.role)
+  const isClientRole = isClient(session.user.role)
 
   const { id } = await props.params
 
@@ -31,6 +32,9 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
       hasAccess = projectCount > 0
       projectFilter = { projectTutors: { some: { tutorId } } }
     }
+  } else if (isClientRole) {
+    const clientId = await getClientId(session.user.id, session.user.email)
+    hasAccess = clientId === id
   }
 
   if (!hasAccess) notFound()

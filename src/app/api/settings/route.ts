@@ -16,41 +16,51 @@ export async function POST(request: Request) {
   const emailEnabled = formData.get("emailEnabled") === "on"
   const defaultTaxRate = parseFloat((formData.get("defaultTaxRate") as string) || "0") || 0
 
+  const getString = (key: string) => (formData.get(key) as string)?.trim() || undefined
+
+  const secretFields = {
+    twilioSid: getString("twilioSid"),
+    twilioToken: getString("twilioToken"),
+    twilioFrom: getString("twilioFrom"),
+    openaiKey: getString("openaiKey"),
+    stripeKey: getString("stripeKey"),
+    resendKey: getString("resendKey"),
+  }
+
+  const updateData: Record<string, unknown> = {
+    name: getString("name"),
+    email: getString("email"),
+    phone: getString("phone"),
+    address: getString("address"),
+    website: getString("website"),
+    taxNumber: getString("taxNumber"),
+    invoicePrefix: getString("invoicePrefix"),
+    invoiceNotes: getString("invoiceNotes"),
+    defaultTaxRate,
+    stripeEnabled, smsEnabled, openaiEnabled, emailEnabled,
+    ...secretFields,
+  }
+
   await prisma.companySettings.upsert({
     where: { id: "main" },
     create: {
       id: "main",
-      name: (formData.get("name") as string) || "J.A.S.S. Tutoring",
-      email: (formData.get("email") as string) || "",
-      phone: (formData.get("phone") as string) || "",
-      address: (formData.get("address") as string) || "",
-      website: (formData.get("website") as string) || "",
-      taxNumber: (formData.get("taxNumber") as string) || "",
-      invoicePrefix: (formData.get("invoicePrefix") as string) || "INV-",
-      invoiceNotes: (formData.get("invoiceNotes") as string) || "",
+      name: getString("name") || "J.A.S.S. Tutoring",
+      email: getString("email") || "",
+      phone: getString("phone") || "",
+      address: getString("address") || "",
+      website: getString("website") || "",
+      taxNumber: getString("taxNumber") || "",
+      invoicePrefix: getString("invoicePrefix") || "INV-",
+      invoiceNotes: getString("invoiceNotes") || "",
       defaultTaxRate,
       stripeEnabled, smsEnabled, openaiEnabled, emailEnabled,
-      twilioSid: (formData.get("twilioSid") as string) || "",
-      twilioToken: (formData.get("twilioToken") as string) || "",
-      twilioFrom: (formData.get("twilioFrom") as string) || "",
-      openaiKey: (formData.get("openaiKey") as string) || "",
+      twilioSid: secretFields.twilioSid || "",
+      twilioToken: secretFields.twilioToken || "",
+      twilioFrom: secretFields.twilioFrom || "",
+      openaiKey: secretFields.openaiKey || "",
     },
-    update: {
-      name: (formData.get("name") as string) || undefined,
-      email: (formData.get("email") as string) || undefined,
-      phone: (formData.get("phone") as string) || undefined,
-      address: (formData.get("address") as string) || undefined,
-      website: (formData.get("website") as string) || undefined,
-      taxNumber: (formData.get("taxNumber") as string) || undefined,
-      invoicePrefix: (formData.get("invoicePrefix") as string) || undefined,
-      invoiceNotes: (formData.get("invoiceNotes") as string) || undefined,
-      defaultTaxRate,
-      stripeEnabled, smsEnabled, openaiEnabled, emailEnabled,
-      twilioSid: (formData.get("twilioSid") as string) || undefined,
-      twilioToken: (formData.get("twilioToken") as string) || undefined,
-      twilioFrom: (formData.get("twilioFrom") as string) || undefined,
-      openaiKey: (formData.get("openaiKey") as string) || undefined,
-    },
+    update: updateData,
   })
 
   return NextResponse.redirect(new URL("/dashboard/settings?saved=1", request.url), 303)

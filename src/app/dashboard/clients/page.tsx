@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin, isTutor, getTutorId, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
+import { requireAuth, isAdmin, isTutor, isClient, getClientId, getTutorId, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
 import { CityFilter } from "@/components/city-filter"
 import { CLIENT_TYPE_LABELS } from "@/lib/constants"
 import { AddClientForm } from "@/components/add-client-form"
@@ -37,6 +37,11 @@ export default async function ClientsPage(props: { searchParams: Promise<{ type?
     const tutorId = await getTutorId(session.user.id, session.user.email)
     if (tutorId) {
       whereClause = { projects: { some: { projectTutors: { some: { tutorId } } } } }
+    }
+  } else if (isClient(session.user.role)) {
+    const clientId = await getClientId(session.user.id, session.user.email)
+    if (clientId) {
+      whereClause = { id: clientId }
     }
   }
 

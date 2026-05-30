@@ -3,6 +3,9 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { isAdmin } from "@/lib/auth-helpers"
 import bcrypt from "bcryptjs"
+import crypto from "crypto"
+
+const ALLOWED_TUTOR_ROLES = ["TUTOR", "CITY_ADMIN"] as const
 
 export async function POST(request: Request) {
   const session = await auth()
@@ -16,7 +19,8 @@ export async function POST(request: Request) {
   const phone = (formData.get("phone") as string)?.trim() || null
   const cityId = (formData.get("cityId") as string) || null
   const tenure = (formData.get("tenure") as string) || "1ST_YEAR"
-  const role = (formData.get("role") as string) || "TUTOR"
+  const rawRole = (formData.get("role") as string) || "TUTOR"
+  const role = ALLOWED_TUTOR_ROLES.includes(rawRole as typeof ALLOWED_TUTOR_ROLES[number]) ? rawRole : "TUTOR"
   const subjects = (formData.get("subjects") as string) || ""
   const gradeLevels = (formData.get("gradeLevels") as string) || ""
 
@@ -29,7 +33,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Email already in use" }, { status: 409 })
   }
 
-  const tempPassword = Math.random().toString(36).slice(2, 10)
+  const tempPassword = crypto.randomBytes(6).toString("base64url").slice(0, 10)
   const hashed = await bcrypt.hash(tempPassword, 12)
 
   const user = await prisma.user.create({
