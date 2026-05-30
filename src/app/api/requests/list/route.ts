@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { isTutor, getTutorId } from "@/lib/auth-helpers"
 
 export async function GET(request: Request) {
   const session = await auth()
@@ -18,6 +19,13 @@ export async function GET(request: Request) {
       { matchedTutor: { user: { cityId } } },
       { client: { user: { cityId } } },
     ]
+  }
+
+  // Tutors only see requests matched to them
+  if (isTutor(session.user.role)) {
+    const tutorId = await getTutorId(session.user.id, (session.user as { email?: string }).email || "")
+    if (!tutorId) return NextResponse.json([])
+    where.matchedTutorId = tutorId
   }
 
   const requests = await prisma.tutoringRequest.findMany({

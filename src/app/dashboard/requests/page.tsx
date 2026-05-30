@@ -5,9 +5,15 @@ import { useSession } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { StatusBadge } from "@/components/ui"
 
-const STATUS_FILTERS = [
+const ADMIN_STATUS_FILTERS = [
   { value: "NEW", label: "New" },
   { value: "MATCHED", label: "Matched" },
+  { value: "ACCEPTED", label: "Accepted" },
+  { value: "REJECTED", label: "Rejected" },
+]
+
+const TUTOR_STATUS_FILTERS = [
+  { value: "NEW", label: "Offers" },
   { value: "ACCEPTED", label: "Accepted" },
   { value: "REJECTED", label: "Rejected" },
 ]
@@ -44,6 +50,9 @@ function RequestsContent() {
   const [cityFilter, setCityFilter] = useState(searchParams.get("city") || "all")
   const [cities, setCities] = useState<{ id: string; name: string }[]>([])
   const isAdmin = session?.user?.role === "ADMIN"
+  const isTutorRole = session?.user?.role === "TUTOR"
+
+  const STATUS_FILTERS = isTutorRole ? TUTOR_STATUS_FILTERS : ADMIN_STATUS_FILTERS
 
   useEffect(() => {
     fetch("/api/city").then(r => r.json()).then(d => setCities(d.cities || []))
@@ -58,10 +67,12 @@ function RequestsContent() {
     fetch(`/api/requests/list?status=${filter}${cityParam}`)
       .then((r) => r.json())
       .then(setRequests)
-    fetch(`/api/requests/waitlist${cityFilter !== "all" ? `?city=${cityFilter}` : ""}`)
-      .then((r) => r.json())
-      .then(setTutors)
-  }, [filter, cityFilter])
+    if (isAdmin) {
+      fetch(`/api/requests/waitlist${cityFilter !== "all" ? `?city=${cityFilter}` : ""}`)
+        .then((r) => r.json())
+        .then(setTutors)
+    }
+  }, [filter, cityFilter, isAdmin])
 
   async function getRecommendations(requestId: string) {
     setSelected(requestId)
@@ -100,33 +111,19 @@ function RequestsContent() {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Tutoring Requests</h2>
+        <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+          {isTutorRole ? "My Offers" : "Tutoring Requests"}
+        </h2>
         <div className="flex gap-2">
           {session?.user?.role === "ADMIN" && (
-            <select
-              value={cityFilter}
-              onChange={(e) => {
-                const v = e.target.value
-                setCityFilter(v)
-                const u = new URL(window.location.href)
-                if (v === "all") u.searchParams.delete("city")
-                else u.searchParams.set("city", v)
-                window.history.replaceState(null, "", u.toString())
-              }}
-              className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-1.5 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
+            <select value={cityFilter} onChange={(e) => { setCityFilter(e.target.value); router.push(`/dashboard/requests?city=${e.target.value}`) }}
+              className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="all">All Cities</option>
-              {cities.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
+              {cities.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
             </select>
           )}
-          <button
-            onClick={() => setShowArchived(!showArchived)}
-            className={`text-sm px-3 py-1.5 rounded-lg transition-colors ${
-              showArchived ? "bg-zinc-200 dark:bg-zinc-600 text-zinc-800 dark:text-zinc-200" : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700"
-            }`}
-          >
+          <button onClick={() => setShowArchived(!showArchived)}
+            className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-2 text-xs text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors">
             {showArchived ? "Active" : "Archive"}
           </button>
         </div>
@@ -137,10 +134,10 @@ function RequestsContent() {
           <button
             key={f.value}
             onClick={() => { setFilter(f.value); setShowArchived(false) }}
-            className={`text-sm px-3 py-1.5 rounded-lg transition-colors ${
-              filter === f.value && !showArchived
+            className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${
+              filter === f.value
                 ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900"
-                : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700 border border-zinc-300 dark:border-zinc-600"
             }`}
           >
             {f.label}
@@ -149,142 +146,149 @@ function RequestsContent() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left: Requests List */}
-        <div>
+        <div className="flex flex-col gap-3">
+          {filteredRequests.length === 0 && (
+            <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-8 text-center">
+              <p className="text-sm text-zinc-500">No requests found.</p>
+            </div>
+          )}
           {filteredRequests.map((req) => (
             <button
               key={req.id}
-              onClick={() => getRecommendations(req.id)}
-              className={`w-full text-left border rounded-lg p-4 mb-3 transition-colors ${
-                selected === req.id
-                  ? "border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20"
-                  : "border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:border-zinc-400"
+              onClick={() => isAdmin ? getRecommendations(req.id) : setSelected(req.id)}
+              className={`text-left bg-white dark:bg-zinc-800 rounded-xl border p-4 transition-colors hover:border-zinc-400 dark:hover:border-zinc-500 ${
+                selected === req.id ? "border-blue-500 dark:border-blue-400 ring-1 ring-blue-500" : "border-zinc-200 dark:border-zinc-700"
               }`}
             >
-              <div className="flex items-start justify-between mb-1">
+              <div className="flex items-center justify-between mb-2">
                 <div>
-                  <p className="font-medium text-zinc-900 dark:text-zinc-100">{req.name}</p>
-                  <p className="text-sm text-zinc-500">{req.email}</p>
+                  <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{req.name}</p>
+                  <p className="text-xs text-zinc-500">{req.email}{req.phone ? ` · ${req.phone}` : ""}</p>
                 </div>
                 <StatusBadge status={req.status} />
               </div>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                <strong>Subject:</strong> {req.subject}
-              </p>
+              <p className="text-sm text-zinc-700 dark:text-zinc-300 mb-1">{req.subject}</p>
               {req.description && (
-                <p className="text-sm text-zinc-500 mt-1 line-clamp-2">{req.description}</p>
+                <p className="text-xs text-zinc-500 line-clamp-2">{req.description}</p>
               )}
               {req.matchedTutor && (
-                <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
-                  Matched: {req.matchedTutor.user.name}
+                <p className="text-xs text-green-600 dark:text-green-400 mt-2">
+                  Matched with: {req.matchedTutor.user.name}
                 </p>
               )}
-              {req.status === "MATCHED" && isAdmin && (
-                <a href="/dashboard/onboarding" className="inline-block mt-2 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg px-3 py-1.5 transition-colors">
-                  Start Onboarding
-                </a>
+              {isAdmin && req.status === "MATCHED" && (
+                <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+                  <a href="/dashboard/onboarding" className="hover:underline">Start Onboarding →</a>
+                </p>
               )}
-              {req.status === "MATCHED" && !isAdmin && (
-                <div className="flex gap-2 mt-2">
+              {isTutorRole && req.status === "NEW" && (
+                <div className="flex gap-2 mt-3">
                   <form action={`/api/requests/${req.id}/accept`} method="POST">
-                    <button type="submit" className="text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg px-3 py-1.5 transition-colors">Accept</button>
+                    <button type="submit" className="text-xs px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700">Accept</button>
                   </form>
                   <form action={`/api/requests/${req.id}/reject`} method="POST">
-                    <button type="submit" className="text-xs font-medium text-red-600 border border-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg px-3 py-1.5 transition-colors">Reject</button>
+                    <button type="submit" className="text-xs px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700">Reject</button>
                   </form>
                 </div>
               )}
-              <p className="text-xs text-zinc-400 mt-2">
-                {new Date(req.createdAt).toLocaleDateString()}
-              </p>
+              <p className="text-xs text-zinc-400 mt-2">{new Date(req.createdAt).toLocaleDateString()}</p>
             </button>
           ))}
-          {filteredRequests.length === 0 && (
-            <p className="text-sm text-zinc-500 py-8 text-center">No requests found.</p>
-          )}
         </div>
 
-        {/* Right: Tutor Waitlist & Recommendations */}
-        <div>
-          {selectedRequest ? (
-            <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
-              <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">
-                {loading ? "Analyzing..." : "AI Recommendations"}
-              </h3>
-              <p className="text-sm text-zinc-500 mb-4">
-                Best tutor matches for: <strong>{selectedRequest.name}</strong> — {selectedRequest.subject}
-              </p>
-
-              {loading ? (
-                <div className="space-y-3">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="animate-pulse bg-zinc-100 dark:bg-zinc-700 rounded-lg h-16" />
-                  ))}
-                </div>
-              ) : recommendations.length > 0 ? (
-                <div className="space-y-3">
-                  {recommendations.map((rec, i) => {
-                    const tutor = tutors.find((t) => t.user.name === rec.name)
-                    return (
-                      <div key={i} className="border border-zinc-200 dark:border-zinc-700 rounded-lg p-4">
+        {isAdmin && (
+          <div>
+            {selectedRequest ? (
+              <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
+                <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">AI Recommendations</h3>
+                {loading ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="animate-pulse bg-zinc-100 dark:bg-zinc-700 h-16 rounded-lg" />
+                    ))}
+                  </div>
+                ) : recommendations.length === 0 ? (
+                  <p className="text-sm text-zinc-500">No recommendations available.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {recommendations.map((rec) => (
+                      <div key={rec.name} className="border border-zinc-200 dark:border-zinc-700 rounded-lg p-3">
                         <div className="flex items-center justify-between mb-1">
-                          <p className="font-medium text-zinc-900 dark:text-zinc-100">{rec.name}</p>
-                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                            rec.score >= 80 ? "bg-green-100 text-green-700" : rec.score >= 60 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"
+                          <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{rec.name}</span>
+                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                            rec.score >= 80 ? "bg-green-100 text-green-700" : rec.score >= 50 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"
                           }`}>
                             {rec.score}%
                           </span>
                         </div>
-                        <p className="text-sm text-zinc-600 dark:text-zinc-400">{rec.reason}</p>
-                        {tutor && (
-                          <p className="text-xs text-zinc-400 mt-1">
-                            {tutor.tenure.replace("_", " ")} &middot; {tutor.subjects || "General"}
-                          </p>
-                        )}
-                        {tutor && !tutor.onboarded && (
-                          <button
-                            onClick={() => matchTutor(selectedRequest.id, rec.name)}
-                            className="mt-2 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg px-3 py-1.5 transition-colors"
-                          >
-                            Match & Send Offer
-                          </button>
-                        )}
+                        <p className="text-xs text-zinc-500 mb-2">{rec.reason}</p>
+                        <button
+                          type="button"
+                          onClick={() => matchTutor(selectedRequest.id, rec.name)}
+                          className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                        >
+                          Match &amp; Send Offer
+                        </button>
                       </div>
-                    )
-                  })}
-                </div>
-              ) : (
-                <p className="text-sm text-zinc-500">Select a request to see AI recommendations.</p>
-              )}
-
-              <div className="mt-6 pt-4 border-t border-zinc-200 dark:border-zinc-700">
-                <h4 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-3">
-                  Waitlist ({tutors.length})
-                </h4>
-                <div className="space-y-2 max-h-64 overflow-auto">
-                  {tutors.map((t) => (
-                    <div key={t.id} className="flex items-center justify-between text-sm py-1">
-                      <div>
-                        <span className="text-zinc-900 dark:text-zinc-100">{t.user.name}</span>
-                        <span className="text-xs text-zinc-400 ml-2">{t.tenure.replace("_", " ")}</span>
-                      </div>
-                      <button
-                        onClick={() => matchTutor(selectedRequest.id, t.user.name)}
-                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                      >
-                        Match
-                      </button>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                )}
+                <div className="mt-6 pt-4 border-t border-zinc-200 dark:border-zinc-700">
+                  <p className="text-xs text-zinc-500 mb-2">Waitlist ({tutors.length})</p>
+                  <div className="space-y-1">
+                    {tutors.slice(0, 10).map((t) => (
+                      <p key={t.id} className="text-xs text-zinc-600 dark:text-zinc-400">
+                        {t.user.name} — {t.subjects || "General"}
+                      </p>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          ) : (
-            <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 text-center">
-              <p className="text-zinc-500 dark:text-zinc-400">Select a request from the left to see AI-matched tutors.</p>
-            </div>
-          )}
-        </div>
+            ) : (
+              <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-8 text-center">
+                <p className="text-sm text-zinc-500">Select a request from the left to see AI-matched tutors.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {isTutorRole && selected && (
+          <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
+            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Request Details</h3>
+            {(() => {
+              const req = requests.find(r => r.id === selected)
+              if (!req) return <p className="text-sm text-zinc-500">Not found.</p>
+              return (
+                <div className="space-y-3 text-sm">
+                  <div>
+                    <p className="text-xs text-zinc-500">Parent</p>
+                    <p className="text-zinc-900 dark:text-zinc-100">{req.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-zinc-500">Contact</p>
+                    <p className="text-zinc-600 dark:text-zinc-400">{req.email}{req.phone ? ` · ${req.phone}` : ""}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-zinc-500">Subject</p>
+                    <p className="text-zinc-900 dark:text-zinc-100">{req.subject}</p>
+                  </div>
+                  {req.description && (
+                    <div>
+                      <p className="text-xs text-zinc-500">Details</p>
+                      <p className="text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">{req.description}</p>
+                    </div>
+                  )}
+                  {req.preferredSchedule && (
+                    <div>
+                      <p className="text-xs text-zinc-500">Schedule</p>
+                      <p className="text-zinc-600 dark:text-zinc-400">{req.preferredSchedule}</p>
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -292,7 +296,7 @@ function RequestsContent() {
 
 export default function RequestsPage() {
   return (
-    <Suspense fallback={<div className="animate-pulse bg-zinc-100 dark:bg-zinc-700 rounded-lg h-96" />}>
+    <Suspense fallback={<div className="p-8 text-zinc-500">Loading...</div>}>
       <RequestsContent />
     </Suspense>
   )
