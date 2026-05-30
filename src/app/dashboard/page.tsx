@@ -18,7 +18,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ cit
   const effectiveCityId = cityAdminId || (superAdmin && selectedCity !== "all" ? selectedCity : null)
   const cityFilter = effectiveCityId ? { cityId: effectiveCityId } : {}
 
-  let stats = { tutorCount: 0, clientCount: 0, projectCount: 0, totalHours: 0, pendingInvoices: 0, newRequests: 0, totalEarned: 0, totalOwed: 0 }
+  let stats = { tutorCount: 0, clientCount: 0, projectCount: 0, totalHours: 0, pendingInvoices: 0, newRequests: 0, totalEarned: 0, totalPaid: 0 }
   let contract: { type: string; yearLevel: string; endDate: Date; signed: boolean } | null = null
   let recentInvoices: Array<{ id: string; number: string; status: string; totalAmount: number; dueDate: Date }> = []
   let onboardingStep = 6
@@ -48,7 +48,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ cit
       stats = {
         tutorCount: tutorData.tc, clientCount: tutorData.cc, projectCount: tutorData.pc,
         totalHours: tutorData.totalHours, pendingInvoices: 0, newRequests: tutorData.nc,
-        totalEarned: tutorData.totalEarned, totalOwed: tutorData.totalPaid,
+        totalEarned: tutorData.totalEarned, totalPaid: tutorData.totalPaid,
       }
       contract = tutorData.ct
       onboardingStep = tutorData.onboardingStep
@@ -62,7 +62,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ cit
       prisma.tutoringRequest.count({ where: { status: "NEW" } }),
     ])
     const logs = await prisma.hourLog.findMany({ select: { hours: true } })
-    stats = { tutorCount: tc, clientCount: cc, projectCount: pc, pendingInvoices: pi, newRequests: nr, totalHours: logs.reduce((s, h) => s + h.hours, 0), totalEarned: 0, totalOwed: 0 }
+    stats = { tutorCount: tc, clientCount: cc, projectCount: pc, pendingInvoices: pi, newRequests: nr, totalHours: logs.reduce((s, h) => s + h.hours, 0), totalEarned: 0, totalPaid: 0 }
   } else if (client) {
     const clientId = await getClientId(session.user.id, session.user.email)
     if (clientId) {
@@ -152,7 +152,8 @@ export default async function DashboardPage(props: { searchParams: Promise<{ cit
         {client && <StatCard label="My Students" value={stats.projectCount} href="/dashboard/projects" />}
         {!client && <StatCard label="Total Hours" value={stats.totalHours} href="/dashboard/hours" />}
         {tutor && <StatCard label="Total Earned" value={`$${stats.totalEarned.toFixed(0)}`} href="/dashboard/payments" green />}
-        {tutor && <StatCard label="Paid to Date" value={`$${stats.totalOwed.toFixed(0)}`} href="/dashboard/payments" green />}
+        {tutor && <StatCard label="Paid to Date" value={`$${stats.totalPaid.toFixed(0)}`} href="/dashboard/payments" green />}
+        {tutor && stats.totalEarned > stats.totalPaid && <StatCard label="Unpaid" value={`$${(stats.totalEarned - stats.totalPaid).toFixed(0)}`} href="/dashboard/payments" highlight />}
         {admin && <StatCard label="Outstanding" value={`$${stats.pendingInvoices}`} href="/dashboard/invoices" highlight />}
         {client && <StatCard label="Unpaid Invoices" value={stats.pendingInvoices} href="/dashboard/invoices" highlight />}
         {tutor && <StatCard label="New Offers" value={stats.newRequests} href="/dashboard/requests" highlight />}

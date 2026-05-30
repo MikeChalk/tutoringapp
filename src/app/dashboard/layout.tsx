@@ -6,6 +6,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { ADMIN_NAV_SECTIONS, TUTOR_NAV_LINKS, CLIENT_NAV_LINKS } from "@/lib/constants"
 import ImpersonationBanner from "@/components/impersonation-banner"
+import FeedbackBubble from "@/components/feedback-bubble"
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession()
@@ -53,6 +54,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <main className="flex-1 bg-zinc-50 dark:bg-zinc-900 overflow-auto">
         <ImpersonationBanner />
         <div className="p-8">{children}</div>
+        <FeedbackBubble />
       </main>
     </div>
   )
