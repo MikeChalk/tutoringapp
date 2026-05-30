@@ -249,18 +249,25 @@ export default function WaitlistTable({ tutors }: { tutors: WaitlistTutor[] }) {
                   {visibleCols.has("cv") && (
                     <td className="px-3 py-2">
                       {tutor.cvToken ? (
-                        <a
-                          href={`/upload/${tutor.cvToken}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                            tutor.cvUploaded
-                              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                              : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                          }`}
-                        >
-                          {tutor.cvUploaded ? "Uploaded" : "Pending"}
-                        </a>
+                        tutor.cvUploaded ? (
+                          <a
+                            href={`/api/files/${tutor.cvToken}/cv`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs px-2 py-0.5 rounded-full font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 hover:underline"
+                          >
+                            View CV
+                          </a>
+                        ) : (
+                          <a
+                            href={`/upload/${tutor.cvToken}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 hover:underline"
+                          >
+                            Pending
+                          </a>
+                        )
                       ) : (
                         <span className="text-xs text-zinc-400">-</span>
                       )}
@@ -269,18 +276,25 @@ export default function WaitlistTable({ tutors }: { tutors: WaitlistTutor[] }) {
                   {visibleCols.has("transcript") && (
                     <td className="px-3 py-2">
                       {tutor.cvToken ? (
-                        <a
-                          href={`/upload/${tutor.cvToken}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                            tutor.transcriptUploaded
-                              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                              : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                          }`}
-                        >
-                          {tutor.transcriptUploaded ? "Uploaded" : "Pending"}
-                        </a>
+                        tutor.transcriptUploaded ? (
+                          <a
+                            href={`/api/files/${tutor.cvToken}/transcript`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs px-2 py-0.5 rounded-full font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 hover:underline"
+                          >
+                            View Transcript
+                          </a>
+                        ) : (
+                          <a
+                            href={`/upload/${tutor.cvToken}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 hover:underline"
+                          >
+                            Pending
+                          </a>
+                        )
                       ) : (
                         <span className="text-xs text-zinc-400">-</span>
                       )}

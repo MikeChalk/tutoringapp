@@ -66,6 +66,12 @@ const adminSections = [
     ],
   },
   {
+    label: "Workflows",
+    links: [
+      { href: "/dashboard/workflows", label: "Email Templates" },
+    ],
+  },
+  {
     label: "Settings",
     links: [
       { href: "/dashboard/settings", label: "Company" },
