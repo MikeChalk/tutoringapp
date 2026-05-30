@@ -18,12 +18,6 @@ export default function Home() {
           >
             Sign In
           </Link>
-          <Link
-            href="/signup"
-            className="inline-flex h-12 items-center justify-center rounded-lg border border-zinc-300 px-8 text-sm font-medium text-zinc-700 hover:bg-zinc-100 transition-colors dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-800"
-          >
-            Get Started
-          </Link>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-8 w-full">
           <div className="bg-white dark:bg-zinc-800 rounded-xl p-6 shadow-sm border border-zinc-200 dark:border-zinc-700">
