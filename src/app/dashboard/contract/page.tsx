@@ -376,7 +376,10 @@ function ContractCard({ contract, showSign, rates }: {
           <div>
             <p className="text-xs text-zinc-500 mb-2">{contract.type === "PROGRAM_SUPERVISOR" ? "Study Hall / Supervisor Rates" : "Study Hall Rates"}</p>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-              {["ELEMENTARY", "SEC1_2", "SEC3", "SEC4_5", "CEGEP", "UNI", "STUDY_HALL", "PROGRAM_SUPERVISOR"].map((grade) => {
+              {(contract.type === "PROGRAM_SUPERVISOR"
+                ? ["ELEMENTARY", "SEC1_2", "SEC3", "SEC4_5", "CEGEP", "UNI", "STUDY_HALL", "PROGRAM_SUPERVISOR"]
+                : ["STUDY_HALL"]
+              ).map((grade) => {
                 const online = rates.studyHall.find(p => p.gradeLevel === grade && p.mode === "ONLINE")
                 const inPerson = rates.studyHall.find(p => p.gradeLevel === grade && p.mode === "IN_PERSON")
                 if (!online && !inPerson) return null
