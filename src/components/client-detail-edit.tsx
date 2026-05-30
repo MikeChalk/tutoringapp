@@ -15,38 +15,20 @@ interface ClientDetailEditProps {
     notes: string | null
     user: { name: string; email: string; city: { name: string } | null }
   }
-  canImpersonate: boolean
-  userId: string
 }
 
-export default function ClientDetailEdit({ client, canImpersonate, userId }: ClientDetailEditProps) {
+export default function ClientDetailEdit({ client }: ClientDetailEditProps) {
   const [editing, setEditing] = useState(false)
 
   return (
     <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Details</h3>
-        <div className="flex items-center gap-3">
-          {canImpersonate && (
-            <a href={`/api/admin/impersonate`} onClick={async (e) => {
-              e.preventDefault()
-              try {
-                const res = await fetch("/api/admin/impersonate", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ userId }),
-                })
-                const data = await res.json()
-                if (data.redirect) window.location.href = data.redirect
-              } catch {}
-            }} className="text-xs text-purple-600 dark:text-purple-400 hover:underline">Impersonate</a>
-          )}
-          {!editing ? (
-            <button type="button" onClick={() => setEditing(true)} className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Edit</button>
-          ) : (
-            <button type="button" onClick={() => setEditing(false)} className="text-xs text-zinc-500 hover:underline">Cancel</button>
-          )}
-        </div>
+        {!editing ? (
+          <button type="button" onClick={() => setEditing(true)} className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Edit</button>
+        ) : (
+          <button type="button" onClick={() => setEditing(false)} className="text-xs text-zinc-500 hover:underline">Cancel</button>
+        )}
       </div>
 
       {editing ? (

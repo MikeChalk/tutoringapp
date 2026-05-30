@@ -4,14 +4,14 @@ import { prisma } from "@/lib/db"
 import { encode } from "next-auth/jwt"
 import { logActivity } from "@/lib/activity"
 
-export async function POST() {
+export async function POST(request: Request) {
   const session = await auth()
   if (!session?.user?.impersonatedBy) {
-    return NextResponse.json({ error: "Not impersonating" }, { status: 400 })
+    return NextResponse.redirect(new URL("/dashboard?error=not-impersonating", request.url))
   }
 
   const admin = await prisma.user.findUnique({ where: { id: session.user.impersonatedBy } })
-  if (!admin) return NextResponse.json({ error: "Admin not found" }, { status: 404 })
+  if (!admin) return NextResponse.redirect(new URL("/dashboard?error=admin-not-found", request.url))
 
   const token = await encode({
     token: {
@@ -25,9 +25,9 @@ export async function POST() {
     maxAge: 86400,
   })
 
-  const response = NextResponse.json({ success: true, redirect: "/dashboard" })
-
   logActivity(admin.id, "stopped_impersonating", "User", session.user.id, `Resumed own session as ${admin.name}`)
+
+  const response = NextResponse.redirect(new URL("/dashboard", request.url))
 
   response.cookies.set("authjs.session-token", token, {
     httpOnly: true,

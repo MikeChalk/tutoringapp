@@ -8,14 +8,24 @@ import { logActivity } from "@/lib/activity"
 export async function POST(request: Request) {
   const session = await auth()
   if (!session?.user || !isSuperAdmin(session.user.role)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    return NextResponse.redirect(new URL("/dashboard?error=unauthorized", request.url))
   }
 
-  const { userId } = await request.json()
-  if (!userId) return NextResponse.json({ error: "Missing userId" }, { status: 400 })
+  const contentType = request.headers.get("content-type") || ""
+  let userId: string | null = null
+
+  if (contentType.includes("application/json")) {
+    const body = await request.json()
+    userId = body.userId
+  } else {
+    const formData = await request.formData()
+    userId = formData.get("userId") as string
+  }
+
+  if (!userId) return NextResponse.redirect(new URL("/dashboard?error=missing", request.url))
 
   const target = await prisma.user.findUnique({ where: { id: userId } })
-  if (!target) return NextResponse.json({ error: "User not found" }, { status: 404 })
+  if (!target) return NextResponse.redirect(new URL("/dashboard?error=notfound", request.url))
 
   const token = await encode({
     token: {
@@ -30,9 +40,9 @@ export async function POST(request: Request) {
     maxAge: 3600,
   })
 
-  const response = NextResponse.json({ success: true, redirect: "/dashboard" })
-
   logActivity(session.user.id, "impersonated", "User", target.id, `Impersonated ${target.name} (${target.email})`)
+
+  const response = NextResponse.redirect(new URL("/dashboard", request.url))
 
   response.cookies.set("authjs.session-token", token, {
     httpOnly: true,

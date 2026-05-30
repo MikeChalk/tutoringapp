@@ -140,7 +140,7 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {admin ? (
-          <ClientDetailEdit client={serializedClient} canImpersonate={superAdmin} userId={client.user.id} />
+          <ClientDetailEdit client={serializedClient} />
         ) : (
           <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
             <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Details</h3>
