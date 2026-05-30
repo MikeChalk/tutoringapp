@@ -27,7 +27,7 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
     ? { client: { user: { cityId: effectiveCityId } } }
     : {}
 
-  const [hourLogs, expenses, invoices, allInvoices, allExpenses] = await Promise.all([
+  const [hourLogs, expenses, invoices, allInvoices, allExpenses, projects] = await Promise.all([
     prisma.hourLog.findMany({
       where: cityFilter,
       include: {
@@ -38,6 +38,7 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
     }),
     prisma.expense.findMany({
       where: expenseCityFilter,
+      include: { project: { select: { name: true } } },
       orderBy: { date: "desc" },
     }),
     prisma.invoice.findMany({
@@ -50,6 +51,11 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
     }),
     prisma.expense.findMany({
       select: { amount: true, cityId: true },
+    }),
+    prisma.project.findMany({
+      where: effectiveCityId ? { cityId: effectiveCityId } : {},
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
     }),
   ])
 
@@ -213,7 +219,7 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
         <div>
           <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 mb-6">
             <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Add Expense</h3>
-            <form action="/api/expenses" method="POST" className="flex flex-col gap-3">
+            <form action="/api/expenses" method="POST" encType="multipart/form-data" className="flex flex-col gap-3">
               <div>
                 <label className="block text-xs text-zinc-500 mb-1">Description</label>
                 <input type="text" name="description" required className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
@@ -235,9 +241,24 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
                   </select>
                 </div>
               </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-zinc-500 mb-1">Project</label>
+                  <select name="projectId" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">— None —</option>
+                    {projects.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-zinc-500 mb-1">Date</label>
+                  <input type="date" name="date" required defaultValue={new Date().toISOString().split("T")[0]} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+              </div>
               <div>
-                <label className="block text-xs text-zinc-500 mb-1">Date</label>
-                <input type="date" name="date" required defaultValue={new Date().toISOString().split("T")[0]} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <label className="block text-xs text-zinc-500 mb-1">Receipt (optional)</label>
+                <input type="file" name="receipt" accept=".pdf,.png,.jpg,.jpeg,.gif,.webp" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 file:mr-3 file:rounded file:border-0 file:bg-zinc-100 dark:file:bg-zinc-700 file:px-3 file:py-1 file:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <button type="submit" className="w-full rounded-lg bg-zinc-900 dark:bg-white px-4 py-2.5 text-sm font-medium text-white dark:text-zinc-900 hover:opacity-90 transition-opacity">Add Expense</button>
             </form>
@@ -251,17 +272,27 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
                   <tr className="border-b border-zinc-200 dark:border-zinc-700">
                     <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Date</th>
                     <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Description</th>
+                    <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Project</th>
                     <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Category</th>
                     <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Amount</th>
+                    <th className="text-center px-2 py-2 text-xs font-medium text-zinc-500">Receipt</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700/50">
                   {expenses.map((e) => (
                     <tr key={e.id} className="text-sm">
-                      <td className="px-2 py-2 text-zinc-600 dark:text-zinc-400">{new Date(e.date).toLocaleDateString()}</td>
+                      <td className="px-2 py-2 text-zinc-600 dark:text-zinc-400 whitespace-nowrap">{new Date(e.date).toLocaleDateString()}</td>
                       <td className="px-2 py-2 text-zinc-900 dark:text-zinc-100">{e.description}</td>
+                      <td className="px-2 py-2 text-zinc-600 dark:text-zinc-400">{e.project?.name || "-"}</td>
                       <td className="px-2 py-2 text-zinc-600 dark:text-zinc-400">{e.category}</td>
                       <td className="px-2 py-2 text-right font-medium text-red-600 dark:text-red-400">${e.amount.toFixed(2)}</td>
+                      <td className="px-2 py-2 text-center">
+                        {e.receiptFileName ? (
+                          <a href={`/api/expenses/receipts?file=${e.receiptFileName}`} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">View</a>
+                        ) : (
+                          <span className="text-xs text-zinc-400">-</span>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
