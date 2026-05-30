@@ -334,8 +334,8 @@ function ContractCard({ contract, showSign, rates }: {
                 : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
               }`}>{contract.status}</span>
               {contract.signed && (
-                <span className="ml-2 inline-flex items-center gap-1 text-xs font-medium rounded-full px-2 py-0.5 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-                  &#128274; Signed {contract.signedAt ? new Date(contract.signedAt).toLocaleDateString() : ""}
+                <span className="ml-2 inline-flex text-xs font-medium rounded-full px-2 py-0.5 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                  Signed {contract.signedAt ? new Date(contract.signedAt).toLocaleDateString() : ""}
                 </span>
               )}
             </dd>
@@ -353,7 +353,7 @@ function ContractCard({ contract, showSign, rates }: {
         )}
         {!contract.terms && <p className="text-sm text-zinc-400">No terms specified.</p>}
 
-        {rates && rates.student.length > 0 && (
+        {rates && rates.student.length > 0 && contract.type !== "PROGRAM_SUPERVISOR" && (
           <div>
             <p className="text-xs text-zinc-500 mb-2">Private Tutoring Rates</p>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
@@ -372,7 +372,7 @@ function ContractCard({ contract, showSign, rates }: {
           </div>
         )}
 
-        {rates && rates.studyHall.length > 0 && (
+        {rates && rates.studyHall.length > 0 && contract.type === "PROGRAM_SUPERVISOR" && (
           <div>
             <p className="text-xs text-zinc-500 mb-2">Study Hall / Supervisor Rates</p>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
