@@ -265,7 +265,51 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
             </div>
           )}
         </div>
-      </div>
-    </div>
+          </div>
+
+          {/* Tutor Payment Summary */}
+          {(() => {
+            const tutorMap = new Map<string, { name: string; totalOwed: number; totalPaid: number; count: number }>()
+            for (const log of hourLogs) {
+              const name = log.tutor.user.name
+              const amount = log.hours * log.tutorPayRate
+              const existing = tutorMap.get(name) || { name, totalOwed: 0, totalPaid: 0, count: 0 }
+              existing.totalOwed += amount
+              existing.count++
+              if (log.paidAt) existing.totalPaid += amount
+              tutorMap.set(name, existing)
+            }
+            const summaries = [...tutorMap.values()].sort((a, b) => b.totalOwed - a.totalOwed)
+
+            if (summaries.length === 0) return null
+            return (
+              <div className="mt-6 bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
+                <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Payment Summary by Tutor</h3>
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-zinc-200 dark:border-zinc-700">
+                      <th className="text-left px-3 py-2 text-xs font-medium text-zinc-500">Tutor</th>
+                      <th className="text-center px-3 py-2 text-xs font-medium text-zinc-500">Sessions</th>
+                      <th className="text-right px-3 py-2 text-xs font-medium text-zinc-500">Total Owed</th>
+                      <th className="text-right px-3 py-2 text-xs font-medium text-zinc-500">Paid</th>
+                      <th className="text-right px-3 py-2 text-xs font-medium text-zinc-500">Unpaid</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700/50">
+                    {summaries.map(s => (
+                      <tr key={s.name} className="text-sm">
+                        <td className="px-3 py-2 font-medium text-zinc-900 dark:text-zinc-100">{s.name}</td>
+                        <td className="px-3 py-2 text-center text-zinc-500">{s.count}</td>
+                        <td className="px-3 py-2 text-right text-zinc-700 dark:text-zinc-300">${s.totalOwed.toFixed(2)}</td>
+                        <td className="px-3 py-2 text-right text-green-600 dark:text-green-400">${s.totalPaid.toFixed(2)}</td>
+                        <td className="px-3 py-2 text-right text-amber-600 dark:text-amber-400">${(s.totalOwed - s.totalPaid).toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )
+          })()}
+        </div>
   )
 }

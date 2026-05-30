@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { isAdmin } from "@/lib/auth-helpers"
+import { logActivity } from "@/lib/activity"
 
 export async function POST(request: Request) {
   const session = await auth()
@@ -20,6 +21,7 @@ export async function POST(request: Request) {
   const existing = await prisma.projectTutor.findFirst({ where: { projectId, tutorId } })
   if (!existing) {
     await prisma.projectTutor.create({ data: { projectId, tutorId } })
+    await logActivity(session.user.id, "assigned_tutor", "Project", projectId, `Tutor: ${tutorId}`)
   }
 
   return NextResponse.redirect(new URL(`/dashboard/projects/${projectId}`, request.url), 303)

@@ -13,6 +13,13 @@ async function recordLog(to: string, subject: string, trigger: string) {
   } catch { /* log unavailable */ }
 }
 
+async function shouldSendEmail(email: string): Promise<boolean> {
+  try {
+    const user = await prisma.user.findUnique({ where: { email }, select: { emailNotifications: true } })
+    return user?.emailNotifications !== false
+  } catch { return true }
+}
+
 async function getTemplate(trigger: string) {
   try {
     const tpl = await prisma.emailTemplate.findUnique({ where: { trigger } })
@@ -56,6 +63,7 @@ export async function sendOnboardingEmail(to: string, name: string, message: str
       : `<p>Hi ${name},</p>${message}<p style="margin-top:16px">— J.A.S.S. Tutors</p>`
 
   if (!resend) { log({ to, subject }); return }
+  if (!(await shouldSendEmail(to))) return
   await recordLog(to, subject, trigger)
   await resend.emails.send({
     from: "J.A.S.S. Tutors <info@jasstutors.com>",

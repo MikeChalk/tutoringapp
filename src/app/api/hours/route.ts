@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { isAdmin, getTutorId } from "@/lib/auth-helpers"
+import { logActivity } from "@/lib/activity"
 
 export async function POST(request: Request) {
   const session = await auth()
@@ -85,6 +86,8 @@ export async function POST(request: Request) {
       category: category || null,
     },
   })
+
+  await logActivity(session.user.id, "logged_hours", "HourLog", null, `${hours}h on project ${projectId}`)
 
   return NextResponse.redirect(new URL("/dashboard/hours", request.url), 303)
 }

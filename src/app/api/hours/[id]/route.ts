@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { isAdmin } from "@/lib/auth-helpers"
+import { logActivity } from "@/lib/activity"
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
@@ -16,10 +17,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (action === "pay") {
     const log = await prisma.hourLog.findUnique({ where: { id } })
     if (log?.paidAt) {
-      // Unpay
       await prisma.hourLog.update({ where: { id }, data: { paidAt: null } })
+      await logActivity(session.user.id, "unpaid", "HourLog", id)
     } else {
       await prisma.hourLog.update({ where: { id }, data: { paidAt: new Date() } })
+      await logActivity(session.user.id, "paid", "HourLog", id)
     }
     const referer = request.headers.get("referer") || "/dashboard/expenses"
     return NextResponse.redirect(new URL(referer, request.url), 303)

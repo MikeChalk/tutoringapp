@@ -5,6 +5,7 @@ import { isAdmin, getActiveCityId } from "@/lib/auth-helpers"
 import { writeFile, mkdir } from "fs/promises"
 import path from "path"
 import crypto from "crypto"
+import { logActivity } from "@/lib/activity"
 
 export async function POST(request: Request) {
   const session = await auth()
@@ -46,6 +47,8 @@ export async function POST(request: Request) {
       receiptFileName,
     },
   })
+
+  await logActivity(session.user.id, "created", "Expense", null, `$${amount.toFixed(2)} - ${description}`)
 
   return NextResponse.redirect(new URL("/dashboard/expenses", request.url), 303)
 }

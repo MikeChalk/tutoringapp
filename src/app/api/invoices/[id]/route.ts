@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { isAdmin } from "@/lib/auth-helpers"
 import { sendClientInviteEmail } from "@/lib/email"
+import { logActivity } from "@/lib/activity"
 
 export async function POST(request: Request, props: { params: Promise<{ id: string }> }) {
   const session = await auth()
@@ -17,6 +18,7 @@ export async function POST(request: Request, props: { params: Promise<{ id: stri
 
   if (action === "markSent") {
     await prisma.invoice.update({ where: { id }, data: { status: "SENT", sentAt: new Date() } })
+    await logActivity(session.user.id, "sent", "Invoice", id)
   } else if (action === "markPaid") {
     const gateway = (formData.get("paymentGateway") as string) || "other"
     await prisma.invoice.update({ where: { id }, data: { status: "PAID", paidAt: new Date(), paymentGateway: gateway } })

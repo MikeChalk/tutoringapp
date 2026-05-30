@@ -56,12 +56,23 @@ export async function POST(request: Request) {
             projectType: "STUDENT",
           },
         })
-        // Auto-assign the tutor to the project
         await prisma.projectTutor.create({ data: { projectId: project.id, tutorId } })
       }
     }
 
     const nextStep = Math.min(currentStep + 1, 6)
+
+    // Step 3→4: Notify tutor they've been assigned to a project
+    if (currentStep === 3 && nextStep === 4) {
+      const msg = `<p>You've been assigned to a new tutoring project. Log in to view details and get started.</p>`
+      await sendOnboardingEmail(tutor.user.email, tutor.user.name, msg, "contract_signed")
+    }
+
+    // Step 5→6: Notify tutor onboarding is complete
+    if (nextStep >= 6) {
+      const msg = `<p>Congratulations! Your onboarding is complete. You're now ready to receive clients and start tutoring.</p>`
+      await sendOnboardingEmail(tutor.user.email, tutor.user.name, msg, "contract_signed")
+    }
     await prisma.tutor.update({
       where: { id: tutorId },
       data: {

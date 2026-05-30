@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { isAdmin } from "@/lib/auth-helpers"
 import { applyDiscountCode, calculateDiscount } from "@/lib/discounts"
+import { logActivity } from "@/lib/activity"
 
 export async function POST(request: Request) {
   const session = await auth()
@@ -74,6 +75,8 @@ export async function POST(request: Request) {
           },
         },
       })
+
+      await logActivity(session.user.id, "created", "Invoice", number, `Client: ${clientId}, $${finalTotal.toFixed(2)}`)
 
       return NextResponse.redirect(new URL("/dashboard/invoices", request.url), 303)
     } catch {
