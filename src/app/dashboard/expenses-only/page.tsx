@@ -49,7 +49,10 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
   const [expenses, clients] = await Promise.all([
     prisma.expense.findMany({
       where,
-      include: { client: { select: { id: true, user: { select: { name: true } } } } },
+      include: {
+        client: { select: { id: true, user: { select: { name: true } } } },
+        hourLog: { select: { paidAt: true } },
+      },
       orderBy: { date: "desc" },
     }),
     prisma.client.findMany({
@@ -104,6 +107,7 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
               <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">Client</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">Category</th>
               <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500">Amount</th>
+              <th className="text-center px-4 py-3 text-xs font-medium text-zinc-500">Status</th>
               <th className="text-center px-4 py-3 text-xs font-medium text-zinc-500">Receipt</th>
             </tr>
           </thead>
@@ -127,6 +131,17 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
                   </span>
                 </td>
                 <td className="px-4 py-2.5 text-right font-medium text-red-600 dark:text-red-400">${e.amount.toFixed(2)}</td>
+                <td className="px-4 py-2.5 text-center">
+                  {e.category === "TUTOR_PAY" ? (
+                    e.hourLog?.paidAt ? (
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Paid</span>
+                    ) : (
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Unpaid</span>
+                    )
+                  ) : (
+                    <span className="text-xs text-zinc-400">—</span>
+                  )}
+                </td>
                 <td className="px-4 py-2.5 text-center">
                   {e.receiptFileName ? (
                     <a href={`/api/expenses/receipts?file=${e.receiptFileName}`} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">View</a>

@@ -170,6 +170,7 @@ model HourLog {
   tutor        Tutor         @relation(fields: [tutorId], references: [id], onDelete: Cascade)
   project      Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
   invoiceItems InvoiceItem[]
+  expense      Expense?
 
   @@map("hour_logs")
 }
@@ -318,6 +319,7 @@ model Expense {
 
   city    City?    @relation(fields: [cityId], references: [id])
   client  Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  hourLog HourLog? @relation(fields: [hourLogId], references: [id], onDelete: SetNull)
 
   @@map("expenses")
 }

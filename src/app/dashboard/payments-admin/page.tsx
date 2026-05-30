@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin } from "@/lib/auth-helpers"
 import { redirect } from "next/navigation"
+import Link from "next/link"
 
 export default async function PayoutsPage() {
   const session = await requireAuth()
@@ -31,7 +32,12 @@ export default async function PayoutsPage() {
   return (
     <div>
       <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">Payouts</h2>
-      <p className="text-sm text-zinc-500 mb-6">{tutorsWithUnpaid.length} tutors with unpaid hours · ${totalUnpaid.toFixed(2)} total pending</p>
+      <p className="text-sm text-zinc-500 mb-2">{tutorsWithUnpaid.length} tutors with unpaid hours · ${totalUnpaid.toFixed(2)} total pending</p>
+      <p className="text-xs text-zinc-400 mb-6">
+        <Link href="/dashboard/expenses-only?category=TUTOR_PAY" className="text-blue-600 dark:text-blue-400 hover:underline">
+          View all tutor payment expenses →
+        </Link>
+      </p>
 
       {tutorsWithUnpaid.length === 0 ? (
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-8 text-center">
