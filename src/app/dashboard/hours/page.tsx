@@ -215,7 +215,7 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
                 ))}
               </select>
             </div>
-            <div>
+            <div id="modeField">
               <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Mode</label>
               <select name="mode" required id="modeSelect"
                 className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -296,6 +296,18 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
 
           function filterProjects() {
             var type = typeSelect && typeSelect.value;
+            var modeField = document.getElementById('modeField');
+            var modeSelectEl = document.getElementById('modeSelect');
+            if (modeField && modeSelectEl) {
+              if (type === 'STUDY_HALL') {
+                modeField.style.display = 'none';
+                modeSelectEl.value = 'IN_PERSON';
+                modeSelectEl.required = false;
+              } else {
+                modeField.style.display = '';
+                modeSelectEl.required = true;
+              }
+            }
             var tutorId = tutorSelect && tutorSelect.value;
             var assignedProjects = tutorId ? (ASSIGN[tutorId] || []) : null;
             if (!projectSelect) return;
