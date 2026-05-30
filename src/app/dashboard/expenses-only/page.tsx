@@ -26,13 +26,14 @@ const CATEGORY_LABELS: Record<string, string> = {
   OTHER: "Other",
 }
 
-export default async function ExpensesPage(props: { searchParams: Promise<{ city?: string; category?: string }> }) {
+export default async function ExpensesPage(props: { searchParams: Promise<{ city?: string; category?: string; search?: string }> }) {
   const session = await requireAuth()
   if (!isAdmin(session.user.role)) redirect("/dashboard")
 
-  const { city: cityParam, category: catParam } = await props.searchParams
+  const { city: cityParam, category: catParam, search: searchParam } = await props.searchParams
   const selectedCity = cityParam || "all"
   const selectedCategory = catParam || "ALL"
+  const searchQuery = searchParam || ""
   const superAdmin = isSuperAdmin(session.user.role)
   const cityAdminId = isCityAdmin(session.user.role) ? await getActiveCityId(session.user.role, session.user.id) : null
   const effectiveCityId = cityAdminId || (superAdmin && selectedCity !== "all" ? selectedCity : null)
@@ -45,6 +46,13 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
     ]
   }
   if (selectedCategory !== "ALL") where.category = selectedCategory
+  if (searchQuery) {
+    where.OR = [
+      ...(Array.isArray(where.OR) ? where.OR as Record<string, unknown>[] : []),
+      { description: { contains: searchQuery } },
+      { client: { user: { name: { contains: searchQuery } } } },
+    ]
+  }
 
   const [expenses, clients] = await Promise.all([
     prisma.expense.findMany({
@@ -54,7 +62,7 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
         hourLog: { select: { paidAt: true } },
       },
       orderBy: { date: "desc" },
-      take: 200,
+      ...(searchQuery ? {} : { take: 200 }),
     }),
     prisma.client.findMany({
       where: effectiveCityId ? { user: { cityId: effectiveCityId } } : {},
@@ -79,6 +87,15 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
           {superAdmin && <CityFilter selected={selectedCity} />}
         </div>
       </div>
+
+      <form action="/dashboard/expenses-only" method="GET" className="mb-4 flex gap-2">
+        {selectedCategory !== "ALL" ? <input type="hidden" name="category" value={selectedCategory} /> : null}
+        {selectedCity !== "all" ? <input type="hidden" name="city" value={selectedCity} /> : null}
+        <input type="text" name="search" defaultValue={searchQuery} placeholder="Search expenses by description or client..."
+          className="flex-1 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Search</button>
+        {searchQuery && <a href={`/dashboard/expenses-only${selectedCategory !== "ALL" ? `?category=${selectedCategory}` : ""}`} className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-500 hover:bg-zinc-100">Clear</a>}
+      </form>
 
       <AddExpenseSection clients={clients} />
 

@@ -13,7 +13,7 @@ const STATUS_TABS = [
   { value: "OVERDUE", label: "Overdue" },
 ]
 
-export default async function InvoicesPage(props: { searchParams: Promise<{ city?: string; status?: string }> }) {
+export default async function InvoicesPage(props: { searchParams: Promise<{ city?: string; status?: string; search?: string }> }) {
   const session = await requireAuth()
   const admin = isAdmin(session.user.role)
   const tutor = isTutor(session.user.role)
@@ -21,9 +21,10 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
 
   if (tutor) redirect("/dashboard")
 
-  const { city: cityParam, status: statusParam } = await props.searchParams
+  const { city: cityParam, status: statusParam, search: searchParam } = await props.searchParams
   const selectedCity = cityParam || "all"
   const selectedStatus = statusParam || ""
+  const searchQuery = searchParam || ""
   const cityAdminId = isCityAdmin(session.user.role) ? await getActiveCityId(session.user.role, session.user.id) : null
   const effectiveCityId = cityAdminId || (isSuperAdmin(session.user.role) && selectedCity !== "all" ? selectedCity : null)
 
@@ -41,13 +42,23 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
     whereClause = { ...whereClause, status: selectedStatus }
   }
 
+  if (searchQuery) {
+    whereClause = {
+      ...whereClause,
+      OR: [
+        { number: { contains: searchQuery } },
+        { client: { user: { name: { contains: searchQuery } } } },
+      ],
+    }
+  }
+
   const invoices = await prisma.invoice.findMany({
     where: whereClause,
     include: {
       client: { include: { user: { select: { name: true, city: { select: { name: true } } } } } },
     },
     orderBy: { createdAt: "desc" },
-    take: 100,
+    ...(searchQuery ? {} : { take: 100 }),
   })
 
   // Always fetch all for stats
@@ -81,6 +92,17 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
           {isSuperAdmin(session.user.role) && <CityFilter selected={selectedCity} />}
         </div>
       </div>
+
+      {admin && (
+        <form action="/dashboard/invoices" method="GET" className="mb-4 flex gap-2">
+          {selectedStatus ? <input type="hidden" name="status" value={selectedStatus} /> : null}
+          {selectedCity !== "all" ? <input type="hidden" name="city" value={selectedCity} /> : null}
+          <input type="text" name="search" defaultValue={searchQuery} placeholder="Search by client name or invoice number..."
+            className="flex-1 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Search</button>
+          {searchQuery && <a href={`/dashboard/invoices${selectedStatus ? `?status=${selectedStatus}` : ""}`} className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-500 hover:bg-zinc-100">Clear</a>}
+        </form>
+      )}
 
       {admin && <CreateInvoiceForm clients={clients} />}
 

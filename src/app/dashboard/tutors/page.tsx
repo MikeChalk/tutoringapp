@@ -22,13 +22,14 @@ function buildHref(typeValue: string, cityValue: string) {
   return `/dashboard/tutors${qs ? `?${qs}` : ""}`
 }
 
-export default async function TutorsPage(props: { searchParams: Promise<{ type?: string; city?: string }> }) {
+export default async function TutorsPage(props: { searchParams: Promise<{ type?: string; city?: string; search?: string }> }) {
   const session = await requireAuth()
   if (!isAdmin(session.user.role)) redirect("/dashboard")
 
-  const { type, city: cityParam } = await props.searchParams
+  const { type, city: cityParam, search: searchParam } = await props.searchParams
   const filter = type || "ALL"
   const selectedCity = cityParam || "all"
+  const searchQuery = searchParam || ""
   const superAdmin = isSuperAdmin(session.user.role)
   const cityAdminId = isCityAdmin(session.user.role) ? await getActiveCityId(session.user.role, session.user.id) : null
   const effectiveCityId = cityAdminId || (superAdmin && selectedCity !== "all" ? selectedCity : null)
@@ -90,6 +91,9 @@ export default async function TutorsPage(props: { searchParams: Promise<{ type?:
   if (effectiveCityId) {
     baseWhere.user = { cityId: effectiveCityId }
   }
+  if (searchQuery) {
+    baseWhere.user = { ...(baseWhere.user as Record<string, unknown> || {}), OR: [{ name: { contains: searchQuery } }, { email: { contains: searchQuery } }] }
+  }
 
   const cities = await prisma.city.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } })
 
@@ -120,6 +124,15 @@ export default async function TutorsPage(props: { searchParams: Promise<{ type?:
           </Link>
         ))}
       </div>
+
+      <form action="/dashboard/tutors" method="GET" className="mb-4 flex gap-2">
+        {filter !== "ALL" ? <input type="hidden" name="type" value={filter} /> : null}
+        {selectedCity !== "all" ? <input type="hidden" name="city" value={selectedCity} /> : null}
+        <input type="text" name="search" defaultValue={searchQuery} placeholder="Search by name or email..."
+          className="flex-1 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Search</button>
+        {searchQuery && <a href={`/dashboard/tutors${filter !== "ALL" ? `?type=${filter}` : ""}`} className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-500 hover:bg-zinc-100">Clear</a>}
+      </form>
 
       <AddTutorForm templates={[]} cities={cities} />
 
