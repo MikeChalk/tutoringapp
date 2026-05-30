@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import RichTextEditor from "@/components/rich-text-editor"
 
 interface EmailTemplate {
   id: string
@@ -11,24 +12,60 @@ interface EmailTemplate {
   isActive: boolean
 }
 
-const TRIGGER_LABELS: Record<string, string> = {
-  career_application: "Career Application",
-  onboarding_welcome: "Onboarding Welcome",
-  parent_tutor_match: "Parent / Tutor Match",
-  contract_signed: "Contract Signed",
-  client_invite: "Client Invite",
-  payment_received: "Payment Received",
-  invoice_reminder: "Invoice Reminder",
-}
+const TRIGGER_OPTIONS = [
+  {
+    value: "career_application",
+    label: "Tutor applies via Careers page",
+    step: "Application — Step 1",
+    description: "Sent automatically when a tutor submits the careers application form. Contains the CV & Transcript upload link.",
+    vars: "{{name}}, {{uploadUrl}}",
+  },
+  {
+    value: "onboarding_welcome",
+    label: "Admin advances tutor to onboarding",
+    step: "Onboarding — Step 2",
+    description: "Sent when an admin moves a tutor from the waitlist into onboarding step 1. Welcomes the tutor and explains next steps.",
+    vars: "{{name}}, {{message}}",
+  },
+  {
+    value: "contract_signed",
+    label: "Tutor signs their contract",
+    step: "Onboarding — Step 3",
+    description: "Sent automatically when a tutor signs their J.A.S.S. contract. Confirms receipt and guides next steps.",
+    vars: "{{name}}, {{message}}",
+  },
+  {
+    value: "parent_tutor_match",
+    label: "Parent notified of tutor match",
+    step: "Onboarding — Step 4",
+    description: "Sent when an admin advances onboarding to step 3. Notifies a parent that a tutor has been matched to their child.",
+    vars: "{{parentName}}, {{tutorName}}, {{message}}",
+  },
+  {
+    value: "client_invite",
+    label: "New client account created",
+    step: "Client — Account Setup",
+    description: "Sent when a new client account is created. Contains the invite link for account setup and invoice access.",
+    vars: "{{name}}, {{inviteUrl}}",
+  },
+  {
+    value: "payment_received",
+    label: "Payment received from client",
+    step: "Finance — Payment Confirmation",
+    description: "Sent when an invoice is marked as paid or a Stripe payment is completed. Thanks the client for their payment.",
+    vars: "{{name}}, {{message}}",
+  },
+  {
+    value: "invoice_reminder",
+    label: "Unpaid invoice reminder",
+    step: "Finance — Automated Reminder",
+    description: "Sent by the automated system (cron job) to remind clients about outstanding invoices.",
+    vars: "{{name}}, {{inviteUrl}}",
+  },
+]
 
-const TRIGGER_VARS: Record<string, string> = {
-  career_application: "{{name}}, {{uploadUrl}}",
-  onboarding_welcome: "{{name}}, {{message}}",
-  parent_tutor_match: "{{parentName}}, {{tutorName}}, {{message}}",
-  contract_signed: "{{name}}, {{message}}",
-  client_invite: "{{name}}, {{inviteUrl}}",
-  payment_received: "{{name}}, {{message}}",
-  invoice_reminder: "{{name}}, {{inviteUrl}}",
+function getTriggerInfo(trigger: string) {
+  return TRIGGER_OPTIONS.find(t => t.value === trigger) || null
 }
 
 export default function WorkflowsPage() {
@@ -40,9 +77,20 @@ export default function WorkflowsPage() {
   const [testEmail, setTestEmail] = useState("")
   const [testResult, setTestResult] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
-  const [newTemplate, setNewTemplate] = useState({ name: "", trigger: "", subject: "", htmlBody: "" })
+  const [newTemplate, setNewTemplate] = useState({
+    name: "",
+    trigger: "",
+    subject: "",
+    htmlBody: "",
+    customTrigger: "",
+  })
 
-  const [editForm, setEditForm] = useState({ name: "", subject: "", htmlBody: "", isActive: true })
+  const [editForm, setEditForm] = useState({
+    name: "",
+    subject: "",
+    htmlBody: "",
+    isActive: true,
+  })
 
   const fetchTemplates = useCallback(async () => {
     const res = await fetch("/api/workflows/templates")
@@ -57,7 +105,13 @@ export default function WorkflowsPage() {
 
   function startEdit(tpl: EmailTemplate) {
     setEditingId(tpl.id)
-    setEditForm({ name: tpl.name, subject: tpl.subject, htmlBody: tpl.htmlBody, isActive: tpl.isActive })
+    setEditForm({
+      name: tpl.name,
+      subject: tpl.subject,
+      htmlBody: tpl.htmlBody,
+      isActive: tpl.isActive,
+    })
+    setTestResult(null)
   }
 
   function cancelEdit() {
@@ -100,7 +154,11 @@ export default function WorkflowsPage() {
         body: JSON.stringify({ testEmail: testEmail.trim() }),
       })
       const data = await res.json()
-      setTestResult(data.success ? "Test email sent successfully!" : (data.error || "Failed to send"))
+      if (data.success) {
+        setTestResult("Test email sent successfully!")
+      } else {
+        setTestResult(data.error || "Failed to send")
+      }
     } catch {
       setTestResult("Network error")
     } finally {
@@ -115,19 +173,26 @@ export default function WorkflowsPage() {
   }
 
   async function createTemplate() {
-    if (!newTemplate.name || !newTemplate.trigger || !newTemplate.subject || !newTemplate.htmlBody) return
+    const trigger = newTemplate.trigger === "__custom__" ? newTemplate.customTrigger : newTemplate.trigger
+    if (!newTemplate.name || !trigger || !newTemplate.subject || !newTemplate.htmlBody) return
+
     setSaving(true)
     try {
       const res = await fetch("/api/workflows/templates", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newTemplate),
+        body: JSON.stringify({
+          name: newTemplate.name,
+          trigger,
+          subject: newTemplate.subject,
+          htmlBody: newTemplate.htmlBody,
+        }),
       })
       const data = await res.json()
       if (data.error) {
         alert(data.error)
       } else {
-        setNewTemplate({ name: "", trigger: "", subject: "", htmlBody: "" })
+        setNewTemplate({ name: "", trigger: "", subject: "", htmlBody: "", customTrigger: "" })
         setCreating(false)
         await fetchTemplates()
       }
@@ -137,17 +202,23 @@ export default function WorkflowsPage() {
   }
 
   if (loading) {
-    return <div className="animate-pulse space-y-4">
-      {[1,2,3].map(i => <div key={i} className="h-24 bg-zinc-200 dark:bg-zinc-700 rounded-xl" />)}
-    </div>
+    return (
+      <div className="animate-pulse space-y-4">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-24 bg-zinc-200 dark:bg-zinc-700 rounded-xl" />
+        ))}
+      </div>
+    )
   }
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Workflows</h2>
-          <p className="text-sm text-zinc-500 mt-1">Manage automatic email templates triggered by system events.</p>
+          <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Email Templates</h2>
+          <p className="text-sm text-zinc-500 mt-1">
+            Customize the automatic emails sent at each step of the J.A.S.S. journey. Changes take effect immediately.
+          </p>
         </div>
         <button
           onClick={() => setCreating(!creating)}
@@ -159,16 +230,20 @@ export default function WorkflowsPage() {
 
       {/* Test email bar */}
       <div className="mb-6 flex items-center gap-3 bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
-        <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300 whitespace-nowrap">Test email:</label>
+        <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300 whitespace-nowrap">
+          Send test to:
+        </label>
         <input
           type="email"
           placeholder="your@email.com"
           value={testEmail}
-          onChange={e => setTestEmail(e.target.value)}
+          onChange={(e) => setTestEmail(e.target.value)}
           className="flex-1 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         {testResult && (
-          <span className={`text-xs ${testResult.includes("success") ? "text-green-600" : "text-red-600"}`}>{testResult}</span>
+          <span className={`text-xs whitespace-nowrap ${testResult.includes("success") ? "text-green-600" : "text-red-600"}`}>
+            {testResult}
+          </span>
         )}
       </div>
 
@@ -176,25 +251,83 @@ export default function WorkflowsPage() {
       {creating && (
         <div className="mb-6 bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 space-y-4">
           <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">Create Custom Template</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Name</label>
-              <input value={newTemplate.name} onChange={e => setNewTemplate(p => ({ ...p, name: e.target.value }))} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. Welcome Series 2" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Trigger Key</label>
-              <input value={newTemplate.trigger} onChange={e => setNewTemplate(p => ({ ...p, trigger: e.target.value }))} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. custom_welcome" />
-            </div>
-          </div>
+
           <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Subject</label>
-            <input value={newTemplate.subject} onChange={e => setNewTemplate(p => ({ ...p, subject: e.target.value }))} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Template Name</label>
+            <input
+              value={newTemplate.name}
+              onChange={(e) => setNewTemplate((p) => ({ ...p, name: e.target.value }))}
+              className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="e.g. Welcome Series Part 2"
+            />
           </div>
+
           <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">HTML Body</label>
-            <textarea value={newTemplate.htmlBody} onChange={e => setNewTemplate(p => ({ ...p, htmlBody: e.target.value }))} rows={6} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+              When should this email be sent?
+            </label>
+            <select
+              value={newTemplate.trigger}
+              onChange={(e) => setNewTemplate((p) => ({ ...p, trigger: e.target.value }))}
+              className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">— Select a trigger —</option>
+              {TRIGGER_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.step}: {opt.label}
+                </option>
+              ))}
+              <option value="__custom__">Custom trigger (manual only)</option>
+            </select>
+            {newTemplate.trigger && newTemplate.trigger !== "__custom__" && (
+              <p className="text-xs text-zinc-500 mt-1">
+                {getTriggerInfo(newTemplate.trigger)?.description} Available variables:{" "}
+                <code className="bg-zinc-100 dark:bg-zinc-700 px-1 rounded">
+                  {getTriggerInfo(newTemplate.trigger)?.vars}
+                </code>
+              </p>
+            )}
+            {newTemplate.trigger === "__custom__" && (
+              <div className="mt-2">
+                <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">Custom Trigger Key</label>
+                <input
+                  value={newTemplate.customTrigger}
+                  onChange={(e) => setNewTemplate((p) => ({ ...p, customTrigger: e.target.value }))}
+                  className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g. custom_new_year_greeting"
+                />
+                <p className="text-xs text-zinc-500 mt-1">
+                  Custom templates can only be sent manually through the Mass Email page. Use{" "}
+                  <code className="bg-zinc-100 dark:bg-zinc-700 px-1 rounded">{"{{name}}"}</code> for the recipient&apos;s name.
+                </p>
+              </div>
+            )}
           </div>
-          <button onClick={createTemplate} disabled={saving} className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity dark:bg-zinc-100 dark:text-zinc-900">
+
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Email Subject</label>
+            <input
+              value={newTemplate.subject}
+              onChange={(e) => setNewTemplate((p) => ({ ...p, subject: e.target.value }))}
+              className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter email subject line"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Email Body</label>
+            <RichTextEditor
+              content={newTemplate.htmlBody}
+              onChange={(html) => setNewTemplate((p) => ({ ...p, htmlBody: html }))}
+              placeholder="Write your email content here..."
+            />
+          </div>
+
+          <button
+            onClick={createTemplate}
+            disabled={saving}
+            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity dark:bg-zinc-100 dark:text-zinc-900"
+          >
             {saving ? "Creating..." : "Create Template"}
           </button>
         </div>
@@ -202,90 +335,130 @@ export default function WorkflowsPage() {
 
       {/* Template list */}
       <div className="space-y-4">
-        {templates.map(tpl => (
-          <div key={tpl.id} className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-100 dark:border-zinc-700/50">
-              <div className="flex items-center gap-3">
-                <h3 className="font-medium text-zinc-900 dark:text-zinc-100">{tpl.name}</h3>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400">
-                  {TRIGGER_LABELS[tpl.trigger] || tpl.trigger}
-                </span>
-                <span className="text-xs text-zinc-400">Vars: {TRIGGER_VARS[tpl.trigger] || "{{name}}"}</span>
-                <button
-                  onClick={() => toggleActive(tpl)}
-                  className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                    tpl.isActive
-                      ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                      : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                  }`}
-                >
-                  {tpl.isActive ? "Active" : "Disabled"}
-                </button>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => sendTest(tpl.id)}
-                  disabled={testing === tpl.id || !testEmail.trim()}
-                  className="text-xs px-3 py-1 rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700 disabled:opacity-50"
-                >
-                  {testing === tpl.id ? "Sending..." : "Send Test"}
-                </button>
-                {editingId === tpl.id ? (
-                  <>
-                    <button onClick={() => saveEdit(tpl.id)} disabled={saving} className="text-xs px-3 py-1 rounded-lg bg-zinc-900 text-white hover:opacity-90 dark:bg-zinc-100 dark:text-zinc-900">
-                      {saving ? "Saving..." : "Save"}
-                    </button>
-                    <button onClick={cancelEdit} className="text-xs px-3 py-1 rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700">
-                      Cancel
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button onClick={() => startEdit(tpl)} className="text-xs px-3 py-1 rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700">
-                      Edit
-                    </button>
-                    {!TRIGGER_LABELS[tpl.trigger] && (
-                      <button onClick={() => deleteTemplate(tpl.id)} className="text-xs px-3 py-1 rounded-lg border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30">
-                        Delete
+        {templates.map((tpl) => {
+          const info = getTriggerInfo(tpl.trigger)
+          return (
+            <div key={tpl.id} className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-100 dark:border-zinc-700/50">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div>
+                    <h3 className="font-medium text-zinc-900 dark:text-zinc-100">{tpl.name}</h3>
+                    <p className="text-xs text-zinc-500 mt-0.5">
+                      {info ? (
+                        <>
+                          <span className="font-medium">{info.step}</span>
+                          {" — "}{info.label}
+                        </>
+                      ) : (
+                        <span>Custom trigger: <code className="bg-zinc-100 dark:bg-zinc-700 px-1 rounded text-xs">{tpl.trigger}</code></span>
+                      )}
+                    </p>
+                  </div>
+                  <span className="text-xs text-zinc-400 whitespace-nowrap">
+                    Vars: {info?.vars || "{{name}}"}
+                  </span>
+                  <button
+                    onClick={() => toggleActive(tpl)}
+                    className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${
+                      tpl.isActive
+                        ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                        : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                    }`}
+                  >
+                    {tpl.isActive ? "Active" : "Disabled"}
+                  </button>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button
+                    onClick={() => sendTest(tpl.id)}
+                    disabled={testing === tpl.id || !testEmail.trim()}
+                    className="text-xs px-3 py-1 rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700 disabled:opacity-50"
+                  >
+                    {testing === tpl.id ? "Sending..." : "Send Test"}
+                  </button>
+                  {editingId === tpl.id ? (
+                    <>
+                      <button
+                        onClick={() => saveEdit(tpl.id)}
+                        disabled={saving}
+                        className="text-xs px-3 py-1 rounded-lg bg-zinc-900 text-white hover:opacity-90 dark:bg-zinc-100 dark:text-zinc-900"
+                      >
+                        {saving ? "Saving..." : "Save"}
                       </button>
-                    )}
-                  </>
-                )}
+                      <button
+                        onClick={cancelEdit}
+                        className="text-xs px-3 py-1 rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700"
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => startEdit(tpl)}
+                        className="text-xs px-3 py-1 rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700"
+                      >
+                        Edit
+                      </button>
+                      {!info && (
+                        <button
+                          onClick={() => deleteTemplate(tpl.id)}
+                          className="text-xs px-3 py-1 rounded-lg border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30"
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
+
+              {/* Edit form */}
+              {editingId === tpl.id && (
+                <div className="p-5 space-y-4 bg-zinc-50/50 dark:bg-zinc-800/50">
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Template Name</label>
+                    <input
+                      value={editForm.name}
+                      onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))}
+                      className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Email Subject</label>
+                    <input
+                      value={editForm.subject}
+                      onChange={(e) => setEditForm((p) => ({ ...p, subject: e.target.value }))}
+                      className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Email Body</label>
+                    <RichTextEditor
+                      content={editForm.htmlBody}
+                      onChange={(html) => setEditForm((p) => ({ ...p, htmlBody: html }))}
+                      placeholder="Write your email content here..."
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Preview (when not editing) */}
+              {editingId !== tpl.id && (
+                <div className="p-5">
+                  <p className="text-xs font-medium text-zinc-500 uppercase mb-1">Subject Preview</p>
+                  <p className="text-sm text-zinc-700 dark:text-zinc-300 mb-3">{tpl.subject}</p>
+                  <p className="text-xs font-medium text-zinc-500 uppercase mb-1">Body Preview</p>
+                  <div
+                    className="prose prose-sm dark:prose-invert max-w-none text-sm text-zinc-600 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-700/50 rounded-lg p-3 max-h-48 overflow-y-auto"
+                    dangerouslySetInnerHTML={{ __html: tpl.htmlBody }}
+                  />
+                </div>
+              )}
             </div>
-
-            {/* Edit form */}
-            {editingId === tpl.id && (
-              <div className="p-5 space-y-4 bg-zinc-50/50 dark:bg-zinc-800/50">
-                <div>
-                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Name</label>
-                  <input value={editForm.name} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Subject</label>
-                  <input value={editForm.subject} onChange={e => setEditForm(p => ({ ...p, subject: e.target.value }))} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">HTML Body</label>
-                  <textarea value={editForm.htmlBody} onChange={e => setEditForm(p => ({ ...p, htmlBody: e.target.value }))} rows={8} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
-              </div>
-            )}
-
-            {/* Preview */}
-            {editingId !== tpl.id && (
-              <div className="p-5">
-                <p className="text-xs font-medium text-zinc-500 uppercase mb-1">Subject</p>
-                <p className="text-sm text-zinc-700 dark:text-zinc-300 mb-3">{tpl.subject}</p>
-                <p className="text-xs font-medium text-zinc-500 uppercase mb-1">Body Preview</p>
-                <div className="text-sm text-zinc-600 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-700/50 rounded-lg p-3 max-h-32 overflow-y-auto font-mono whitespace-pre-wrap break-all">
-                  {tpl.htmlBody}
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )
