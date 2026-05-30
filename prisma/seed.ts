@@ -117,6 +117,14 @@ async function main() {
     await prisma.payScale.create({ data: scale })
   }
 
+  // Pre-compute rates maps per year level for contract seed
+  const allPayScales = await prisma.payScale.findMany()
+  const ratesByYear: Record<string, Record<string, number>> = {}
+  for (const ps of allPayScales) {
+    if (!ratesByYear[ps.tenure]) ratesByYear[ps.tenure] = {}
+    ratesByYear[ps.tenure][ps.gradeLevel] = ps.rate
+  }
+
   const hash = await bcrypt.hash("password123", 12)
 
   // Admin user
@@ -216,6 +224,7 @@ async function main() {
       type: "PRIVATE_TUTORING",
       yearLevel: "3RD_YEAR",
       terms: "Private tutoring contract. Tutor agrees to provide one-on-one tutoring sessions as assigned. Payment processed bi-weekly based on submitted and approved hours. All tutoring materials provided by the company.",
+      rates: JSON.stringify(ratesByYear["3RD_YEAR"] || {}),
       startDate: new Date("2025-09-01"),
       endDate: new Date("2026-07-01"),
       signed: true,
