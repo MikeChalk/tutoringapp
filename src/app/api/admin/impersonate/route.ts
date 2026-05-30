@@ -8,24 +8,19 @@ import { logActivity } from "@/lib/activity"
 export async function POST(request: Request) {
   const session = await auth()
   if (!session?.user || !isSuperAdmin(session.user.role)) {
-    return NextResponse.redirect(new URL("/dashboard?error=unauthorized", request.url))
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const contentType = request.headers.get("content-type") || ""
-  let userId: string | null = null
-
-  if (contentType.includes("application/json")) {
-    const body = await request.json()
-    userId = body.userId
-  } else {
-    const formData = await request.formData()
-    userId = formData.get("userId") as string
-  }
-
-  if (!userId) return NextResponse.redirect(new URL("/dashboard?error=missing", request.url))
+  const { userId } = await request.json()
+  if (!userId) return NextResponse.json({ error: "Missing userId" }, { status: 400 })
 
   const target = await prisma.user.findUnique({ where: { id: userId } })
-  if (!target) return NextResponse.redirect(new URL("/dashboard?error=notfound", request.url))
+  if (!target) return NextResponse.json({ error: "User not found" }, { status: 404 })
+
+  const secret = process.env.AUTH_SECRET
+  if (!secret) return NextResponse.json({ error: "Auth secret not configured" }, { status: 500 })
+
+  console.log("[IMPERSONATE] Target:", target.email, "Role:", target.role)
 
   const token = await encode({
     token: {
@@ -36,21 +31,24 @@ export async function POST(request: Request) {
       impersonatedBy: session.user.id,
     },
     salt: "authjs.session-token",
-    secret: process.env.AUTH_SECRET!,
+    secret,
     maxAge: 3600,
   })
 
+  console.log("[IMPERSONATE] Token length:", token.length)
+
   logActivity(session.user.id, "impersonated", "User", target.id, `Impersonated ${target.name} (${target.email})`)
 
-  const response = NextResponse.redirect(new URL("/dashboard", request.url))
-
+  const response = NextResponse.json({ success: true, redirect: "/dashboard" })
   response.cookies.set("authjs.session-token", token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: false,
     sameSite: "lax",
     path: "/",
     maxAge: 3600,
   })
+
+  console.log("[IMPERSONATE] Cookie set, returning response")
 
   return response
 }

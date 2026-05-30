@@ -1,18 +1,20 @@
+"use server"
+
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { encode } from "next-auth/jwt"
+import { cookies } from "next/headers"
 import { logActivity } from "@/lib/activity"
+import { redirect } from "next/navigation"
 
-export async function POST() {
+export async function stopImpersonating() {
   const session = await auth()
   if (!session?.user?.impersonatedBy) {
-    return Response.json({ error: "Not impersonating" }, { status: 400 })
+    throw new Error("Not impersonating")
   }
 
   const admin = await prisma.user.findUnique({ where: { id: session.user.impersonatedBy } })
-  if (!admin) return Response.json({ error: "Admin not found" }, { status: 404 })
-
-  const maxAge = 86400
+  if (!admin) throw new Error("Admin not found")
 
   const token = await encode({
     token: {
@@ -23,20 +25,19 @@ export async function POST() {
     },
     salt: "authjs.session-token",
     secret: process.env.AUTH_SECRET!,
-    maxAge,
+    maxAge: 86400,
   })
 
   logActivity(admin.id, "stopped_impersonating", "User", session.user.id, `Resumed own session as ${admin.name}`)
 
-  const secure = process.env.NODE_ENV === "production" ? "; Secure" : ""
+  const cookieStore = await cookies()
+  cookieStore.set("authjs.session-token", token, {
+    httpOnly: true,
+    secure: false,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 86400,
+  })
 
-  return Response.json(
-    { success: true, redirect: "/dashboard" },
-    {
-      headers: {
-        "Set-Cookie": `authjs.session-token=${token}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${maxAge}${secure}`,
-      },
-      status: 200,
-    }
-  )
+  redirect("/dashboard")
 }
