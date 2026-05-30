@@ -309,6 +309,23 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
                 modeSelectEl.required = true;
               }
             }
+            // Populate category options based on project type
+            if (categorySelect) {
+              categorySelect.innerHTML = '<option value="">--</option>';
+              if (type === 'STUDY_HALL') {
+                var opts = ['Study Hall Tutor','In-Person Program Management','Online Program Management','Supervision','Marketing'];
+                var vals = ['STUDY_HALL_TUTOR','IN_PERSON_MGMT','ONLINE_MGMT','SUPERVISION','MARKETING'];
+                for (var i = 0; i < opts.length; i++) {
+                  categorySelect.innerHTML += '<option value="' + vals[i] + '">' + opts[i] + '</option>';
+                }
+              } else {
+                var grades = ['Elementary','SEC 1-2','SEC 3','SEC 4-5','CEGEP','UNIVERSITY'];
+                var gvals = ['ELEMENTARY','SEC1_2','SEC3','SEC4_5','CEGEP','UNI'];
+                for (var j = 0; j < grades.length; j++) {
+                  categorySelect.innerHTML += '<option value="' + gvals[j] + '">' + grades[j] + '</option>';
+                }
+              }
+            }
             var tutorId = tutorSelect && tutorSelect.value;
             var assignedProjects = tutorId ? (ASSIGN[tutorId] || []) : null;
             if (!projectSelect) return;
