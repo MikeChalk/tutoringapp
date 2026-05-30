@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import SearchableSelect from "@/components/searchable-select"
-import { GRADE_LABELS, SUBJECT_OPTIONS } from "@/lib/constants"
+import { GRADE_LABELS, SUBJECT_OPTIONS, STUDENT_GRADES } from "@/lib/constants"
 
 interface Client { id: string; user: { name: string } }
 interface City { id: string; name: string }
@@ -10,7 +10,8 @@ interface City { id: string; name: string }
 export function CreateProjectForm({ clients, cities, defaultType, defaultCity }: {
   clients: Client[]; cities: City[]; defaultType: string; defaultCity: string
 }) {
-  const [projectType, setProjectType] = useState(defaultType)
+  const normalizedType = defaultType === "STUDENT" || defaultType === "STUDY_HALL" ? defaultType : "STUDENT"
+  const [projectType, setProjectType] = useState(normalizedType)
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([])
   const [otherSubject, setOtherSubject] = useState("")
   const [showForm, setShowForm] = useState(false)
@@ -90,9 +91,10 @@ export function CreateProjectForm({ clients, cities, defaultType, defaultCity }:
           {isStudent ? (
             <div>
               <label className="block text-xs text-zinc-500 mb-1">Grade Level</label>
-              <select name="gradeLevel" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                {Object.entries(GRADE_LABELS).filter(([k]) => k !== "STUDY_HALL" && k !== "PROGRAM_SUPERVISOR").map(([k, v]) => (
-                  <option key={k} value={k}>{v}</option>
+              <select name="gradeLevel" value={gradeLevel} onChange={e => setGradeLevel(e.target.value)}
+                className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                {STUDENT_GRADES.map((k) => (
+                  <option key={k} value={k}>{GRADE_LABELS[k]}</option>
                 ))}
               </select>
             </div>

@@ -16,9 +16,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     function handleConfirm(e: Event) {
-      const form = (e.target as HTMLElement).closest("form")
-      const msg = form?.getAttribute("data-confirm")
-      if (msg && !confirm(msg)) e.preventDefault()
+      const target = e.target as HTMLElement
+      const form = target.closest("form")
+      if (!form) return
+      const msg = form.getAttribute("data-confirm")
+      if (!msg) return
+      const isSubmit = target.closest('button[type="submit"], input[type="submit"]')
+      if (!isSubmit) return
+      if (!confirm(msg)) e.preventDefault()
     }
     document.addEventListener("click", handleConfirm)
     return () => document.removeEventListener("click", handleConfirm)

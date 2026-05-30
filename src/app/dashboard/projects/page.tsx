@@ -220,7 +220,7 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
               </div>
               <div className="flex items-center justify-between mt-4 text-sm">
                 <span className="text-zinc-600 dark:text-zinc-400">{totalHours}h logged</span>
-                {admin && <Link href={`/dashboard/projects/${project.id}`} className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Edit</Link>}
+                {admin && <span className="text-xs text-blue-600 dark:text-blue-400">Edit</span>}
               </div>
               <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-2">
                 {project.projectTutors.map((pt) => pt.tutor.user.name).join(", ") || "None"}

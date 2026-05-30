@@ -12,6 +12,15 @@ export const GRADE_LABELS: Record<string, string> = {
   MARKETING: "Marketing",
 }
 
+// Category sets for the Log Hours form
+// Private Tutoring (7 categories): all student grades + Study Hall Tutor
+export const PRIVATE_TUTORING_CATEGORIES = ["ELEMENTARY", "SEC1_2", "SEC3", "SEC4_5", "CEGEP", "UNI", "STUDY_HALL_TUTOR"]
+// Program Supervisor (11 = 7 tutoring + 4 management)
+export const PROGRAM_SUPERVISOR_CATEGORIES = [
+  "ELEMENTARY", "SEC1_2", "SEC3", "SEC4_5", "CEGEP", "UNI", "STUDY_HALL_TUTOR",
+  "IN_PERSON_MGMT", "ONLINE_MGMT", "SUPERVISION", "MARKETING",
+]
+
 // Rate structure:
 // PRIVATE_TUTORING: ELEMENTARY → UNI (student rates)
 // STUDY_HALL_TUTOR: STUDY_HALL_TUTOR (shared between tutors and supervisors)

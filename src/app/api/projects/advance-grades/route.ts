@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     SEC1_2: "SEC3",
     SEC3: "SEC4_5",
     SEC4_5: "CEGEP",
-    CEGEP: "UNI",
+    CEGEP: null,
     UNI: null,
   }
 
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     if (!nextGrade) continue
 
     const projects = await prisma.project.findMany({
-      where: { gradeLevel: grade, projectType: "STUDENT", status: "ACTIVE" },
+      where: { gradeLevel: grade, projectType: "STUDENT", status: "IN_PROGRESS" },
     })
 
     for (const project of projects) {

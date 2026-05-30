@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin } from "@/lib/auth-helpers"
+import { GRADE_LABELS, STUDENT_GRADES } from "@/lib/constants"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 
@@ -67,6 +68,35 @@ export default async function DataHealthPage(props: { searchParams: Promise<{ ad
   const hasErrors = checks.some(c => c.status === "error")
   const hasWarnings = checks.some(c => c.status === "warn")
 
+  const GRADE_ADVANCE: Record<string, string | null> = {
+    ELEMENTARY: "SEC1_2",
+    SEC1_2: "SEC3",
+    SEC3: "SEC4_5",
+    SEC4_5: "CEGEP",
+    CEGEP: null,
+    UNI: null,
+  }
+  const advancePreviews: Array<{ currentGrade: string; nextGrade: string; projects: Array<{ id: string; currentName: string; newName: string }> }> = []
+  for (const grade of STUDENT_GRADES) {
+    const nextGrade = GRADE_ADVANCE[grade]
+    if (!nextGrade) continue
+    const affected = await prisma.project.findMany({
+      where: { gradeLevel: grade, projectType: "STUDENT", status: "IN_PROGRESS" },
+      select: { id: true, name: true },
+    })
+    if (affected.length === 0) continue
+    advancePreviews.push({
+      currentGrade: grade,
+      nextGrade,
+      projects: affected.map(p => ({
+        id: p.id,
+        currentName: p.name,
+        newName: p.name.replace(GRADE_LABELS[grade], GRADE_LABELS[nextGrade]),
+      })),
+    })
+  }
+  const totalAffected = advancePreviews.reduce((s, g) => s + g.projects.length, 0)
+
   return (
     <div>
       <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">Data Health</h2>
@@ -80,12 +110,43 @@ export default async function DataHealthPage(props: { searchParams: Promise<{ ad
         </div>
       )}
 
-      <div className="flex gap-2 mb-4">
-        <form action="/api/projects/advance-grades" method="POST" data-confirm="Advance ALL active student projects to the next grade level? This will update project names and grades.">
-          <button type="submit" className="text-xs px-3 py-1.5 rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition-colors">
-            Advance All Grades
-          </button>
-        </form>
+      <div className="mb-4">
+        {totalAffected > 0 ? (
+          <>
+            <h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2">
+              Grade Advance Preview — {totalAffected} project{totalAffected !== 1 ? "s" : ""} will be updated
+            </h3>
+            <div className="space-y-2 mb-4">
+              {advancePreviews.map(group => (
+                <div key={group.currentGrade} className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                  <p className="text-xs font-medium text-amber-700 dark:text-amber-400 mb-2">
+                    {GRADE_LABELS[group.currentGrade]} → {GRADE_LABELS[group.nextGrade]} ({group.projects.length} project{group.projects.length !== 1 ? "s" : ""})
+                  </p>
+                  <ul className="space-y-1">
+                    {group.projects.map(p => (
+                      <li key={p.id} className="text-xs flex flex-wrap items-center gap-1">
+                        <Link href={`/dashboard/projects/${p.id}`} className="text-blue-600 dark:text-blue-400 hover:underline">{p.currentName}</Link>
+                        {p.currentName !== p.newName && (
+                          <>
+                            <span className="text-zinc-400">→</span>
+                            <span className="text-zinc-500 line-through">{p.newName}</span>
+                          </>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+            <form action="/api/projects/advance-grades" method="POST" data-confirm={`Advance ${totalAffected} project${totalAffected !== 1 ? "s" : ""} to the next grade level? This will update project names and grades.`}>
+              <button type="submit" className="text-xs px-3 py-1.5 rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition-colors">
+                Approve & Advance All Grades
+              </button>
+            </form>
+          </>
+        ) : (
+          <p className="text-sm text-zinc-500">No IN_PROGRESS student projects eligible for grade advancement.</p>
+        )}
       </div>
 
       <div className="space-y-3">

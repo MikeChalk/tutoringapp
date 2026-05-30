@@ -32,13 +32,12 @@ export async function POST(request: Request) {
     if (!userTutorId || userTutorId !== tutorId) {
       return NextResponse.json({ error: "You can only log hours for yourself" }, { status: 403 })
     }
-  }
-
-  const assignment = await prisma.projectTutor.findFirst({
-    where: { projectId, tutorId },
-  })
-  if (!assignment) {
-    return NextResponse.json({ error: "Tutor is not assigned to this project" }, { status: 403 })
+    const assignment = await prisma.projectTutor.findFirst({
+      where: { projectId, tutorId },
+    })
+    if (!assignment) {
+      return NextResponse.json({ error: "Tutor is not assigned to this project" }, { status: 403 })
+    }
   }
 
   const project = await prisma.project.findUnique({ where: { id: projectId } })
@@ -71,10 +70,13 @@ export async function POST(request: Request) {
       lookupGrade = project.gradeLevel
     }
 
-    // Try contract rates first for tutor pay
+    // Try contract rates first for tutor pay (mode-aware key first, then plain key)
     if (contract?.rates) {
       const contractRates = JSON.parse(contract.rates) as Record<string, number>
-      if (contractRates[lookupGrade] !== undefined) {
+      const modeKey = `${lookupGrade}|${mode}`
+      if (contractRates[modeKey] !== undefined) {
+        tutorPayRate = contractRates[modeKey]
+      } else if (contractRates[lookupGrade] !== undefined) {
         tutorPayRate = contractRates[lookupGrade]
       }
     }

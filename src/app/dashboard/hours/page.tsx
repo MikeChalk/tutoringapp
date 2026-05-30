@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db"
 import { requireAuth, isTutor, getTutorId, isSuperAdmin, isAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
-import { GRADE_LABELS, TENURE_LABELS, STATUS_COLORS } from "@/lib/constants"
+import { GRADE_LABELS, TENURE_LABELS, STATUS_COLORS, PRIVATE_TUTORING_CATEGORIES, PROGRAM_SUPERVISOR_CATEGORIES } from "@/lib/constants"
 import { CityFilter } from "@/components/city-filter"
 import { DeleteHourButton } from "@/components/delete-hour-button"
 import EditHourLog from "@/components/edit-hour-log"
@@ -62,11 +62,53 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
         }),
   ])
 
-  // Fetch contract rates for the logged-in tutor
+  let adminTutorId: string | null = null
+  if (admin) {
+    let adminTutor = await prisma.tutor.findUnique({ where: { userId: session.user.id } })
+    if (!adminTutor) {
+      adminTutor = await prisma.tutor.create({
+        data: { userId: session.user.id, tenure: "1ST_YEAR", isActive: true, onboarded: false, onboardingStep: 0 },
+      })
+    } else if (!adminTutor.isActive) {
+      await prisma.tutor.update({ where: { id: adminTutor.id }, data: { isActive: true } })
+    }
+    adminTutorId = adminTutor.id
+    const idx = tutors.findIndex(t => t.id === adminTutorId)
+    if (idx > 0) {
+      const [me] = tutors.splice(idx, 1)
+      tutors.unshift(me)
+    } else if (idx === -1) {
+      const adminUser = await prisma.user.findUnique({ where: { id: session.user.id }, select: { name: true } })
+      tutors.unshift({ id: adminTutorId, user: { name: adminUser?.name || "Me (Admin)" }, tenure: "1ST_YEAR" } as typeof tutors[0])
+    }
+  }
+
   let contractRatesJson = "{}"
+  let tutorContractsJson = "{}"
+  let billingRatesJson = "{}"
   if (tutor && tutorId) {
     const contract = await prisma.contract.findFirst({ where: { tutorId, status: "ACTIVE" }, select: { rates: true } })
     if (contract?.rates) contractRatesJson = contract.rates
+  } else if (admin) {
+    const [allContracts, allBillingRates] = await Promise.all([
+      prisma.contract.findMany({
+        where: { status: "ACTIVE", tutorId: { in: tutors.map(t => t.id) } },
+        select: { tutorId: true, rates: true },
+      }),
+      prisma.billingRate.findMany({ select: { gradeLevel: true, mode: true, projectType: true, rate: true } }),
+    ])
+    const tc: Record<string, unknown> = {}
+    for (const c of allContracts) {
+      if (c.rates) {
+        try { tc[c.tutorId] = JSON.parse(c.rates) } catch { tc[c.tutorId] = {} }
+      }
+    }
+    tutorContractsJson = JSON.stringify(tc)
+    const brMap: Record<string, number> = {}
+    for (const r of allBillingRates) {
+      brMap[`${r.gradeLevel}|${r.mode}|${r.projectType}`] = r.rate
+    }
+    billingRatesJson = JSON.stringify(brMap)
   }
 
   const tutorProjectsMap: Record<string, string[]> = {}
@@ -246,7 +288,6 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
                     </div>
                   </div>
                   <p className="text-xs text-zinc-400">Leave blank to auto-calculate from rate tables.</p>
-
                 </>
               ) : (
                 <div className="flex justify-between text-sm">
@@ -281,12 +322,88 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
       <Script id="hourLogFormScript" strategy="afterInteractive">{`
         (function() {
           var ASSIGN = ${assignJson};
+          var CONTRACT_RATES = ${contractRatesJson};
+          var TUTOR_CONTRACTS = ${tutorContractsJson};
+          var BILLING_RATES = ${billingRatesJson};
+          var ADMIN_TUTOR_ID = ${adminTutorId ? JSON.stringify(adminTutorId) : "null"};
+          var TUTORING_CATS = ${JSON.stringify(PRIVATE_TUTORING_CATEGORIES)};
+          var SUPERVISOR_CATS = ${JSON.stringify(PROGRAM_SUPERVISOR_CATEGORIES)};
+          var CAT_LABELS = ${JSON.stringify(GRADE_LABELS)};
+          var IS_TUTOR = ${tutor};
+
           var projectSelect = document.getElementById('projectSelect');
           var tutorSelect = document.getElementById('tutorSelect');
           var modeSelect = document.getElementById('modeSelect');
           var typeSelect = document.getElementById('projectTypeSelect');
           var categorySelect = document.getElementById('categorySelect');
-          var CONTRACT_RATES = ${contractRatesJson};
+          var billingInput = document.getElementById('billingRateInput');
+          var payRateInput = document.getElementById('payRateInput');
+          var payRateDisplay = document.getElementById('payRateDisplay');
+
+          function getContractRate(ratesObj, category, mode) {
+            if (!ratesObj || !category) return undefined;
+            var key = category + '|' + mode;
+            if (ratesObj[key] !== undefined) return ratesObj[key];
+            return ratesObj[category];
+          }
+
+          function populateCategories() {
+            if (!categorySelect) return;
+            var type = typeSelect && typeSelect.value;
+            var cats = type === 'STUDY_HALL' ? SUPERVISOR_CATS : TUTORING_CATS;
+            var current = categorySelect.value;
+            categorySelect.innerHTML = '<option value="">--</option>';
+            for (var i = 0; i < cats.length; i++) {
+              var label = CAT_LABELS[cats[i]] || cats[i];
+              var sel = current === cats[i] ? ' selected' : '';
+              categorySelect.innerHTML += '<option value="' + cats[i] + '"' + sel + '>' + label + '</option>';
+            }
+          }
+
+          function autoSelectCategory() {
+            if (!projectSelect || !categorySelect) return;
+            var opt = projectSelect.selectedOptions[0];
+            if (!opt || !opt.dataset.grade) return;
+            if (categorySelect.dataset.manual === '1') return;
+            var grade = opt.dataset.grade;
+            var found = false;
+            for (var i = 0; i < categorySelect.options.length; i++) {
+              if (categorySelect.options[i].value === grade) { found = true; break; }
+            }
+            if (found) {
+              categorySelect.value = grade;
+            } else if (opt.dataset.type === 'STUDY_HALL') {
+              categorySelect.value = 'STUDY_HALL_TUTOR';
+            }
+          }
+
+          function suggestRates() {
+            autoSelectCategory();
+            var projectOpt = projectSelect && projectSelect.selectedOptions[0];
+            var grade = projectOpt && projectOpt.dataset.grade;
+            var projectType = projectOpt && projectOpt.dataset.type || 'STUDENT';
+            var mode = modeSelect && modeSelect.value || 'IN_PERSON';
+            var category = categorySelect && categorySelect.value;
+            var tutorId = tutorSelect && tutorSelect.value;
+            var lookupGrade = category || grade;
+
+            if (billingInput && lookupGrade && mode && projectType) {
+              var brKey = lookupGrade + '|' + mode + '|' + projectType;
+              var br = BILLING_RATES[brKey];
+              if (br !== undefined) billingInput.value = br;
+            }
+
+            if (tutorId && TUTOR_CONTRACTS[tutorId]) {
+              var rates = TUTOR_CONTRACTS[tutorId];
+              var cr = getContractRate(rates, lookupGrade, mode);
+              if (cr !== undefined && payRateInput) payRateInput.value = cr;
+            }
+
+            if (IS_TUTOR && payRateDisplay && category) {
+              var cr = getContractRate(CONTRACT_RATES, category, mode);
+              payRateDisplay.textContent = cr !== undefined ? '$' + cr + '/hr' : '--';
+            }
+          }
 
           function filterProjects() {
             var type = typeSelect && typeSelect.value;
@@ -300,24 +417,11 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
                 modeField.style.display = '';
               }
             }
-            if (categorySelect) {
-              categorySelect.innerHTML = '<option value="">--</option>';
-              if (type === 'STUDY_HALL') {
-                var mgmtOpts = ['Study Hall Tutor','In-Person Program Management','Online Program Management','Supervision','Marketing'];
-                var mgmtVals = ['STUDY_HALL_TUTOR','IN_PERSON_MGMT','ONLINE_MGMT','SUPERVISION','MARKETING'];
-                for (var i = 0; i < mgmtOpts.length; i++) {
-                  categorySelect.innerHTML += '<option value="'+mgmtVals[i]+'">'+mgmtOpts[i]+'</option>';
-                }
-              } else {
-                var grades = ['ELEMENTARY','SEC1_2','SEC3','SEC4_5','CEGEP','UNI'];
-                var labels = ['Elementary','SEC 1-2','SEC 3','SEC 4-5','CEGEP','UNIVERSITY'];
-                for (var j = 0; j < grades.length; j++) {
-                  categorySelect.innerHTML += '<option value="'+grades[j]+'">'+labels[j]+'</option>';
-                }
-              }
-            }
+            populateCategories();
+            if (categorySelect) categorySelect.dataset.manual = '0';
             var tutorId = tutorSelect && tutorSelect.value;
-            var assignedProjects = tutorId ? (ASSIGN[tutorId] || []) : null;
+            var isAdminTutor = ADMIN_TUTOR_ID && tutorId === ADMIN_TUTOR_ID;
+            var assignedProjects = tutorId && !isAdminTutor ? (ASSIGN[tutorId] || []) : null;
             if (!projectSelect) return;
             var opts = projectSelect.options;
             var hasVisible = false;
@@ -330,16 +434,29 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
               if (show && !hasVisible) { hasVisible = true; opts[i].selected = true; }
             }
             if (!hasVisible) projectSelect.value = '';
+            suggestRates();
           }
 
           if (typeSelect) typeSelect.addEventListener('change', filterProjects);
-          if (tutorSelect) tutorSelect.addEventListener('change', filterProjects);
+          if (tutorSelect) tutorSelect.addEventListener('change', function() {
+            if (categorySelect) categorySelect.dataset.manual = '0';
+            filterProjects();
+          });
+          if (projectSelect) projectSelect.addEventListener('change', function() {
+            if (categorySelect) categorySelect.dataset.manual = '0';
+            suggestRates();
+          });
+          if (modeSelect) modeSelect.addEventListener('change', suggestRates);
           if (categorySelect) {
             categorySelect.addEventListener('change', function() {
+              categorySelect.dataset.manual = '1';
               var val = categorySelect.value;
-              var rate = (val && CONTRACT_RATES[val] !== undefined) ? '$' + CONTRACT_RATES[val] + '/hr' : '--';
-              var payDisplay = document.getElementById('payRateDisplay');
-              if (payDisplay) payDisplay.textContent = rate;
+              if (IS_TUTOR && payRateDisplay) {
+                var mode = modeSelect && modeSelect.value || 'IN_PERSON';
+                var cr = getContractRate(CONTRACT_RATES, val, mode);
+                payRateDisplay.textContent = cr !== undefined ? '$' + cr + '/hr' : '--';
+              }
+              suggestRates();
             });
           }
           filterProjects();
