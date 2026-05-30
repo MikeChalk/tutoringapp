@@ -92,15 +92,20 @@ export default async function ContractPage(props: { searchParams: Promise<{ filt
   const expired = allContracts.filter(c => c.status === "EXPIRED" || (!c.signed && c.status === "EXPIRED"))
 
   const latestActive = active[0]
-  const payScales = latestActive
-    ? await prisma.payScale.findMany({
-        where: { tenure: latestActive.yearLevel },
-        orderBy: [{ gradeLevel: "asc" }, { mode: "asc" }, { projectType: "asc" }],
-      })
-    : []
 
-  const studentPayScales = payScales.filter(p => p.projectType === "STUDENT")
-  const studyHallPayScales = payScales.filter(p => p.projectType === "STUDY_HALL")
+  // Fetch pay scales for all year levels once
+  const allPayScales = await prisma.payScale.findMany({
+    orderBy: [{ gradeLevel: "asc" }, { mode: "asc" }, { projectType: "asc" }],
+  })
+
+  function getRates(yearLevel: string) {
+    const scales = allPayScales.filter(p => p.tenure === yearLevel)
+    const student = scales.filter(p => p.projectType === "STUDENT")
+    const studyHall = scales.filter(p => p.projectType === "STUDY_HALL")
+    return { student, studyHall }
+  }
+
+  const latestRates = latestActive ? getRates(latestActive.yearLevel) : null
 
   return (
     <div>
@@ -221,7 +226,7 @@ export default async function ContractPage(props: { searchParams: Promise<{ filt
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-amber-600 dark:text-amber-400">Pending ({pending.length})</h3>
               {pending.map(c => (
-                <ContractCard key={c.id} contract={c} showSign />
+                <ContractCard key={c.id} contract={c} showSign rates={getRates(c.yearLevel)} />
               ))}
             </div>
           )}
@@ -231,7 +236,7 @@ export default async function ContractPage(props: { searchParams: Promise<{ filt
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-green-600 dark:text-green-400">Active ({active.length})</h3>
               {active.map(c => (
-                <ContractCard key={c.id} contract={c} />
+                <ContractCard key={c.id} contract={c} rates={getRates(c.yearLevel)} />
               ))}
             </div>
           )}
@@ -241,20 +246,20 @@ export default async function ContractPage(props: { searchParams: Promise<{ filt
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-zinc-400">Expired ({expired.length})</h3>
               {expired.map(c => (
-                <ContractCard key={c.id} contract={c} />
+                <ContractCard key={c.id} contract={c} rates={getRates(c.yearLevel)} />
               ))}
             </div>
           )}
 
           {/* Pay scales for latest active contract */}
-          {latestActive && (
+          {latestActive && latestRates && (
             <div className="lg:col-span-2 space-y-6">
               <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
                 <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Private Tutoring Rates ({TENURE_LABELS[latestActive.yearLevel]})</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
                   {["ELEMENTARY", "SEC1_2", "SEC3", "SEC4_5", "CEGEP", "UNI"].map((grade) => {
-                    const onlineRate = studentPayScales.find((p) => p.gradeLevel === grade && p.mode === "ONLINE")
-                    const inPersonRate = studentPayScales.find((p) => p.gradeLevel === grade && p.mode === "IN_PERSON")
+                  const onlineRate = latestRates.student.find((p) => p.gradeLevel === grade && p.mode === "ONLINE")
+                  const inPersonRate = latestRates.student.find((p) => p.gradeLevel === grade && p.mode === "IN_PERSON")
                     return (
                       <div key={grade} className="bg-zinc-50 dark:bg-zinc-900 rounded-lg p-3 text-center">
                         <p className="text-xs text-zinc-500 mb-2 font-medium">{grade.replace(/_/g, " ")}</p>
@@ -267,13 +272,13 @@ export default async function ContractPage(props: { searchParams: Promise<{ filt
                   })}
                 </div>
               </div>
-              {studyHallPayScales.length > 0 && (
+              {latestRates.studyHall.length > 0 && (
                 <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
                   <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Study Hall Rates ({TENURE_LABELS[latestActive.yearLevel]})</h3>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
                     {["ELEMENTARY", "SEC1_2", "SEC3", "SEC4_5", "CEGEP", "UNI"].map((grade) => {
-                      const onlineRate = studyHallPayScales.find((p) => p.gradeLevel === grade && p.mode === "ONLINE")
-                      const inPersonRate = studyHallPayScales.find((p) => p.gradeLevel === grade && p.mode === "IN_PERSON")
+                      const onlineRate = latestRates.studyHall.find((p) => p.gradeLevel === grade && p.mode === "ONLINE")
+                      const inPersonRate = latestRates.studyHall.find((p) => p.gradeLevel === grade && p.mode === "IN_PERSON")
                       return (
                         <div key={grade} className="bg-zinc-50 dark:bg-zinc-900 rounded-lg p-3 text-center">
                           <p className="text-xs text-zinc-500 mb-2 font-medium">{grade.replace(/_/g, " ")}</p>
@@ -295,7 +300,11 @@ export default async function ContractPage(props: { searchParams: Promise<{ filt
   )
 }
 
-function ContractCard({ contract, showSign }: { contract: { id: string; type: string; yearLevel: string; startDate: Date; endDate: Date; signed: boolean; signedAt: Date | null; status: string; terms: string }; showSign?: boolean }) {
+function ContractCard({ contract, showSign, rates }: {
+  contract: { id: string; type: string; yearLevel: string; startDate: Date; endDate: Date; signed: boolean; signedAt: Date | null; status: string; terms: string }
+  showSign?: boolean
+  rates?: { student: Array<{ gradeLevel: string; mode: string; rate: number; projectType: string }>; studyHall: Array<{ gradeLevel: string; mode: string; rate: number; projectType: string }> }
+}) {
   return (
     <details className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 group">
       <summary className="p-6 cursor-pointer list-none flex items-center justify-between">
@@ -331,14 +340,34 @@ function ContractCard({ contract, showSign }: { contract: { id: string; type: st
         <span className="text-xs text-zinc-400 ml-2 group-open:hidden">Details</span>
         <span className="text-xs text-zinc-400 ml-2 hidden group-open:inline">Close</span>
       </summary>
-      <div className="px-6 pb-6 border-t border-zinc-100 dark:border-zinc-700/50 pt-4">
+      <div className="px-6 pb-6 border-t border-zinc-100 dark:border-zinc-700/50 pt-4 space-y-4">
         {contract.terms && (
-          <div className="mb-4">
+          <div>
             <p className="text-xs text-zinc-500 mb-1">Terms</p>
             <p className="text-sm text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap leading-relaxed">{contract.terms}</p>
           </div>
         )}
-        {!contract.terms && <p className="text-sm text-zinc-400 mb-4">No terms specified.</p>}
+        {!contract.terms && <p className="text-sm text-zinc-400">No terms specified.</p>}
+
+        {rates && rates.student.length > 0 && (
+          <div>
+            <p className="text-xs text-zinc-500 mb-2">Private Tutoring Rates</p>
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+              {["ELEMENTARY", "SEC1_2", "SEC3", "SEC4_5", "CEGEP", "UNI"].map((grade) => {
+                const online = rates.student.find(p => p.gradeLevel === grade && p.mode === "ONLINE")
+                const inPerson = rates.student.find(p => p.gradeLevel === grade && p.mode === "IN_PERSON")
+                return (
+                  <div key={grade} className="bg-zinc-50 dark:bg-zinc-900 rounded-lg p-2 text-center">
+                    <p className="text-[10px] text-zinc-500 mb-1">{grade.replace(/_/g, " ").replace("SEC", "Sec ")}</p>
+                    <p className="text-[10px] text-purple-600 dark:text-purple-400">O ${online?.rate?.toFixed(0) || "-"}</p>
+                    <p className="text-[10px] text-cyan-600 dark:text-cyan-400">IP ${inPerson?.rate?.toFixed(0) || "-"}</p>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
         {showSign && !contract.signed && (
           <form action="/api/contracts/sign" method="POST">
             <button type="submit" className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 transition-colors">Sign Contract</button>
