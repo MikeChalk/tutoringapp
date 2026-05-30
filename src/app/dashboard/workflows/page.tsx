@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import RichTextEditor from "@/components/rich-text-editor"
+import { EMAIL_TRIGGERS, getEmailTrigger, getEmailTriggerVars } from "@/lib/constants"
 
 interface EmailTemplate {
   id: string
@@ -10,62 +11,6 @@ interface EmailTemplate {
   subject: string
   htmlBody: string
   isActive: boolean
-}
-
-const TRIGGER_OPTIONS = [
-  {
-    value: "career_application",
-    label: "Tutor applies via Careers page",
-    step: "Application — Step 1",
-    description: "Sent automatically when a tutor submits the careers application form. Contains the CV & Transcript upload link.",
-    vars: "{{name}}, {{uploadUrl}}",
-  },
-  {
-    value: "onboarding_welcome",
-    label: "Admin advances tutor to onboarding",
-    step: "Onboarding — Step 2",
-    description: "Sent when an admin moves a tutor from the waitlist into onboarding step 1. Welcomes the tutor and explains next steps.",
-    vars: "{{name}}, {{message}}",
-  },
-  {
-    value: "contract_signed",
-    label: "Tutor signs their contract",
-    step: "Onboarding — Step 3",
-    description: "Sent automatically when a tutor signs their J.A.S.S. contract. Confirms receipt and guides next steps.",
-    vars: "{{name}}, {{message}}",
-  },
-  {
-    value: "parent_tutor_match",
-    label: "Parent notified of tutor match",
-    step: "Onboarding — Step 4",
-    description: "Sent when an admin advances onboarding to step 3. Notifies a parent that a tutor has been matched to their child.",
-    vars: "{{parentName}}, {{tutorName}}, {{message}}",
-  },
-  {
-    value: "client_invite",
-    label: "New client account created",
-    step: "Client — Account Setup",
-    description: "Sent when a new client account is created. Contains the invite link for account setup and invoice access.",
-    vars: "{{name}}, {{inviteUrl}}",
-  },
-  {
-    value: "payment_received",
-    label: "Payment received from client",
-    step: "Finance — Payment Confirmation",
-    description: "Sent when an invoice is marked as paid or a Stripe payment is completed. Thanks the client for their payment.",
-    vars: "{{name}}, {{message}}",
-  },
-  {
-    value: "invoice_reminder",
-    label: "Unpaid invoice reminder",
-    step: "Finance — Automated Reminder",
-    description: "Sent by the automated system (cron job) to remind clients about outstanding invoices.",
-    vars: "{{name}}, {{inviteUrl}}",
-  },
-]
-
-function getTriggerInfo(trigger: string) {
-  return TRIGGER_OPTIONS.find(t => t.value === trigger) || null
 }
 
 export default function WorkflowsPage() {
@@ -201,6 +146,10 @@ export default function WorkflowsPage() {
     }
   }
 
+  const createVars = newTemplate.trigger && newTemplate.trigger !== "__custom__"
+    ? getEmailTriggerVars(newTemplate.trigger)
+    : (newTemplate.trigger === "__custom__" ? ["name"] : [])
+
   if (loading) {
     return (
       <div className="animate-pulse space-y-4">
@@ -272,21 +221,21 @@ export default function WorkflowsPage() {
               className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">— Select a trigger —</option>
-              {TRIGGER_OPTIONS.map((opt) => (
+              {EMAIL_TRIGGERS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.step}: {opt.label}
                 </option>
               ))}
               <option value="__custom__">Custom trigger (manual only)</option>
             </select>
-            {newTemplate.trigger && newTemplate.trigger !== "__custom__" && (
-              <p className="text-xs text-zinc-500 mt-1">
-                {getTriggerInfo(newTemplate.trigger)?.description} Available variables:{" "}
-                <code className="bg-zinc-100 dark:bg-zinc-700 px-1 rounded">
-                  {getTriggerInfo(newTemplate.trigger)?.vars}
-                </code>
-              </p>
-            )}
+            {newTemplate.trigger && newTemplate.trigger !== "__custom__" && (() => {
+              const info = getEmailTrigger(newTemplate.trigger)
+              return (
+                <p className="text-xs text-zinc-500 mt-1">
+                  {info?.description}
+                </p>
+              )
+            })()}
             {newTemplate.trigger === "__custom__" && (
               <div className="mt-2">
                 <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">Custom Trigger Key</label>
@@ -320,6 +269,7 @@ export default function WorkflowsPage() {
               content={newTemplate.htmlBody}
               onChange={(html) => setNewTemplate((p) => ({ ...p, htmlBody: html }))}
               placeholder="Write your email content here..."
+              variables={createVars}
             />
           </div>
 
@@ -336,7 +286,8 @@ export default function WorkflowsPage() {
       {/* Template list */}
       <div className="space-y-4">
         {templates.map((tpl) => {
-          const info = getTriggerInfo(tpl.trigger)
+          const info = getEmailTrigger(tpl.trigger)
+          const editVars = getEmailTriggerVars(tpl.trigger)
           return (
             <div key={tpl.id} className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
               {/* Header */}
@@ -356,7 +307,7 @@ export default function WorkflowsPage() {
                     </p>
                   </div>
                   <span className="text-xs text-zinc-400 whitespace-nowrap">
-                    Vars: {info?.vars || "{{name}}"}
+                    Vars: {editVars.map(v => `{{${v}}}`).join(", ")}
                   </span>
                   <button
                     onClick={() => toggleActive(tpl)}
@@ -439,6 +390,7 @@ export default function WorkflowsPage() {
                       content={editForm.htmlBody}
                       onChange={(html) => setEditForm((p) => ({ ...p, htmlBody: html }))}
                       placeholder="Write your email content here..."
+                      variables={editVars}
                     />
                   </div>
                 </div>

@@ -61,3 +61,109 @@ export const SUBJECT_OPTIONS = [
   "Geography",
   "Computer Science",
 ]
+
+export interface EmailTrigger {
+  value: string
+  label: string
+  step: string
+  description: string
+  vars: string[]
+}
+
+export const EMAIL_TRIGGERS: EmailTrigger[] = [
+  {
+    value: "career_application",
+    label: "Tutor applies via Careers page",
+    step: "Application — Step 1",
+    description: "Sent automatically when a tutor submits the careers application form. Contains the CV & Transcript upload link.",
+    vars: ["name", "uploadUrl"],
+  },
+  {
+    value: "onboarding_welcome",
+    label: "Admin advances tutor to onboarding",
+    step: "Onboarding — Step 2",
+    description: "Sent when an admin moves a tutor from the waitlist into onboarding step 1. Welcomes the tutor and explains next steps.",
+    vars: ["name", "message"],
+  },
+  {
+    value: "contract_signed",
+    label: "Tutor signs their contract",
+    step: "Onboarding — Step 3",
+    description: "Sent automatically when a tutor signs their J.A.S.S. contract. Confirms receipt and guides next steps.",
+    vars: ["name", "message"],
+  },
+  {
+    value: "parent_tutor_match",
+    label: "Parent notified of tutor match",
+    step: "Onboarding — Step 4",
+    description: "Sent when an admin advances onboarding to step 3. Notifies a parent that a tutor has been matched to their child.",
+    vars: ["parentName", "tutorName", "message"],
+  },
+  {
+    value: "client_invite",
+    label: "New client account created",
+    step: "Client — Account Setup",
+    description: "Sent when a new client account is created. Contains the invite link for account setup and invoice access.",
+    vars: ["name", "inviteUrl"],
+  },
+  {
+    value: "payment_received",
+    label: "Payment received from client",
+    step: "Finance — Payment Confirmation",
+    description: "Sent when an invoice is marked as paid or a Stripe payment is completed. Thanks the client for their payment.",
+    vars: ["name", "message"],
+  },
+  {
+    value: "invoice_reminder",
+    label: "Unpaid invoice reminder",
+    step: "Finance — Automated Reminder",
+    description: "Sent by the automated system (cron job) to remind clients about outstanding invoices.",
+    vars: ["name", "inviteUrl"],
+  },
+]
+
+export const EMAIL_TRIGGER_DEFAULTS: Record<string, { name: string; subject: string; htmlBody: string }> = {
+  career_application: {
+    name: "Career Application - Upload Request",
+    subject: "Thank you for your application — Next Steps",
+    htmlBody: `<p>Hi {{name}},</p><p>Thank you for applying to tutor with J.A.S.S.!</p><p>To complete your application, please upload your documents here:</p><p style="margin:16px 0"><a href="{{uploadUrl}}" style="background:#18181b;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;font-weight:500">Upload CV & Transcript</a></p><p>You can also paste this link: {{uploadUrl}}</p><p>Once we receive these, we'll review your profile and reach out when a matching client is available.</p><p>— J.A.S.S. Tutors</p>`,
+  },
+  onboarding_welcome: {
+    name: "Onboarding Welcome",
+    subject: "Welcome to J.A.S.S. — Next Steps",
+    htmlBody: `<p>Hi {{name}},</p>{{message}}<p style="margin-top:16px">— J.A.S.S. Tutors</p>`,
+  },
+  contract_signed: {
+    name: "Contract Signed Confirmation",
+    subject: "Contract Signed — Welcome to J.A.S.S.",
+    htmlBody: `<p>Hi {{name}},</p>{{message}}<p style="margin-top:16px">— J.A.S.S. Tutors</p>`,
+  },
+  parent_tutor_match: {
+    name: "Parent - Tutor Match Notification",
+    subject: "Your tutor match from J.A.S.S.",
+    htmlBody: `<p>Hi {{parentName}},</p>{{message}}<p style="margin-top:16px">— J.A.S.S. Tutors</p>`,
+  },
+  client_invite: {
+    name: "Client Account Invite",
+    subject: "Your J.A.S.S. account — Complete Setup",
+    htmlBody: `<p>Hi {{name}},</p><p>You've been added as a client of J.A.S.S. Tutoring Services. Please complete your account setup to view and pay invoices.</p><p style="margin:16px 0"><a href="{{inviteUrl}}" style="background:#18181b;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;font-weight:500">Set Up Your Account</a></p><p>You can also paste this link: {{inviteUrl}}</p><p>— J.A.S.S. Tutors</p>`,
+  },
+  payment_received: {
+    name: "Payment Received",
+    subject: "Payment Received — Thank You",
+    htmlBody: `<p>Hi {{name}},</p>{{message}}<p style="margin-top:16px">— J.A.S.S. Tutors</p>`,
+  },
+  invoice_reminder: {
+    name: "Invoice Payment Reminder",
+    subject: "Reminder: Outstanding Invoice",
+    htmlBody: `<p>Hi {{name}},</p><p>This is a friendly reminder that you have an outstanding invoice. Please log in to view and pay it.</p><p style="margin:16px 0"><a href="{{inviteUrl}}" style="background:#18181b;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;font-weight:500">View Invoice</a></p><p>— J.A.S.S. Tutors</p>`,
+  },
+}
+
+export function getEmailTrigger(value: string): EmailTrigger | undefined {
+  return EMAIL_TRIGGERS.find(t => t.value === value)
+}
+
+export function getEmailTriggerVars(value: string): string[] {
+  return EMAIL_TRIGGERS.find(t => t.value === value)?.vars || ["name"]
+}
