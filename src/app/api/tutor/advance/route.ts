@@ -25,9 +25,6 @@ export async function POST(request: Request) {
   }
   if (!tutor) return NextResponse.json({ error: "Tutor not found" }, { status: 404 })
 
-  const formData = await request.formData()
-  const step = parseInt(formData.get("step") as string)
-
   if (step === 5 || step === 6) {
     if (tutor.onboardingStep === step) {
       const next = Math.min(step + 1, 6)
