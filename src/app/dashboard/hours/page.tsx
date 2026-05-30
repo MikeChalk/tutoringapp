@@ -236,7 +236,6 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
                 className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="">--</option>
               </select>
-              <p className="text-xs text-zinc-500 mt-1" id="categoryRate"></p>
             </div>
             <div className="bg-zinc-50 dark:bg-zinc-900 rounded-lg p-3 border border-zinc-200 dark:border-zinc-700">
               {!tutor ? (
@@ -294,7 +293,6 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
           var modeSelect = document.getElementById('modeSelect');
           var typeSelect = document.getElementById('projectTypeSelect');
           var categorySelect = document.getElementById('categorySelect');
-          var categoryRate = document.getElementById('categoryRate');
           var CONTRACT_RATES = ${contractRatesJson};
 
           function filterProjects() {
@@ -347,7 +345,6 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
             categorySelect.addEventListener('change', function() {
               var val = categorySelect.value;
               var rate = (val && CONTRACT_RATES[val] !== undefined) ? '$' + CONTRACT_RATES[val] + '/hr' : '--';
-              if (categoryRate) categoryRate.textContent = val ? 'Rate: $' + CONTRACT_RATES[val] + '/hr (from contract)' : '';
               var payDisplay = document.getElementById('payRateDisplay');
               if (payDisplay) payDisplay.textContent = rate;
             });
