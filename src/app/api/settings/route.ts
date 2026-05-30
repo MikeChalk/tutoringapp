@@ -13,6 +13,7 @@ export async function POST(request: Request) {
   const stripeEnabled = formData.get("stripeEnabled") === "on"
   const smsEnabled = formData.get("smsEnabled") === "on"
   const openaiEnabled = formData.get("openaiEnabled") === "on"
+  const defaultTaxRate = parseFloat((formData.get("defaultTaxRate") as string) || "0") || 0
 
   await prisma.companySettings.upsert({
     where: { id: "main" },
@@ -26,6 +27,7 @@ export async function POST(request: Request) {
       taxNumber: (formData.get("taxNumber") as string) || "",
       invoicePrefix: (formData.get("invoicePrefix") as string) || "INV-",
       invoiceNotes: (formData.get("invoiceNotes") as string) || "",
+      defaultTaxRate,
       stripeEnabled, smsEnabled, openaiEnabled,
       twilioSid: (formData.get("twilioSid") as string) || "",
       twilioToken: (formData.get("twilioToken") as string) || "",
@@ -41,6 +43,7 @@ export async function POST(request: Request) {
       taxNumber: (formData.get("taxNumber") as string) || undefined,
       invoicePrefix: (formData.get("invoicePrefix") as string) || undefined,
       invoiceNotes: (formData.get("invoiceNotes") as string) || undefined,
+      defaultTaxRate,
       stripeEnabled, smsEnabled, openaiEnabled,
       twilioSid: (formData.get("twilioSid") as string) || undefined,
       twilioToken: (formData.get("twilioToken") as string) || undefined,

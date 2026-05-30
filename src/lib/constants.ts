@@ -167,3 +167,124 @@ export function getEmailTrigger(value: string): EmailTrigger | undefined {
 export function getEmailTriggerVars(value: string): string[] {
   return EMAIL_TRIGGERS.find(t => t.value === value)?.vars || ["name"]
 }
+
+// ── Navigation links (shared between sidebar and settings) ──
+
+export interface NavLink {
+  href: string
+  label: string
+}
+
+export interface NavSection {
+  label: string
+  links: NavLink[]
+}
+
+export const ADMIN_NAV_SECTIONS: NavSection[] = [
+  {
+    label: "Overview",
+    links: [
+      { href: "/dashboard", label: "Dashboard" },
+      { href: "/dashboard/analytics", label: "Analytics" },
+    ],
+  },
+  {
+    label: "HRM",
+    links: [
+      { href: "/dashboard/tutors", label: "Team" },
+      { href: "/dashboard/waitlist", label: "Tutor Waitlist" },
+      { href: "/dashboard/onboarding", label: "Onboarding" },
+    ],
+  },
+  {
+    label: "CRM",
+    links: [
+      { href: "/dashboard/clients", label: "Clients" },
+      { href: "/dashboard/leads", label: "Leads" },
+      { href: "/dashboard/discounts", label: "Discounts" },
+    ],
+  },
+  {
+    label: "Productivity",
+    links: [
+      { href: "/dashboard/projects", label: "Projects" },
+      { href: "/dashboard/hours", label: "Log Hours" },
+      { href: "/dashboard/requests", label: "Tutoring Requests" },
+    ],
+  },
+  {
+    label: "Finance",
+    links: [
+      { href: "/dashboard/invoices", label: "Invoices" },
+      { href: "/dashboard/payments-admin", label: "Payouts" },
+      { href: "/dashboard/expenses", label: "Finance" },
+      { href: "/dashboard/rates", label: "Rates & Cities" },
+    ],
+  },
+  {
+    label: "Files",
+    links: [
+      { href: "/dashboard/contracts", label: "Contracts" },
+    ],
+  },
+  {
+    label: "Forms",
+    links: [
+      { href: "/careers", label: "Career Application" },
+    ],
+  },
+  {
+    label: "Data",
+    links: [
+      { href: "/dashboard/import", label: "Import" },
+      { href: "/dashboard/email", label: "Mass Email" },
+    ],
+  },
+  {
+    label: "Workflows",
+    links: [
+      { href: "/dashboard/workflows", label: "Email Templates" },
+    ],
+  },
+  {
+    label: "Settings",
+    links: [
+      { href: "/dashboard/settings", label: "Company" },
+    ],
+  },
+]
+
+export const TUTOR_NAV_LINKS: NavLink[] = [
+  { href: "/dashboard", label: "Overview" },
+  { href: "/dashboard/profile", label: "My Profile" },
+  { href: "/dashboard/clients", label: "My Clients" },
+  { href: "/dashboard/projects", label: "My Students" },
+  { href: "/dashboard/hours", label: "Log Hours" },
+  { href: "/dashboard/requests", label: "Offers" },
+  { href: "/dashboard/payments", label: "My Payments" },
+  { href: "/dashboard/contract", label: "My Contract" },
+]
+
+export const CLIENT_NAV_LINKS: NavLink[] = [
+  { href: "/dashboard", label: "Overview" },
+  { href: "/dashboard/profile", label: "My Profile" },
+  { href: "/dashboard/projects", label: "My Students" },
+  { href: "/dashboard/invoices", label: "Invoices" },
+]
+
+export const TOP_LEVEL_LINKS: NavLink[] = [
+  { href: "/", label: "Homepage" },
+  { href: "/careers", label: "Careers Application" },
+]
+
+export function getAdminFlatLinks(): NavLink[] {
+  const links: NavLink[] = []
+  for (const section of ADMIN_NAV_SECTIONS) {
+    for (const link of section.links) {
+      if (!links.some(l => l.href === link.href)) {
+        links.push(link)
+      }
+    }
+  }
+  return links
+}

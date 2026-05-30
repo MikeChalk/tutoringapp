@@ -4,98 +4,7 @@ import { useState } from "react"
 import { signOut, useSession } from "next-auth/react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-
-const adminSections = [
-  {
-    label: "Overview",
-    links: [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/dashboard/analytics", label: "Analytics" },
-    ],
-  },
-  {
-    label: "HRM",
-    links: [
-      { href: "/dashboard/tutors", label: "Team" },
-      { href: "/dashboard/waitlist", label: "Tutor Waitlist" },
-      { href: "/dashboard/onboarding", label: "Onboarding" },
-    ],
-  },
-  {
-    label: "CRM",
-    links: [
-      { href: "/dashboard/clients", label: "Clients" },
-      { href: "/dashboard/leads", label: "Leads" },
-      { href: "/dashboard/discounts", label: "Discounts" },
-    ],
-  },
-  {
-    label: "Productivity",
-    links: [
-      { href: "/dashboard/projects", label: "Projects" },
-      { href: "/dashboard/hours", label: "Log Hours" },
-      { href: "/dashboard/requests", label: "Tutoring Requests" },
-    ],
-  },
-  {
-    label: "Finance",
-    links: [
-      { href: "/dashboard/invoices", label: "Invoices" },
-      { href: "/dashboard/payments-admin", label: "Payouts" },
-      { href: "/dashboard/expenses", label: "Finance" },
-      { href: "/dashboard/rates", label: "Rates & Cities" },
-    ],
-  },
-  {
-    label: "Files",
-    links: [
-      { href: "/dashboard/contracts", label: "Contracts" },
-    ],
-  },
-  {
-    label: "Forms",
-    links: [
-      { href: "/careers", label: "Career Application" },
-    ],
-  },
-  {
-    label: "Data",
-    links: [
-      { href: "/dashboard/import", label: "Import" },
-      { href: "/dashboard/email", label: "Mass Email" },
-    ],
-  },
-  {
-    label: "Workflows",
-    links: [
-      { href: "/dashboard/workflows", label: "Email Templates" },
-    ],
-  },
-  {
-    label: "Settings",
-    links: [
-      { href: "/dashboard/settings", label: "Company" },
-    ],
-  },
-]
-
-const tutorLinks = [
-  { href: "/dashboard", label: "Overview" },
-  { href: "/dashboard/profile", label: "My Profile" },
-  { href: "/dashboard/clients", label: "My Clients" },
-  { href: "/dashboard/projects", label: "My Students" },
-  { href: "/dashboard/hours", label: "Log Hours" },
-  { href: "/dashboard/requests", label: "Offers" },
-  { href: "/dashboard/payments", label: "My Payments" },
-  { href: "/dashboard/contract", label: "My Contract" },
-]
-
-const clientLinks = [
-  { href: "/dashboard", label: "Overview" },
-  { href: "/dashboard/profile", label: "My Profile" },
-  { href: "/dashboard/projects", label: "My Students" },
-  { href: "/dashboard/invoices", label: "Invoices" },
-]
+import { ADMIN_NAV_SECTIONS, TUTOR_NAV_LINKS, CLIENT_NAV_LINKS } from "@/lib/constants"
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession()
@@ -116,7 +25,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {isAdminRole ? (
             <AdminNav pathname={pathname} />
           ) : (
-            (role === "TUTOR" ? tutorLinks : clientLinks).map((link) => (
+            (role === "TUTOR" ? TUTOR_NAV_LINKS : CLIENT_NAV_LINKS).map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
@@ -150,7 +59,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 function AdminNav({ pathname }: { pathname: string }) {
   const [open, setOpen] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {}
-    for (const s of adminSections) initial[s.label] = true
+    for (const s of ADMIN_NAV_SECTIONS) initial[s.label] = true
     return initial
   })
 
@@ -161,7 +70,7 @@ function AdminNav({ pathname }: { pathname: string }) {
 
   return (
     <>
-      {adminSections.map((section) => (
+      {ADMIN_NAV_SECTIONS.map((section) => (
         <div key={section.label}>
           {section.links.length === 1 && section.label === "Overview" ? (
             <Link
