@@ -1,8 +1,28 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isTutor, getTutorId } from "@/lib/auth-helpers"
+import { requireAuth, isTutor, getTutorId, isClient, getClientId } from "@/lib/auth-helpers"
 import { CONTRACT_TYPE_LABELS, TENURE_LABELS } from "@/lib/constants"
 import { redirect } from "next/navigation"
 import Script from "next/script"
+
+const TOS_TEXT = `J.A.S.S. Tutoring Services — Terms of Service
+
+1. SERVICES
+J.A.S.S. Tutoring ("J.A.S.S.", "we", "us") provides tutoring matching services connecting students with qualified tutors.
+
+2. PAYMENT
+Clients agree to pay for tutoring sessions at the rates established in their invoice. Payment is due within 30 days of invoice date unless otherwise specified.
+
+3. CANCELLATION
+Sessions cancelled with less than 24 hours notice may be subject to a cancellation fee at the tutor's discretion.
+
+4. LIABILITY
+J.A.S.S. acts as a matching service. While we vet all tutors, we are not liable for disputes between clients and tutors. Any concerns should be reported immediately.
+
+5. PRIVACY
+Client information is kept confidential and used solely for the purpose of providing tutoring services.
+
+6. AGREEMENT
+By accepting these terms, you agree to the conditions outlined above. These terms may be updated periodically.`
 
 const ONBOARDING_STEPS = [
   "Email sent to tutor",
@@ -16,15 +36,47 @@ const ONBOARDING_STEPS = [
 
 export default async function ContractPage() {
   const session = await requireAuth()
-  if (!isTutor(session.user.role)) redirect("/dashboard")
+  const isTutorRole = isTutor(session.user.role)
+  const isClientRole = isClient(session.user.role)
+  if (!isTutorRole && !isClientRole) redirect("/dashboard")
+
+  // Client view: Terms of Service
+  if (isClientRole) {
+    const clientId = await getClientId(session.user.id, session.user.email)
+    if (!clientId) redirect("/dashboard")
+    const clientRecord = await prisma.client.findUnique({ where: { id: clientId } })
+    if (!clientRecord) redirect("/dashboard")
+
+    return (
+      <div>
+        <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-6">Terms of Service</h2>
+        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 mb-6">
+          <div className="text-sm text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap leading-relaxed mb-6">{TOS_TEXT}</div>
+          {clientRecord.tosAccepted ? (
+            <div className="border border-green-200 dark:border-green-800 rounded-lg p-4 bg-green-50/50 dark:bg-green-900/10">
+              <p className="text-sm font-medium text-green-700 dark:text-green-300">
+                Terms accepted on {clientRecord.tosAcceptedAt ? new Date(clientRecord.tosAcceptedAt).toLocaleDateString() : "N/A"}
+              </p>
+            </div>
+          ) : (
+            <form action="/api/terms/accept" method="POST">
+              <button type="submit" className="rounded-lg bg-green-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-green-700 transition-colors">
+                Accept Terms of Service
+              </button>
+            </form>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   const tutorId = await getTutorId(session.user.id, session.user.email)
   if (!tutorId) redirect("/dashboard")
 
-  const tutor = await prisma.tutor.findUnique({ where: { id: tutorId } })
-  if (!tutor) redirect("/dashboard")
+  const tutorRecord = await prisma.tutor.findUnique({ where: { id: tutorId } })
+  if (!tutorRecord) redirect("/dashboard")
 
-  const step = tutor.onboardingStep
+  const step = tutorRecord.onboardingStep
 
   const contract = await prisma.contract.findFirst({
     where: { tutorId, status: "ACTIVE" },
@@ -86,7 +138,7 @@ export default async function ContractPage() {
                 Watch the onboarding video and connect your bank account to receive payments via Stripe.
               </p>
 
-              {!tutor.stripeConnectId && process.env.STRIPE_SECRET_KEY && (
+              {!tutorRecord.stripeConnectId && process.env.STRIPE_SECRET_KEY && (
                 <div className="mb-3 p-3 bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700">
                   <p className="text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">Connect Your Bank Account</p>
                   <p className="text-xs text-zinc-500 mb-2">Required to receive payments. You'll be redirected to Stripe to complete this.</p>
@@ -97,7 +149,7 @@ export default async function ContractPage() {
                   </form>
                 </div>
               )}
-              {tutor.stripeConnectId && (
+              {tutorRecord.stripeConnectId && (
                 <p className="text-xs text-green-600 dark:text-green-400 mb-3">Bank account connected. Ready to receive payments.</p>
               )}
 

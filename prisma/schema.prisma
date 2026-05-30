@@ -95,15 +95,17 @@ model Tutor {
 }
 
 model Client {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  type      String   @default("PARENT")
-  company   String?
-  phone     String?
-  address   String?
-  notes     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String    @id @default(cuid())
+  userId         String    @unique
+  type           String    @default("PARENT")
+  company        String?
+  phone          String?
+  address        String?
+  notes          String?
+  tosAccepted    Boolean   @default(false)
+  tosAcceptedAt  DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   projects         Project[]
