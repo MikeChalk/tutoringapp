@@ -60,7 +60,6 @@ export default async function PaymentsPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard label="Total Hours" value={totalHours.toString()} />
-        <StatCard label="Total Earned" value={`$${totalPayOwed.toFixed(2)}`} />
         <StatCard label="Paid to Date" value={`$${totalPaid.toFixed(2)}`} green />
         <StatCard label="Unpaid" value={`$${totalUnpaid.toFixed(2)}`} amber />
       </div>
