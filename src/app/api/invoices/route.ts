@@ -113,7 +113,6 @@ export async function POST(request: Request) {
     data: {
       number,
       clientId,
-      projectId: projectId || null,
       dueDate,
       totalAmount: total,
       status: "DRAFT",

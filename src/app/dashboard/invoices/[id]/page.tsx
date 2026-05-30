@@ -18,7 +18,6 @@ export default async function InvoiceDetailPage(props: { params: Promise<{ id: s
     where: { id },
     include: {
       client: { include: { user: { select: { name: true, email: true, city: { select: { name: true } } } } } },
-      project: { select: { name: true } },
       items: {
         include: { hourLog: { select: { date: true, description: true, hours: true, tutor: { select: { user: { select: { name: true } } } }, project: { select: { name: true } } } } },
       },
@@ -169,8 +168,8 @@ export default async function InvoiceDetailPage(props: { params: Promise<{ id: s
               <dd className="text-zinc-900 dark:text-zinc-100">{invoice.number}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-zinc-500">Project</dt>
-              <dd className="text-zinc-900 dark:text-zinc-100">{invoice.project?.name || "-"}</dd>
+              <dt className="text-zinc-500">Client</dt>
+              <dd className="text-zinc-900 dark:text-zinc-100">{invoice.client.user.name}</dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-zinc-500">Due Date</dt>

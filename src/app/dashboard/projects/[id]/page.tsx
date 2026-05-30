@@ -43,14 +43,6 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
 
   if (!project) notFound()
 
-  // Fetch client-level invoices (invoices linked to this client but not a specific project)
-  const clientInvoices = project.clientId ? await prisma.invoice.findMany({
-    where: { clientId: project.clientId, projectId: null },
-    orderBy: { createdAt: "desc" },
-  }) : []
-
-  const allInvoices = [...project.invoices, ...clientInvoices]
-
   const totalHours = project.hourLogs.reduce((sum, h) => sum + h.hours, 0)
 
   const availableTutors = admin ? await prisma.tutor.findMany({
@@ -126,22 +118,6 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
               </select>
               <button type="submit" className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">Assign</button>
             </form>
-          )}
-        </div>
-
-        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
-          <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Invoices</h3>
-          {allInvoices.length === 0 ? (
-            <p className="text-sm text-zinc-500">No invoices yet.</p>
-          ) : (
-            <ul className="space-y-2">
-              {allInvoices.map((inv) => (
-                <li key={inv.id} className="text-sm flex justify-between">
-                  <a href={`/dashboard/invoices/${inv.id}`} className="text-blue-600 dark:text-blue-400 hover:underline">{inv.number}</a>
-                  <span className="text-zinc-500">${inv.totalAmount.toFixed(2)}</span>
-                </li>
-              ))}
-            </ul>
           )}
         </div>
 
