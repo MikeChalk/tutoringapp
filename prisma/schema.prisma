@@ -134,7 +134,6 @@ model Project {
   city          City?          @relation(fields: [cityId], references: [id])
   projectTutors ProjectTutor[]
   hourLogs      HourLog[]
-  invoices      Invoice[]
 
   @@map("projects")
 }
@@ -179,7 +178,6 @@ model Invoice {
   id          String    @id @default(cuid())
   number      String    @unique
   clientId    String
-  projectId   String?
   status      String    @default("DRAFT")
   totalAmount Float     @default(0)
   dueDate     DateTime
@@ -197,7 +195,6 @@ model Invoice {
   updatedAt   DateTime  @updatedAt
 
   client  Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  project Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
   items   InvoiceItem[]
 
   @@map("invoices")

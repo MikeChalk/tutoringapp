@@ -38,7 +38,6 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
         include: { tutor: { include: { user: { select: { name: true } } } } },
         orderBy: { date: "desc" },
       },
-      invoices: true,
     },
   })
 
