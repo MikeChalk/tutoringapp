@@ -5,12 +5,14 @@ import { useSession } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { StatusBadge } from "@/components/ui"
 
-const ADMIN_STATUS_FILTERS = [
-  { value: "NEW", label: "New" },
-  { value: "MATCHED", label: "Matched" },
-  { value: "ACCEPTED", label: "Accepted" },
-  { value: "REJECTED", label: "Rejected" },
-]
+  const ADMIN_STATUS_FILTERS = [
+    { value: "NEW", label: "New" },
+    { value: "MATCHED", label: "Matched" },
+    { value: "ACCEPTED", label: "Accepted" },
+    { value: "REJECTED", label: "Rejected" },
+    { value: "COMPLETED", label: "Completed" },
+    { value: "CANCELLED", label: "Cancelled" },
+  ]
 
 const TUTOR_STATUS_FILTERS = [
   { value: "NEW", label: "Offers" },
@@ -46,7 +48,6 @@ function RequestsContent() {
   const [selected, setSelected] = useState<string | null>(null)
   const [recommendations, setRecommendations] = useState<Recommendation[]>([])
   const [loading, setLoading] = useState(false)
-  const [showArchived, setShowArchived] = useState(false)
   const [cityFilter, setCityFilter] = useState(searchParams.get("city") || "all")
   const [cities, setCities] = useState<{ id: string; name: string }[]>([])
   const isAdmin = session?.user?.role === "ADMIN"
@@ -102,9 +103,7 @@ function RequestsContent() {
     setRecommendations([])
   }
 
-  const filteredRequests = showArchived
-    ? requests.filter((r) => r.status === "COMPLETED" || r.status === "CANCELLED")
-    : requests
+  const filteredRequests = requests
 
   const selectedRequest = requests.find((r) => r.id === selected)
 
@@ -122,20 +121,14 @@ function RequestsContent() {
               {cities.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
             </select>
           )}
-          {isAdmin && (
-            <button onClick={() => setShowArchived(!showArchived)}
-              className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-2 text-xs text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors">
-              {showArchived ? "Active" : "Archive"}
-            </button>
-          )}
         </div>
       </div>
 
       <div className="flex gap-2 mb-6">
-        {STATUS_FILTERS.map((f) => (
+          {STATUS_FILTERS.map((f) => (
           <button
             key={f.value}
-            onClick={() => { setFilter(f.value); setShowArchived(false) }}
+            onClick={() => { setFilter(f.value) }}
             className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${
               filter === f.value
                 ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900"

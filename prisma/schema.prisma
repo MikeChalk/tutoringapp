@@ -101,6 +101,9 @@ model Client {
   company        String?
   phone          String?
   address        String?
+  province       String?
+  country        String?
+  postalCode     String?
   notes          String?
   tosAccepted    Boolean   @default(false)
   tosAcceptedAt  DateTime?
@@ -351,6 +354,7 @@ model CompanySettings {
   stripeEnabled   Boolean @default(false)
   smsEnabled      Boolean @default(false)
   openaiEnabled   Boolean @default(false)
+  emailEnabled    Boolean @default(true)
   twilioSid       String  @default("")
   twilioToken     String  @default("")
   twilioFrom      String  @default("")

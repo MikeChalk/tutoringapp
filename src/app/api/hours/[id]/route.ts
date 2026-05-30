@@ -89,15 +89,46 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
 
     await logActivity(session!.user!.id, "edited", "HourLog", id, `${hours}h${superAdmin ? `, $${tutorPayRate}/h` : ""}`)
+
+    // Update linked invoice items on draft invoices
+    const invoiceItems = await prisma.invoiceItem.findMany({
+      where: { hourLogId: id, invoice: { status: "DRAFT" } },
+    })
+    for (const item of invoiceItems) {
+      await prisma.invoiceItem.update({
+        where: { id: item.id },
+        data: { hours, rate: billingRate ?? item.rate, amount: hours * (billingRate ?? item.rate) },
+      })
+    }
+
     const referer = request.headers.get("referer") || "/dashboard/hours"
     return NextResponse.redirect(new URL(referer, request.url), 303)
   }
 
-  // Delete hour log + corresponding expense
-  await prisma.expense.deleteMany({ where: { hourLogId: id } })
-  await prisma.hourLog.delete({ where: { id } })
-  await logActivity(session!.user!.id, "deleted", "HourLog", id)
+  if (action === "delete") {
+    // Check for linked invoices before deleting
+    const linkedItems = await prisma.invoiceItem.findMany({
+      where: { hourLogId: id },
+      include: { invoice: { select: { status: true, number: true } } },
+    })
+    for (const item of linkedItems) {
+      if (item.invoice.status !== "DRAFT") {
+        return NextResponse.json({ error: `Cannot delete: this log is on invoice ${item.invoice.number} (${item.invoice.status})` }, { status: 400 })
+      }
+    }
+    // Remove from draft invoices
+    if (linkedItems.length > 0) {
+      await prisma.invoiceItem.deleteMany({ where: { hourLogId: id } })
+    }
+    // Delete hour log + corresponding expense
+    await prisma.expense.deleteMany({ where: { hourLogId: id } })
+    await prisma.hourLog.delete({ where: { id } })
+    await logActivity(session!.user!.id, "deleted", "HourLog", id)
+    const referer = request.headers.get("referer") || "/dashboard/hours"
+    return NextResponse.redirect(new URL(referer, request.url), 303)
+  }
 
+  // Default: redirect back (no matching action)
   const referer = request.headers.get("referer") || "/dashboard/hours"
   return NextResponse.redirect(new URL(referer, request.url), 303)
 }

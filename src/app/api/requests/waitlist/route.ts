@@ -18,7 +18,7 @@ export async function GET(request: Request) {
 
   const tutors = await prisma.tutor.findMany({
     where,
-    include: { user: { select: { name: true, email: true } } },
+    include: { user: { select: { name: true } } },
     orderBy: { createdAt: "asc" },
   })
 

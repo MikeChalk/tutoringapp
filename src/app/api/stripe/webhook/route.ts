@@ -55,6 +55,13 @@ export async function POST(request: Request) {
         },
       })
 
+      // Cascade paidAt to underlying hour logs
+      const items = await prisma.invoiceItem.findMany({ where: { invoiceId }, select: { hourLogId: true } })
+      const logIds = items.map(i => i.hourLogId).filter(Boolean) as string[]
+      if (logIds.length > 0) {
+        await prisma.hourLog.updateMany({ where: { id: { in: logIds } }, data: { paidAt: new Date() } })
+      }
+
       const invoice = await prisma.invoice.findUnique({
         where: { id: invoiceId },
         include: { client: { include: { user: { select: { name: true, email: true } } } } },

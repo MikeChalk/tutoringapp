@@ -7,17 +7,16 @@ export default async function AnalyticsPage() {
   if (!isAdmin(session.user.role)) redirect("/dashboard")
 
   const [
-    totalTutors, totalClients, totalProjects, totalHours,
+    totalTutors, totalClients, totalProjects,
     totalRevenue, totalPaid, totalTutorPay, totalExpenses,
     invoiceCounts, monthlyData, cityData
   ] = await Promise.all([
     prisma.tutor.count({ where: { onboarded: true } }),
     prisma.client.count(),
     prisma.project.count(),
-    prisma.hourLog.aggregate({ _sum: { hours: true } }),
     prisma.invoice.aggregate({ _sum: { totalAmount: true } }),
     prisma.invoice.aggregate({ _sum: { totalAmount: true }, where: { status: "PAID" } }),
-    prisma.hourLog.aggregate({ _sum: { hours: true, tutorPayRate: true } }),
+    prisma.hourLog.aggregate({ _sum: { hours: true } }),
     prisma.expense.aggregate({ _sum: { amount: true } }),
     (async () => {
       const invoices = await prisma.invoice.findMany({ select: { status: true }, where: { status: { in: ["SENT", "PAID", "DRAFT", "OVERDUE"] } } })

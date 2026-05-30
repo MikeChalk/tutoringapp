@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { STUDENT_GRADE_OPTIONS, SUBJECT_OPTIONS } from "@/lib/constants"
 
 interface Template { id: string; name: string }
@@ -48,6 +48,12 @@ export function AddTutorForm({ templates, cities, onboardFlow }: { templates: Te
             <select name="cityId" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="">None</option>
               {cities.map(c => (<option key={c.id} value={c.id}>{c.name}</option>))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-zinc-500 mb-1">Role</label>
+            <select name="role" defaultValue="TUTOR" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="TUTOR">Tutor</option><option value="CITY_ADMIN">City Admin</option>
             </select>
           </div>
           <div>

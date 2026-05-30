@@ -19,10 +19,24 @@ export async function POST(request: Request) {
   }
 
   const existing = await prisma.projectTutor.findFirst({ where: { projectId, tutorId } })
-  if (!existing) {
-    await prisma.projectTutor.create({ data: { projectId, tutorId } })
-    await logActivity(session.user.id, "assigned_tutor", "Project", projectId, `Tutor: ${tutorId}`)
+  if (existing) {
+    return NextResponse.redirect(new URL(`/dashboard/projects/${projectId}`, request.url), 303)
   }
+
+  const [project, tutor] = await Promise.all([
+    prisma.project.findUnique({ where: { id: projectId }, select: { cityId: true } }),
+    prisma.tutor.findUnique({ where: { id: tutorId }, select: { user: { select: { cityId: true } } } }),
+  ])
+  if (!project) return NextResponse.json({ error: "Project not found" }, { status: 404 })
+  if (!tutor) return NextResponse.json({ error: "Tutor not found" }, { status: 404 })
+
+  // Enforce city scoping if both project and tutor have city assignments
+  if (project.cityId && tutor.user.cityId && project.cityId !== tutor.user.cityId) {
+    return NextResponse.json({ error: "Tutor and project are in different cities" }, { status: 400 })
+  }
+
+  await prisma.projectTutor.create({ data: { projectId, tutorId } })
+  await logActivity(session.user.id, "assigned_tutor", "Project", projectId, `Tutor: ${tutorId}`)
 
   return NextResponse.redirect(new URL(`/dashboard/projects/${projectId}`, request.url), 303)
 }

@@ -49,11 +49,15 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
   }
   if (selectedCategory !== "ALL") where.category = selectedCategory
   if (searchQuery) {
-    where.OR = [
-      ...(Array.isArray(where.OR) ? where.OR as Record<string, unknown>[] : []),
-      { description: { contains: searchQuery } },
-      { client: { user: { name: { contains: searchQuery } } } },
+    const cityOr = Array.isArray(where.OR) ? where.OR as Record<string, unknown>[] : []
+    where.AND = [
+      ...(cityOr.length > 0 ? [{ OR: cityOr }] : []),
+      { OR: [
+        { description: { contains: searchQuery } },
+        { client: { user: { name: { contains: searchQuery } } } },
+      ] },
     ]
+    delete where.OR
   }
 
   const [expenses, clients, totalCount] = await Promise.all([
@@ -77,14 +81,12 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
 
   const totalPages = Math.ceil(totalCount / pageSize)
 
-  const totalAmount = expenses.reduce((s, e) => s + e.amount, 0)
-
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Expenses</h2>
-          <p className="text-sm text-zinc-500">${totalAmount.toFixed(2)} total · {expenses.length} entries</p>
+          <p className="text-sm text-zinc-500">${totalCount > 0 ? "..." : "0.00"} · {totalCount} entries</p>
         </div>
         <div className="flex items-center gap-3">
           <form action="/api/expenses/seed" method="POST" data-confirm="Sync all historical hour logs as expenses?">
@@ -100,7 +102,7 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
         <input type="text" name="search" defaultValue={searchQuery} placeholder="Search expenses by description or client..."
           className="flex-1 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
         <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Search</button>
-        {searchQuery && <a href={`/dashboard/expenses-only${selectedCategory !== "ALL" ? `?category=${selectedCategory}` : ""}`} className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-500 hover:bg-zinc-100">Clear</a>}
+        {searchQuery && <a href={`/dashboard/expenses-only${selectedCategory !== "ALL" ? `?category=${selectedCategory}` : ""}${selectedCity !== "all" ? `${selectedCategory !== "ALL" ? "&" : "?"}city=${selectedCity}` : ""}`} className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-500 hover:bg-zinc-100">Clear</a>}
       </form>
 
       <AddExpenseSection clients={clients} />

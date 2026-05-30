@@ -34,12 +34,14 @@ export async function POST(request: Request) {
       await prisma.client.create({ data: { userId: user.id, phone: lead.phone, type: "PARENT" } })
       await prisma.lead.update({ where: { id: leadId }, data: { status: "CONVERTED", convertedToClientId: user.id } })
     } else {
-      // Link existing client
-      const client = await prisma.client.findUnique({ where: { userId: existing.id } })
-      if (client) {
-        await prisma.lead.update({ where: { id: leadId }, data: { status: "CONVERTED", convertedToClientId: client.id } })
+      // Link or create client
+      let client = await prisma.client.findUnique({ where: { userId: existing.id } })
+      if (!client) {
+        client = await prisma.client.create({ data: { userId: existing.id, phone: lead.phone, type: "PARENT" } })
       }
+      await prisma.lead.update({ where: { id: leadId }, data: { status: "CONVERTED", convertedToClientId: client.id } })
     }
+    return NextResponse.redirect(new URL("/dashboard/leads", request.url), 303)
   }
 
   return NextResponse.redirect(new URL("/dashboard/leads", request.url), 303)

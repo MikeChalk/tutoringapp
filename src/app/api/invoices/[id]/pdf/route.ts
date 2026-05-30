@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server"
+import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { isAdmin, getClientId } from "@/lib/auth-helpers"
 
 export async function GET(request: Request, props: { params: Promise<{ id: string }> }) {
+  const session = await auth()
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
   const { id } = await props.params
 
   const invoice = await prisma.invoice.findUnique({
@@ -13,6 +18,11 @@ export async function GET(request: Request, props: { params: Promise<{ id: strin
   })
 
   if (!invoice) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+  const clientId = await getClientId(session.user.id, (session.user as { email?: string }).email || "")
+  if (!isAdmin(session.user.role) && clientId !== invoice.clientId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
 
   const settings = await prisma.companySettings.findUnique({ where: { id: "main" } })
   const companyName = settings?.name || "J.A.S.S. Tutoring"

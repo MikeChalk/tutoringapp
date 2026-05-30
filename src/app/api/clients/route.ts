@@ -44,6 +44,10 @@ export async function POST(request: Request) {
       const company = (formData.get("company") as string)?.trim() || null
       const phone = (formData.get("phone") as string)?.trim() || null
       const address = (formData.get("address") as string)?.trim() || null
+      const province = (formData.get("province") as string)?.trim() || null
+      const country = (formData.get("country") as string)?.trim() || null
+      const postalCode = (formData.get("postalCode") as string)?.trim() || null
+      const notes = (formData.get("notes") as string)?.trim() || null
 
       await prisma.user.update({
         where: { id: client.userId },
@@ -51,7 +55,7 @@ export async function POST(request: Request) {
       })
       await prisma.client.update({
         where: { id },
-        data: { type: clientType, company, phone, address },
+        data: { type: clientType, company, phone, address, province, country, postalCode, notes },
       })
     }
     return NextResponse.redirect(new URL(`/dashboard/clients/${id}`, request.url), 303)
@@ -63,6 +67,10 @@ export async function POST(request: Request) {
   const company = (formData.get("company") as string)?.trim() || null
   const phone = (formData.get("phone") as string)?.trim() || null
   const address = (formData.get("address") as string)?.trim() || null
+  const province = (formData.get("province") as string)?.trim() || null
+  const country = (formData.get("country") as string)?.trim() || null
+  const postalCode = (formData.get("postalCode") as string)?.trim() || null
+  const notes = (formData.get("notes") as string)?.trim() || null
   const cityId = (formData.get("cityId") as string) || null
 
   if (!name || !email) {
@@ -83,7 +91,7 @@ export async function POST(request: Request) {
   })
 
   await prisma.client.create({
-    data: { userId: user.id, type: clientType, company, phone, address },
+    data: { userId: user.id, type: clientType, company, phone, address, province, country, postalCode, notes },
   })
 
   const inviteUrl = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/invite/${signupToken}`

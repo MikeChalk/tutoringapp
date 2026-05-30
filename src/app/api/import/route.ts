@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { isAdmin } from "@/lib/auth-helpers"
+import { GRADE_LABELS } from "@/lib/constants"
 import bcrypt from "bcryptjs"
 
 function parseCSV(text: string): { headers: string[]; rows: Record<string, string>[] } {
@@ -67,8 +68,9 @@ async function handlePreview(formData: FormData, type: string) {
     const resolved: Record<string, string> = {}
 
     if (type === "team") {
-      if (!row.name?.trim()) issues.push("Missing name")
-      else resolved.name = row.name.trim()
+      const fullName = row.first_name ? (row.last_name ? `${row.first_name.trim()} ${row.last_name.trim()}` : row.first_name.trim()) : row.name?.trim()
+      if (!fullName) issues.push("Missing name (use first_name+last_name or name)")
+      else resolved.name = fullName
       if (!row.email?.trim()) issues.push("Missing email")
       else {
         resolved.email = row.email.trim().toLowerCase()
@@ -78,7 +80,10 @@ async function handlePreview(formData: FormData, type: string) {
       resolved.tenure = ["1ST_YEAR", "2ND_YEAR", "3RD_YEAR"].includes(row.tenure?.toUpperCase() || "") ? row.tenure!.toUpperCase() : "1ST_YEAR"
       resolved.subjects = row.subjects || ""
       resolved.grades = row.grade_levels || ""
-      resolved.onboarded = (row.onboarded || "").toLowerCase() === "true" ? "Active" : "Waitlist"
+      resolved.role = ["TUTOR", "CITY_ADMIN"].includes(row.role?.toUpperCase() || "") ? row.role!.toUpperCase() : "TUTOR"
+      resolved.status = "Onboarding (step 0)"
+      resolved.phone = row.phone || "-"
+      resolved.created = row.created_at || row.created_date || new Date().toISOString().split("T")[0]
       if (row.city) {
         const match = cities.find(c => c.name.toLowerCase() === row.city.toLowerCase()) || cities.find(c => c.name.toLowerCase().includes(row.city.toLowerCase()))
         resolved.city = match?.name || `${row.city} (not found)`
@@ -87,8 +92,9 @@ async function handlePreview(formData: FormData, type: string) {
     }
 
     if (type === "clients") {
-      if (!row.name?.trim()) issues.push("Missing name")
-      else resolved.name = row.name.trim()
+      const fullName = row.first_name ? (row.last_name ? `${row.first_name.trim()} ${row.last_name.trim()}` : row.first_name.trim()) : row.name?.trim()
+      if (!fullName) issues.push("Missing name (use first_name+last_name or name)")
+      else resolved.name = fullName
       if (!row.email?.trim()) issues.push("Missing email")
       else {
         resolved.email = row.email.trim().toLowerCase()
@@ -98,6 +104,11 @@ async function handlePreview(formData: FormData, type: string) {
       resolved.type = row.type?.toUpperCase() === "SCHOOL" ? "School" : "Parent"
       resolved.company = row.company?.trim() || "-"
       resolved.phone = row.phone || "-"
+      resolved.province = row.province || "-"
+      resolved.country = row.country || "-"
+      resolved.postal_code = row.postal_code || "-"
+      resolved.notes = row.notes || "-"
+      resolved.created = row.created_at || row.created_date || new Date().toISOString().split("T")[0]
       if (row.city) {
         const match = cities.find(c => c.name.toLowerCase() === row.city.toLowerCase()) || cities.find(c => c.name.toLowerCase().includes(row.city.toLowerCase()))
         resolved.city = match?.name || `${row.city} (not found)`
@@ -135,6 +146,52 @@ async function handlePreview(formData: FormData, type: string) {
       resolved.amount = row.amount || (parseFloat(row.hours || "0") * parseFloat(row.rate || "0")).toFixed(2)
       resolved.status = (row.status || "DRAFT").toUpperCase()
       resolved.dueDate = row.due_date || new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0]
+      resolved.created = row.created_at || row.created_date || new Date().toISOString().split("T")[0]
+    }
+
+    if (type === "projects") {
+      if (row.student_name?.trim()) resolved.studentName = row.student_name.trim()
+      else resolved.studentName = "-"
+      if (!row.client_email?.trim()) issues.push("Missing client email")
+      else {
+        resolved.clientEmail = row.client_email.trim().toLowerCase()
+        const user = await prisma.user.findUnique({ where: { email: resolved.clientEmail } })
+        if (!user || user.role !== "CLIENT") issues.push(`Client "${resolved.clientEmail}" not found`)
+        else {
+          resolved.clientName = user.name
+          // Auto-generate project name: "StudentName - Grade (ParentName)" or "ProjectName (ParentName)" for study hall
+          const gradeKey = row.grade_level || "ELEMENTARY"
+          const projectType = row.project_type?.toUpperCase() === "STUDY_HALL" ? "STUDY_HALL" : "STUDENT"
+          const student = row.student_name?.trim()
+          // Naming priority: student_name > school (study hall) > description
+          if (student) {
+            if (projectType === "STUDY_HALL") {
+              resolved.name = `${student} - Study Hall`
+            } else {
+              const gradeLabel = GRADE_LABELS[gradeKey] || gradeKey
+              resolved.name = `${student} - ${gradeLabel} (${user.name})`
+            }
+          } else if (projectType === "STUDY_HALL" && row.school?.trim()) {
+            resolved.name = `${row.school.trim()} - Study Hall`
+          } else if (row.description?.trim()) {
+            resolved.name = row.description.trim()
+          } else {
+            issues.push("Missing student_name, school, or description")
+          }
+        }
+      }
+      resolved.gradeLevel = row.grade_level || "ELEMENTARY"
+      resolved.subjects = row.subjects || ""
+      resolved.description = row.description || "-"
+      resolved.projectType = row.project_type?.toUpperCase() === "STUDY_HALL" ? "STUDY_HALL" : "STUDENT"
+      resolved.school = row.school || ""
+      resolved.status = row.status || "ON_HOLD"
+      resolved.created = row.created_at || row.created_date || new Date().toISOString().split("T")[0]
+      if (row.city) {
+        const match = cities.find(c => c.name.toLowerCase() === row.city.toLowerCase()) || cities.find(c => c.name.toLowerCase().includes(row.city.toLowerCase()))
+        resolved.city = match?.name || `${row.city} (not found)`
+        if (!match) issues.push(`City "${row.city}" not found`)
+      }
     }
 
     return { row: i + 1, issues, resolved, canImport: issues.length === 0 }
@@ -168,7 +225,7 @@ async function handleImport(formData: FormData, type: string, request: Request) 
   for (const row of rows) {
     try {
       if (type === "team") {
-        const name = row.name?.trim()
+        const name = row.first_name ? (row.last_name ? `${row.first_name.trim()} ${row.last_name.trim()}` : row.first_name.trim()) : row.name?.trim()
         const email = row.email?.trim().toLowerCase()
         if (!name || !email) { results.errors.push(`Row: name and email required`); results.skipped++; continue }
 
@@ -182,12 +239,16 @@ async function handleImport(formData: FormData, type: string, request: Request) 
         }
 
         const tenure = ["1ST_YEAR", "2ND_YEAR", "3RD_YEAR"].includes(row.tenure?.toUpperCase() || "") ? row.tenure!.toUpperCase() : "1ST_YEAR"
-        const onboarded = (row.onboarded || "false").toLowerCase() === "true"
+        const role = ["TUTOR", "CITY_ADMIN"].includes(row.role?.toUpperCase() || "") ? row.role!.toUpperCase() : "TUTOR"
         const tempPassword = Math.random().toString(36).slice(2, 10)
         const hashed = await bcrypt.hash(tempPassword, 12)
+        const createdDate = row.created_at || row.created_date
 
         const user = await prisma.user.create({
-          data: { name, email, password: hashed, role: "TUTOR", cityId },
+          data: {
+            name, email, password: hashed, role, cityId,
+            ...(createdDate && { createdAt: new Date(createdDate) }),
+          },
         })
         await prisma.tutor.create({
           data: {
@@ -195,16 +256,18 @@ async function handleImport(formData: FormData, type: string, request: Request) 
             tenure,
             subjects: row.subjects || "",
             gradeLevels: row.grade_levels || "",
+            phone: row.phone?.trim() || null,
             isActive: true,
-            onboarded,
-            onboardedAt: onboarded ? new Date() : null,
+            onboarded: false,
+            onboardingStep: 0,
+            ...(createdDate && { createdAt: new Date(createdDate) }),
           },
         })
         results.created++
       }
 
       else if (type === "clients") {
-        const name = row.name?.trim()
+        const name = row.first_name ? (row.last_name ? `${row.first_name.trim()} ${row.last_name.trim()}` : row.first_name.trim()) : row.name?.trim()
         const email = row.email?.trim().toLowerCase()
         if (!name || !email) { results.errors.push(`Row: name and email required`); results.skipped++; continue }
 
@@ -220,9 +283,13 @@ async function handleImport(formData: FormData, type: string, request: Request) 
         const clientType = row.type?.toUpperCase() === "SCHOOL" ? "SCHOOL" : "PARENT"
         const tempPassword = Math.random().toString(36).slice(2, 10)
         const hashed = await bcrypt.hash(tempPassword, 12)
+        const createdDate = row.created_at || row.created_date
 
         const user = await prisma.user.create({
-          data: { name, email, password: hashed, role: "CLIENT", cityId },
+          data: {
+            name, email, password: hashed, role: "CLIENT", cityId,
+            ...(createdDate && { createdAt: new Date(createdDate) }),
+          },
         })
         await prisma.client.create({
           data: {
@@ -231,6 +298,11 @@ async function handleImport(formData: FormData, type: string, request: Request) 
             company: row.company?.trim() || null,
             phone: row.phone?.trim() || null,
             address: row.address?.trim() || null,
+            province: row.province?.trim() || null,
+            country: row.country?.trim() || null,
+            postalCode: row.postal_code?.trim() || null,
+            notes: row.notes?.trim() || null,
+            ...(createdDate && { createdAt: new Date(createdDate) }),
           },
         })
         results.created++
@@ -274,6 +346,8 @@ async function handleImport(formData: FormData, type: string, request: Request) 
         const invoiceCount = await prisma.invoice.count()
         const number = `INV-${String(invoiceCount + 1).padStart(4, "0")}`
         const dueDate = row.due_date ? new Date(row.due_date) : new Date(Date.now() + 30 * 86400000)
+        const createdDate = row.created_at || row.created_date
+        const paidDate = row.status?.toUpperCase() === "PAID" && row.paid_date ? new Date(row.paid_date) : null
 
         await prisma.invoice.create({
           data: {
@@ -283,6 +357,8 @@ async function handleImport(formData: FormData, type: string, request: Request) 
             dueDate,
             totalAmount: amount,
             notes: description,
+            ...(createdDate && { createdAt: new Date(createdDate) }),
+            ...(paidDate && { paidAt: paidDate }),
             items: {
               create: [{
                 description,
@@ -291,6 +367,55 @@ async function handleImport(formData: FormData, type: string, request: Request) 
                 amount,
               }],
             },
+          },
+        })
+        results.created++
+      }
+
+      else if (type === "projects") {
+        const studentName = row.student_name?.trim()
+        const clientEmail = row.client_email?.trim().toLowerCase()
+        if (!studentName && !row.description?.trim()) { results.errors.push(`Row: student_name or description required`); results.skipped++; continue }
+        if (!clientEmail) { results.errors.push(`Row: client_email required`); results.skipped++; continue }
+
+        const user = await prisma.user.findUnique({ where: { email: clientEmail } })
+        if (!user || user.role !== "CLIENT") { results.errors.push(`Client ${clientEmail} not found`); results.skipped++; continue }
+        const client = await prisma.client.findUnique({ where: { userId: user.id } })
+        if (!client) { results.errors.push(`Client record for ${clientEmail} not found`); results.skipped++; continue }
+
+        let cityId: string | null = null
+        if (row.city) {
+          const match = cities.find(c => c.name.toLowerCase() === row.city.toLowerCase()) || cities.find(c => c.name.toLowerCase().includes(row.city.toLowerCase()))
+          if (match) cityId = match.id
+        }
+
+        const projectType = row.project_type?.toUpperCase() === "STUDY_HALL" ? "STUDY_HALL" : "STUDENT"
+        const gradeLevel = row.grade_level || "ELEMENTARY"
+        const name = (() => {
+          if (studentName) {
+            return projectType === "STUDY_HALL"
+              ? `${studentName} - Study Hall`
+              : `${studentName} - ${GRADE_LABELS[gradeLevel] || gradeLevel} (${user.name})`
+          }
+          if (projectType === "STUDY_HALL" && row.school?.trim()) {
+            return `${row.school.trim()} - Study Hall`
+          }
+          return row.description?.trim() || `${studentName || "Project"} (${user.name})`
+        })()
+        const createdDate = row.created_at || row.created_date
+
+        await prisma.project.create({
+          data: {
+            name,
+            description: row.description?.trim() || null,
+            clientId: client.id,
+            gradeLevel,
+            subjects: row.subjects || "",
+            projectType,
+            school: row.school?.trim() || "",
+            status: row.status || "ON_HOLD",
+            cityId,
+            ...(createdDate && { createdAt: new Date(createdDate) }),
           },
         })
         results.created++

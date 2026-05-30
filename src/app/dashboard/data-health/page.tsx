@@ -3,9 +3,11 @@ import { requireAuth, isAdmin } from "@/lib/auth-helpers"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 
-export default async function DataHealthPage() {
+export default async function DataHealthPage(props: { searchParams: Promise<{ advanced?: string }> }) {
   const session = await requireAuth()
   if (!isAdmin(session.user.role)) redirect("/dashboard")
+
+  const { advanced } = await props.searchParams
 
   const checks: Array<{ label: string; status: "ok" | "warn" | "error"; count: number; detail: string; items?: Array<{ name: string; href: string; info: string }> }> = []
 
@@ -68,9 +70,23 @@ export default async function DataHealthPage() {
   return (
     <div>
       <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">Data Health</h2>
-      <p className="text-sm text-zinc-500 mb-6">
+      <p className="text-sm text-zinc-500 mb-2">
         {hasErrors ? "Issues detected that need attention." : hasWarnings ? "Some items to review." : "Everything looks good."}
       </p>
+
+      {advanced && (
+        <div className="mb-4 bg-green-50 dark:bg-green-900/20 border border-green-300 dark:border-green-700 rounded-lg p-3 text-sm text-green-700 dark:text-green-300">
+          Advanced {advanced} project{advanced === "1" ? "" : "s"} to next grade level.
+        </div>
+      )}
+
+      <div className="flex gap-2 mb-4">
+        <form action="/api/projects/advance-grades" method="POST" data-confirm="Advance ALL active student projects to the next grade level? This will update project names and grades.">
+          <button type="submit" className="text-xs px-3 py-1.5 rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition-colors">
+            Advance All Grades
+          </button>
+        </form>
+      </div>
 
       <div className="space-y-3">
         {checks.map(check => (

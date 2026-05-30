@@ -7,7 +7,7 @@ export async function POST(request: Request) {
 
   const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } })
   if (user) {
-    console.log(`[PASSWORD RESET] Requested for: ${email}`)
+    console.log(`[PASSWORD RESET] Request received`)
     // In production: generate token, save to user, send email with link
   }
 

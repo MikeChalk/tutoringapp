@@ -123,32 +123,32 @@ export default async function InvoiceDetailPage(props: { params: Promise<{ id: s
                 {invoice.subtotal > 0 && (
                   <>
                     <tr className="text-sm">
-                      <td colSpan={3} className="px-2 py-1 text-right text-zinc-500">Subtotal</td>
+                      <td colSpan={6} className="px-2 py-1 text-right text-zinc-500">Subtotal</td>
                       <td className="px-2 py-1 text-right text-zinc-700 dark:text-zinc-300">${invoice.subtotal.toFixed(2)}</td>
                     </tr>
                     {invoice.taxRate > 0 && (
                       <tr className="text-sm">
-                        <td colSpan={3} className="px-2 py-1 text-right text-zinc-500">Tax ({invoice.taxRate}%)</td>
+                        <td colSpan={6} className="px-2 py-1 text-right text-zinc-500">Tax ({invoice.taxRate}%)</td>
                         <td className="px-2 py-1 text-right text-zinc-700 dark:text-zinc-300">${invoice.taxAmount.toFixed(2)}</td>
                       </tr>
                     )}
                     {invoice.discountAmount > 0 && (
                       <tr className="text-sm text-red-600 dark:text-red-400">
-                        <td colSpan={3} className="px-2 py-1 text-right">
+                        <td colSpan={6} className="px-2 py-1 text-right">
                           Discount {invoice.discountCode && <span className="font-mono">({invoice.discountCode})</span>}
                         </td>
                         <td className="px-2 py-1 text-right">-${invoice.discountAmount.toFixed(2)}</td>
                       </tr>
                     )}
                     <tr className="text-sm font-bold border-t border-zinc-200 dark:border-zinc-700">
-                      <td colSpan={3} className="px-2 py-3 text-right text-zinc-900 dark:text-zinc-100">Total</td>
+                      <td colSpan={6} className="px-2 py-3 text-right text-zinc-900 dark:text-zinc-100">Total</td>
                       <td className="px-2 py-3 text-right text-zinc-900 dark:text-zinc-100">${invoice.totalAmount.toFixed(2)}</td>
                     </tr>
                   </>
                 )}
                 {invoice.subtotal === 0 && (
                   <tr className="text-sm font-bold border-t border-zinc-200 dark:border-zinc-700">
-                    <td colSpan={3} className="px-2 py-3 text-right text-zinc-900 dark:text-zinc-100">Total</td>
+                    <td colSpan={6} className="px-2 py-3 text-right text-zinc-900 dark:text-zinc-100">Total</td>
                     <td className="px-2 py-3 text-right text-zinc-900 dark:text-zinc-100">${invoice.totalAmount.toFixed(2)}</td>
                   </tr>
                 )}
@@ -234,7 +234,7 @@ export default async function InvoiceDetailPage(props: { params: Promise<{ id: s
                     </form>
                   </>
                 )}
-                {(invoice.status === "SENT" || invoice.status === "OVERDUE") && (
+                {(invoice.status === "SENT") && (
                   <form action={`/api/invoices/${invoice.id}`} method="POST">
                     <input type="hidden" name="_action" value="markOverdue" />
                     <button type="submit" className="rounded bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 transition-colors">Mark Overdue</button>

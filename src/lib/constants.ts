@@ -17,6 +17,14 @@ export const GRADE_LABELS: Record<string, string> = {
 // STUDY_HALL_TUTOR: STUDY_HALL_TUTOR (shared between tutors and supervisors)
 // PROGRAM_SUPERVISOR: IN_PERSON_MGMT, ONLINE_MGMT, SUPERVISION, MARKETING
 export const STUDENT_GRADES = ["ELEMENTARY", "SEC1_2", "SEC3", "SEC4_5", "CEGEP", "UNI"]
+export const GRADE_ADVANCE: Record<string, string | null> = {
+  ELEMENTARY: "SEC1_2",
+  SEC1_2: "SEC3",
+  SEC3: "SEC4_5",
+  SEC4_5: "CEGEP",
+  CEGEP: "UNI",
+  UNI: null,
+}
 export const TUTOR_STUDY_HALL_GRADES = ["STUDY_HALL_TUTOR"]
 export const SUPERVISOR_GRADES = ["STUDY_HALL_TUTOR", "IN_PERSON_MGMT", "ONLINE_MGMT", "SUPERVISION", "MARKETING"]
 

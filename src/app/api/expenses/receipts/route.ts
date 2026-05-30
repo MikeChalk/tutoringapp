@@ -1,9 +1,16 @@
 import { NextResponse } from "next/server"
+import { auth } from "@/lib/auth"
+import { isAdmin } from "@/lib/auth-helpers"
 import { readFile } from "fs/promises"
 import { existsSync } from "fs"
 import path from "path"
 
 export async function GET(request: Request) {
+  const session = await auth()
+  if (!session?.user || !isAdmin(session.user.role)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   const { searchParams } = new URL(request.url)
   const filename = searchParams.get("file")
   if (!filename) return NextResponse.json({ error: "Missing file param" }, { status: 400 })

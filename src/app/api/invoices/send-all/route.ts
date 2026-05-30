@@ -21,5 +21,5 @@ export async function POST(request: Request) {
     })
   }
 
-  return NextResponse.redirect(new URL(`/dashboard/invoices?status=DRAFT`, request.url), 303)
+  return NextResponse.redirect(new URL(`/dashboard/invoices?status=SENT`, request.url), 303)
 }

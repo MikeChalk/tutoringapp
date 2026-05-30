@@ -7,6 +7,7 @@ import Link from "next/link"
 const IMPORT_TYPES = [
   { value: "team", label: "Team Members" },
   { value: "clients", label: "Clients" },
+  { value: "projects", label: "Projects" },
   { value: "expenses", label: "Expenses" },
   { value: "invoices", label: "Invoices" },
 ]
@@ -31,6 +32,7 @@ function ImportContent() {
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const [importing, setImporting] = useState(false)
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0] || null
@@ -94,6 +96,16 @@ function ImportContent() {
 
   return (
     <div>
+      {importing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-8 shadow-xl text-center">
+            <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4" />
+            <p className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Importing...</p>
+            <p className="text-sm text-zinc-500 mt-1">Please don&apos;t close this page</p>
+          </div>
+        </div>
+      )}
+
       <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-4">Import Data</h2>
 
       {hasResult && (
@@ -147,6 +159,7 @@ function ImportContent() {
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Format</h3>
           {tab === "team" && <FormatHelp type="team" />}
           {tab === "clients" && <FormatHelp type="clients" />}
+          {tab === "projects" && <FormatHelp type="projects" />}
           {tab === "expenses" && <FormatHelp type="expenses" />}
           {tab === "invoices" && <FormatHelp type="invoices" />}
         </div>
@@ -165,7 +178,7 @@ function ImportContent() {
                 {preview.filter(r => r.issues.length > 0).length} with issues
               </p>
             </div>
-            <form action="/api/import" method="POST" encType="multipart/form-data">
+            <form action="/api/import" method="POST" encType="multipart/form-data" onSubmit={() => setImporting(true)}>
               <input type="hidden" name="type" value={tab} />
               <input type="hidden" name="fileContent" value={fileContent} />
               <input type="hidden" name="rows" value={JSON.stringify([...selected])} />
@@ -227,25 +240,50 @@ function FormatHelp({ type }: { type: string }) {
   if (type === "team") return (
     <div className="space-y-2 text-sm">
       <p className="text-zinc-500">CSV columns (header row required):</p>
-      <code className="block bg-zinc-50 dark:bg-zinc-900 rounded p-3 text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">{"name, email, tenure, subjects, grade_levels, city, onboarded\nSarah Chen, sarah@email.com, 1ST_YEAR, \"Math, Physics\", \"ELEMENTARY, SEC3\", Montreal, true"}</code>
+      <code className="block bg-zinc-50 dark:bg-zinc-900 rounded p-3 text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">{"first_name, last_name, email, tenure, role, subjects, grade_levels, phone, city, created_at\nSarah, Chen, sarah@email.com, 1ST_YEAR, TUTOR, \"Math, Physics\", \"ELEMENTARY, SEC3\", 514-555-0101, Montreal, 2024-09-01"}</code>
       <div className="text-xs text-zinc-400 space-y-1 mt-2">
-        <p><strong>name</strong> — required</p>
+        <p><strong>first_name, last_name</strong> — required (or use single "name" column)</p>
         <p><strong>email</strong> — required, unique</p>
         <p><strong>tenure</strong> — 1ST_YEAR, 2ND_YEAR, 3RD_YEAR</p>
+        <p><strong>role</strong> — TUTOR or CITY_ADMIN (default: TUTOR)</p>
         <p><strong>grade_levels</strong> — ELEMENTARY, SEC1_2, SEC3, SEC4_5, CEGEP, UNI</p>
+        <p><strong>phone</strong> — optional</p>
         <p><strong>city</strong> — city name to assign</p>
-        <p><strong>onboarded</strong> — true = active, false = waitlist</p>
+        <p><strong>created_at</strong> — optional date (YYYY-MM-DD), defaults to today</p>
+        <p className="text-amber-600 dark:text-amber-400 mt-2">All imported tutors start at onboarding step 0 (go through full onboarding).</p>
       </div>
     </div>
   )
   if (type === "clients") return (
     <div className="space-y-2 text-sm">
       <p className="text-zinc-500">CSV columns:</p>
-      <code className="block bg-zinc-50 dark:bg-zinc-900 rounded p-3 text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">name, email, type, company, phone, address, city
-Westmount High, admin@wsh.qc.ca, SCHOOL, Westmount High, 514-555-0200, 456 Elm, Montreal</code>
+      <code className="block bg-zinc-50 dark:bg-zinc-900 rounded p-3 text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">first_name, last_name, email, type, company, phone, address, city, province, country, postal_code, notes, created_at
+John, Smith, john@email.com, PARENT,, 514-555-0100, 123 Main St, Montreal, QC, CA, H3A 1A1, "Referred by Sarah", 2025-01-15</code>
       <div className="text-xs text-zinc-400 space-y-1 mt-2">
+        <p><strong>first_name, last_name</strong> — required (or use single "name" column)</p>
         <p><strong>type</strong> — PARENT or SCHOOL</p>
-        <p><strong>company</strong> — optional</p>
+        <p><strong>company, phone, address, city</strong> — optional</p>
+        <p><strong>province, country, postal_code</strong> — optional</p>
+        <p><strong>notes</strong> — optional, free text</p>
+        <p><strong>created_at</strong> — optional date (YYYY-MM-DD), defaults to today</p>
+      </div>
+    </div>
+  )
+  if (type === "projects") return (
+    <div className="space-y-2 text-sm">
+      <p className="text-zinc-500">CSV columns:</p>
+      <code className="block bg-zinc-50 dark:bg-zinc-900 rounded p-3 text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">student_name, client_email, grade_level, subjects, description, project_type, school, status, city, created_at
+Sarah, john@email.com, SEC3, Math,, STUDENT,, ON_HOLD, Montreal, 2024-09-01
+Study Hall Q1, admin@wsh.qc.ca, ELEMENTARY,, After-school tutoring program, STUDY_HALL, Westmount High, ON_HOLD,,</code>
+      <div className="text-xs text-zinc-400 space-y-1 mt-2">
+        <p><strong>student_name</strong> — required</p>
+        <p><strong>client_email</strong> — required, must match existing client</p>
+        <p><strong>grade_level</strong> — ELEMENTARY, SEC1_2, SEC3, SEC4_5, CEGEP, UNI</p>
+        <p><strong>description</strong> — optional, saved as project notes</p>
+        <p><strong>project_type</strong> — STUDENT or STUDY_HALL (default: STUDENT)</p>
+        <p><strong>school, status, city</strong> — optional</p>
+        <p><strong>created_at</strong> — optional date (YYYY-MM-DD)</p>
+        <p className="text-amber-600 dark:text-amber-400 mt-2">Name is auto-generated from student_name + grade + parent. Default status is ON_HOLD.<br />Projects are imported without tutor assignments.</p>
       </div>
     </div>
   )

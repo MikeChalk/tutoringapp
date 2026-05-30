@@ -29,7 +29,8 @@ export async function POST(request: Request) {
 
   // Send confirmation to the user
   if (senderEmail) {
-    const confirmMsg = `<p>Here&apos;s a copy of your message:</p><p style="background:#f4f4f4;padding:12px;border-radius:8px;margin:12px 0">${message.replace(/\n/g, "<br>")}</p>`
+    const escaped = message.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;")
+    const confirmMsg = `<p>Here&apos;s a copy of your message:</p><p style="background:#f4f4f4;padding:12px;border-radius:8px;margin:12px 0">${escaped.replace(/\n/g, "<br>")}</p>`
     await sendOnboardingEmail(senderEmail, senderName, confirmMsg, "feedback_received")
   }
 

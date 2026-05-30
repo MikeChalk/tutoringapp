@@ -13,8 +13,17 @@ async function recordLog(to: string, subject: string, trigger: string) {
   } catch { /* log unavailable */ }
 }
 
+async function isEmailGloballyEnabled(): Promise<boolean> {
+  try {
+    const settings = await prisma.companySettings.findUnique({ where: { id: "main" }, select: { emailEnabled: true } })
+    return settings?.emailEnabled !== false
+  } catch { return true }
+}
+
 async function shouldSendEmail(email: string): Promise<boolean> {
   try {
+    const settings = await prisma.companySettings.findUnique({ where: { id: "main" }, select: { emailEnabled: true } })
+    if (settings?.emailEnabled === false) return false
     const user = await prisma.user.findUnique({ where: { email }, select: { emailNotifications: true } })
     return user?.emailNotifications !== false
   } catch { return true }
@@ -37,6 +46,7 @@ function render(html: string, vars: Record<string, string>): string {
 }
 
 export async function sendCareerApplicationEmail(to: string, name: string, uploadUrl: string) {
+  if (!(await isEmailGloballyEnabled())) { log({ to, subject: "Career Application" }); return }
   const template = await getTemplate("career_application")
   const subject = template?.subject || "Thank you for your application — Next Steps"
   const html = template
@@ -54,6 +64,7 @@ export async function sendCareerApplicationEmail(to: string, name: string, uploa
 }
 
 export async function sendOnboardingEmail(to: string, name: string, message: string, trigger = "onboarding_welcome") {
+  if (!(await isEmailGloballyEnabled())) { log({ to, subject: trigger }); return }
   const template = await getTemplate(trigger)
   const subject = template?.subject || (trigger === "contract_signed" ? "Contract Signed — Welcome to J.A.S.S." : "Welcome to J.A.S.S. — Next Steps")
   const html = template
@@ -74,6 +85,7 @@ export async function sendOnboardingEmail(to: string, name: string, message: str
 }
 
 export async function sendClientInviteEmail(to: string, name: string, inviteUrl: string, trigger: "client_invite" | "payment_received" | "invoice_reminder" = "client_invite") {
+  if (!(await isEmailGloballyEnabled())) { log({ to, subject: trigger }); return }
   const template = await getTemplate(trigger)
   const fallbackSubject = trigger === "payment_received"
     ? "Payment Received — Thank You"
@@ -100,6 +112,7 @@ export async function sendClientInviteEmail(to: string, name: string, inviteUrl:
 }
 
 export async function sendParentNotificationEmail(to: string, parentName: string, tutorName: string, message: string) {
+  if (!(await isEmailGloballyEnabled())) { log({ to, subject: "Parent Match" }); return }
   const template = await getTemplate("parent_tutor_match")
   const subject = template?.subject || "Your tutor match from J.A.S.S."
   const html = template

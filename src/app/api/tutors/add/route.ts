@@ -16,6 +16,7 @@ export async function POST(request: Request) {
   const phone = (formData.get("phone") as string)?.trim() || null
   const cityId = (formData.get("cityId") as string) || null
   const tenure = (formData.get("tenure") as string) || "1ST_YEAR"
+  const role = (formData.get("role") as string) || "TUTOR"
   const subjects = (formData.get("subjects") as string) || ""
   const gradeLevels = (formData.get("gradeLevels") as string) || ""
 
@@ -32,7 +33,7 @@ export async function POST(request: Request) {
   const hashed = await bcrypt.hash(tempPassword, 12)
 
   const user = await prisma.user.create({
-    data: { name, email, password: hashed, role: "TUTOR", cityId },
+    data: { name, email, password: hashed, role, cityId },
   })
 
   const bioParts: string[] = []
@@ -46,9 +47,8 @@ export async function POST(request: Request) {
       gradeLevels,
       bio: bioParts.join("\n") || null,
       isActive: true,
-      onboarded: true,
-      onboardedAt: new Date(),
-      onboardingStep: 6,
+      onboarded: false,
+      onboardingStep: 0,
     },
   })
 

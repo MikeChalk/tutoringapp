@@ -69,14 +69,22 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
 
   const totalPages = Math.ceil(totalCount / pageSize)
 
-  // Always fetch all for stats
-  const statsWhere = { ...whereClause }
-  delete statsWhere.status
-  const allForStats = selectedStatus
-    ? await prisma.invoice.findMany({ where: statsWhere, select: { status: true, totalAmount: true, paidAt: true } })
-    : invoices
+  // Always fetch all invoices for stats (not just current page)
+  const statsWhere: Record<string, unknown> = {}
+  if (client) {
+    const clientId = await getClientId(session.user.id, session.user.email)
+    if (clientId) statsWhere.clientId = clientId
+  }
+  if (effectiveCityId) {
+    statsWhere.client = { user: { cityId: effectiveCityId } }
+  }
+  const allForStats = await prisma.invoice.findMany({
+    where: statsWhere,
+    select: { status: true, totalAmount: true, paidAt: true },
+  })
 
   const draftCount = allForStats.filter(i => i.status === "DRAFT").length
+  const draftTotal = allForStats.filter(i => i.status === "DRAFT").reduce((sum, i) => sum + i.totalAmount, 0)
 
   const clients = admin ? await prisma.client.findMany({
     where: effectiveCityId ? { user: { cityId: effectiveCityId } } : {},
@@ -108,7 +116,7 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
           <input type="text" name="search" defaultValue={searchQuery} placeholder="Search by client name or invoice number..."
             className="flex-1 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Search</button>
-          {searchQuery && <a href={`/dashboard/invoices${selectedStatus ? `?status=${selectedStatus}` : ""}`} className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-500 hover:bg-zinc-100">Clear</a>}
+          {searchQuery && <a href={`/dashboard/invoices${selectedStatus ? `?status=${selectedStatus}` : ""}${selectedCity !== "all" ? `${selectedStatus ? "&" : "?"}city=${selectedCity}` : ""}`} className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-500 hover:bg-zinc-100">Clear</a>}
         </form>
       )}
 
@@ -156,7 +164,7 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
         <StatCard
           label={selectedStatus ? `${selectedStatus} Total` : "Total Outstanding"}
           value={`$${allForStats
-            .filter((i) => i.status === "SENT" || i.status === "OVERDUE")
+            .filter((i) => selectedStatus ? i.status === selectedStatus : (i.status === "SENT" || i.status === "OVERDUE"))
             .reduce((sum, i) => sum + i.totalAmount, 0)
             .toFixed(2)}`}
         />
@@ -173,7 +181,7 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
             .reduce((sum, i) => sum + i.totalAmount, 0)
             .toFixed(2)}`}
         />
-        <StatCard label={selectedStatus ? "Filtered" : "Draft"} value={selectedStatus ? invoices.length.toString() : draftCount.toString()} />
+        <StatCard label={selectedStatus ? "All Invoices" : "Draft Total"} value={selectedStatus ? allForStats.length.toString() : `$${draftTotal.toFixed(2)}`} />
       </div>
 
       <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">

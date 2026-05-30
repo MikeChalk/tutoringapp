@@ -27,17 +27,11 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
     ? { client: { user: { cityId: effectiveCityId } } }
     : {}
 
-  const [hourLogs, expenses, invoices, allInvoices, allExpenses] = await Promise.all([
+  const [hourLogs, invoices, allInvoices, allExpenses] = await Promise.all([
     prisma.hourLog.findMany({
       where: cityFilter,
       select: { hours: true, tutorPayRate: true, paidAt: true, tutor: { select: { user: { select: { name: true } } } }, project: { select: { name: true } }, date: true },
       orderBy: { date: "desc" },
-    }),
-    prisma.expense.findMany({
-      where: expenseCityFilter,
-      include: { client: { select: { user: { select: { name: true } } } } },
-      orderBy: { date: "desc" },
-      take: 100,
     }),
     prisma.invoice.findMany({
       where: { status: { in: ["SENT", "PAID"] }, ...invoiceCityFilter },

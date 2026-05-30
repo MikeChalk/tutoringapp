@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin } from "@/lib/auth-helpers"
-import { TENURE_LABELS, GRADE_LABELS, STUDENT_GRADE_OPTIONS } from "@/lib/constants"
+import { TENURE_LABELS, GRADE_LABELS } from "@/lib/constants"
 import { redirect, notFound } from "next/navigation"
 
 export default async function TutorDetailPage(props: { params: Promise<{ id: string }> }) {
@@ -125,12 +125,13 @@ export default async function TutorDetailPage(props: { params: Promise<{ id: str
                 <p className="text-sm text-zinc-500">No study hall rates configured.</p>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
-                  {["ELEMENTARY", "SEC1_2", "SEC3", "SEC4_5", "CEGEP", "UNI"].map((grade) => {
-                    const onlineRate = studyHallPayScales.find((p) => p.gradeLevel === grade && p.mode === "ONLINE")
-                    const inPersonRate = studyHallPayScales.find((p) => p.gradeLevel === grade && p.mode === "IN_PERSON")
+                  {["STUDY_HALL_TUTOR", "IN_PERSON_MGMT", "ONLINE_MGMT", "SUPERVISION", "MARKETING"].map((cat) => {
+                    const catLabel: Record<string, string> = { STUDY_HALL_TUTOR: "Tutor", IN_PERSON_MGMT: "In-Person Mgmt", ONLINE_MGMT: "Online Mgmt", SUPERVISION: "Supervision", MARKETING: "Marketing" }
+                    const onlineRate = studyHallPayScales.find((p) => p.gradeLevel === cat && p.mode === "ONLINE")
+                    const inPersonRate = studyHallPayScales.find((p) => p.gradeLevel === cat && p.mode === "IN_PERSON")
                     return (
-                      <div key={grade} className="bg-zinc-50 dark:bg-zinc-900 rounded-lg p-2 text-center">
-                        <p className="text-xs text-zinc-500 mb-1">{GRADE_LABELS[grade]}</p>
+                      <div key={cat} className="bg-zinc-50 dark:bg-zinc-900 rounded-lg p-2 text-center">
+                        <p className="text-xs text-zinc-500 mb-1">{catLabel[cat] || cat}</p>
                         <p className="text-xs text-purple-600 dark:text-purple-400">Online ${onlineRate?.rate?.toFixed(0) || "-"}</p>
                         <p className="text-xs text-cyan-600 dark:text-cyan-400">In-person ${inPersonRate?.rate?.toFixed(0) || "-"}</p>
                       </div>

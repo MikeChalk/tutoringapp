@@ -4,6 +4,10 @@ import { prisma } from "@/lib/db"
 import { isAdmin } from "@/lib/auth-helpers"
 
 export async function GET() {
+  const session = await auth()
+  if (!session?.user || !isAdmin(session.user.role)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
   const codes = await prisma.discountCode.findMany({ orderBy: { code: "asc" } })
   return NextResponse.json({ codes })
 }

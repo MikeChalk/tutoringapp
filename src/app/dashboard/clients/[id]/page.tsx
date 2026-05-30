@@ -64,7 +64,7 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
       <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-1">{client.user.email}</p>
       <p className="text-xs text-zinc-400 dark:text-zinc-500 mb-6">Client since {new Date(client.createdAt).toLocaleDateString()}</p>
       {admin && (
-        <form action="/api/clients" method="POST" className="mb-6">
+        <form action="/api/clients" method="POST" className="mb-6" onSubmit={(e) => { if (!confirm("Permanently delete this client and all associated data?")) e.preventDefault() }}>
           <input type="hidden" name="_action" value="delete" />
           <input type="hidden" name="id" value={client.id} />
           <button type="submit" className="text-sm text-red-600 dark:text-red-400 hover:underline">Delete Client</button>
@@ -135,6 +135,24 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
                 <label className="block text-xs text-zinc-500 mb-1">Address</label>
                 <input type="text" name="address" defaultValue={client.address || ""} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs text-zinc-500 mb-1">Province</label>
+                  <input type="text" name="province" defaultValue={client.province || ""} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-xs text-zinc-500 mb-1">Country</label>
+                  <input type="text" name="country" defaultValue={client.country || ""} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-xs text-zinc-500 mb-1">Postal Code</label>
+                  <input type="text" name="postalCode" defaultValue={client.postalCode || ""} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-zinc-500 mb-1">Notes</label>
+                <textarea name="notes" rows={3} defaultValue={client.notes || ""} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
               <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">Save Changes</button>
             </form>
           ) : (
@@ -151,6 +169,24 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
                 <dt className="text-zinc-500">Address</dt>
                 <dd className="text-zinc-900 dark:text-zinc-100">{client.address || "-"}</dd>
               </div>
+              <div className="flex justify-between">
+                <dt className="text-zinc-500">Province</dt>
+                <dd className="text-zinc-900 dark:text-zinc-100">{client.province || "-"}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-zinc-500">Country</dt>
+                <dd className="text-zinc-900 dark:text-zinc-100">{client.country || "-"}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-zinc-500">Postal Code</dt>
+                <dd className="text-zinc-900 dark:text-zinc-100">{client.postalCode || "-"}</dd>
+              </div>
+              {client.notes && (
+                <div>
+                  <dt className="text-zinc-500 mb-1">Notes</dt>
+                  <dd className="text-zinc-900 dark:text-zinc-100 text-xs whitespace-pre-wrap">{client.notes}</dd>
+                </div>
+              )}
             </dl>
           )}
         </div>

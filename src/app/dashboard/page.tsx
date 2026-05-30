@@ -28,14 +28,13 @@ export default async function DashboardPage(props: { searchParams: Promise<{ cit
     if (tutorId) {
       const [tutorData] = await Promise.all([
         (async () => {
-          const [tc, cc, pc, nc, ct, tt, hAgg] = await Promise.all([
+          const [tc, cc, pc, nc, ct, tt] = await Promise.all([
             prisma.tutor.count({ where: { id: tutorId } }),
             prisma.client.count({ where: { projects: { some: { projectTutors: { some: { tutorId } } } } } }),
             prisma.project.count({ where: { projectTutors: { some: { tutorId } } } }),
             prisma.tutoringRequest.count({ where: { matchedTutorId: tutorId, status: "MATCHED" } }),
             prisma.contract.findFirst({ where: { tutorId, status: "ACTIVE" }, select: { type: true, yearLevel: true, endDate: true, signed: true } }),
             prisma.tutor.findUnique({ where: { id: tutorId }, select: { onboardingStep: true } }),
-            prisma.hourLog.aggregate({ where: { tutorId }, _sum: { hours: true }, _count: true }),
           ])
           const logs = await prisma.hourLog.findMany({ where: { tutorId }, select: { hours: true, tutorPayRate: true, paidAt: true } })
           return {

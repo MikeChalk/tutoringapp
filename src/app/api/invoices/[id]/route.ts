@@ -22,6 +22,12 @@ export async function POST(request: Request, props: { params: Promise<{ id: stri
   } else if (action === "markPaid") {
     const gateway = (formData.get("paymentGateway") as string) || "other"
     await prisma.invoice.update({ where: { id }, data: { status: "PAID", paidAt: new Date(), paymentGateway: gateway } })
+    // Cascade paidAt to underlying hour logs
+    const items = await prisma.invoiceItem.findMany({ where: { invoiceId: id }, select: { hourLogId: true } })
+    const logIds = items.map(i => i.hourLogId).filter(Boolean) as string[]
+    if (logIds.length > 0) {
+      await prisma.hourLog.updateMany({ where: { id: { in: logIds } }, data: { paidAt: new Date() } })
+    }
     // Notify client
     const invoice = await prisma.invoice.findUnique({ where: { id }, include: { client: { include: { user: { select: { name: true, email: true } } } } } })
     if (invoice?.client?.user.email) {
@@ -34,7 +40,7 @@ export async function POST(request: Request, props: { params: Promise<{ id: stri
     const invoice = await prisma.invoice.findUnique({ where: { id }, include: { client: { include: { user: { select: { name: true, email: true } } } } } })
     if (invoice?.client?.user.email) {
       sendClientInviteEmail(invoice.client.user.email, invoice.client.user.name,
-        `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/dashboard/invoices/${id}`, "payment_received")
+        `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/dashboard/invoices/${id}`, "invoice_reminder")
     }
   }
 

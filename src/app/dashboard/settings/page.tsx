@@ -4,9 +4,11 @@ import { redirect } from "next/navigation"
 import Link from "next/link"
 import { getAdminFlatLinks, TUTOR_NAV_LINKS, CLIENT_NAV_LINKS, TOP_LEVEL_LINKS } from "@/lib/constants"
 
-export default async function SettingsPage() {
+export default async function SettingsPage(props: { searchParams: Promise<{ saved?: string }> }) {
   const session = await requireAuth()
   if (!isAdmin(session.user.role)) redirect("/dashboard")
+
+  const { saved } = await props.searchParams
 
   let settings = await prisma.companySettings.findUnique({ where: { id: "main" } })
   if (!settings) {
@@ -18,6 +20,12 @@ export default async function SettingsPage() {
   return (
     <div>
       <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-6">Settings</h2>
+
+      {saved === "1" && (
+        <div className="mb-6 bg-green-50 dark:bg-green-900/20 border border-green-300 dark:border-green-700 rounded-lg p-3 text-sm text-green-700 dark:text-green-300">
+          Settings saved successfully.
+        </div>
+      )}
 
       <form action="/api/settings" method="POST" className="space-y-6">
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
@@ -47,15 +55,15 @@ export default async function SettingsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
               <div>
                 <label className="block text-xs text-zinc-500 mb-1">Stripe Secret Key</label>
-                <input type="text" name="stripeKey" defaultValue={process.env.STRIPE_SECRET_KEY || ""} placeholder="sk_live_..." className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input type="password" name="stripeKey" defaultValue={""} placeholder={process.env.STRIPE_SECRET_KEY ? "••••••••" : "sk_live_..."} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
                 <label className="block text-xs text-zinc-500 mb-1">OpenAI API Key</label>
-                <input type="text" name="openaiKey" defaultValue={settings.openaiKey || process.env.OPENAI_API_KEY || ""} placeholder="sk-..." className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input type="password" name="openaiKey" defaultValue={""} placeholder={settings.openaiKey || process.env.OPENAI_API_KEY ? "••••••••" : "sk-..."} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
                 <label className="block text-xs text-zinc-500 mb-1">Resend API Key</label>
-                <input type="text" name="resendKey" defaultValue={process.env.RESEND_API_KEY || ""} placeholder="re_..." className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input type="password" name="resendKey" defaultValue={""} placeholder={process.env.RESEND_API_KEY ? "••••••••" : "re_..."} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
@@ -67,6 +75,7 @@ export default async function SettingsPage() {
               <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="stripeEnabled" defaultChecked={settings.stripeEnabled} className="rounded" /> Enable Stripe payments</label>
               <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="smsEnabled" defaultChecked={settings.smsEnabled} className="rounded" /> Enable SMS alerts</label>
               <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="openaiEnabled" defaultChecked={settings.openaiEnabled} className="rounded" /> Enable AI tutor matching</label>
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="emailEnabled" defaultChecked={settings.emailEnabled} className="rounded" /> Enable outgoing emails</label>
             </div>
           </div>
         </div>

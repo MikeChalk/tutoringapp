@@ -24,6 +24,11 @@ export async function POST(request: Request) {
 
     const currentStep = tutor.onboardingStep
 
+    // Only allow admin to advance steps 0, 2, 3, 4 (1 and 5 are tutor-only)
+    if (![0, 2, 3, 4].includes(currentStep)) {
+      return NextResponse.json({ error: `Step ${currentStep} cannot be advanced by admin` }, { status: 400 })
+    }
+
     // Step 0 → 1: Send email to tutor
     if (currentStep === 0) {
       const emailMessage = (formData.get("emailMessage") as string) || `<p>Welcome to J.A.S.S.! We're excited to have you on the team.</p><p>Please log in to the platform and sign your contract to get started.</p>`
@@ -43,6 +48,9 @@ export async function POST(request: Request) {
     // Step 3 → 4: Create project and auto-assign tutor
     if (currentStep === 3) {
       const projectName = (formData.get("projectName") as string)?.trim()
+      if (!projectName) {
+        return NextResponse.json({ error: "Project name is required to advance from step 3" }, { status: 400 })
+      }
       const clientId = formData.get("projectClientId") as string
       const gradeLevel = (formData.get("projectGradeLevel") as string) || "ELEMENTARY"
       const subjects = formData.get("projectSubjects") as string
@@ -164,8 +172,23 @@ export async function POST(request: Request) {
       data: { userId: user.id, tenure: yearLevel, gradeLevels: gradeLevels || templateGradeLevels, onboardingStep: 0 },
     })
     finalTutorId = tutor.id
+    // Send password via email (respects global email toggle)
+    try {
+      const settings = await prisma.companySettings.findUnique({ where: { id: "main" }, select: { emailEnabled: true } })
+      if (settings?.emailEnabled !== false && process.env.RESEND_API_KEY) {
+        const { Resend } = await import("resend")
+        const resend = new Resend(process.env.RESEND_API_KEY)
+        await resend.emails.send({
+          from: "J.A.S.S. <info@jasstutors.com>",
+          to: email,
+          subject: "Your Tutor Account",
+          text: `Welcome ${name}! Your account has been created. Please log in with your email and this temporary password: ${tempPassword}\n\nChange your password after logging in.`,
+        })
+      }
+    } catch { /* fallthrough — password shown in console */ }
+
     return NextResponse.redirect(
-      new URL(`/dashboard/onboarding?created=${encodeURIComponent(email)}&pw=${encodeURIComponent(tempPassword)}`, request.url),
+      new URL(`/dashboard/onboarding?created=${encodeURIComponent(email)}`, request.url),
       303
     )
   }

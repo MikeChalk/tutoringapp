@@ -46,3 +46,5 @@ next-env.d.ts
 # local db
 prisma/dev.db
 prisma/dev.db-journal
+prisma/staging.db
+prisma/staging.db-journal

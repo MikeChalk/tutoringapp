@@ -3,7 +3,10 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { SignJWT } from "jose"
 
-const secret = new TextEncoder().encode(process.env.AUTH_SECRET || "temporary-secret-change-me")
+function getSecret(): Uint8Array {
+  if (!process.env.AUTH_SECRET) throw new Error("AUTH_SECRET environment variable is not set")
+  return new TextEncoder().encode(process.env.AUTH_SECRET)
+}
 
 export async function POST() {
   const session = await auth()
@@ -23,7 +26,7 @@ export async function POST() {
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("24h")
-    .sign(secret)
+    .sign(getSecret())
 
   const response = NextResponse.json({ success: true, redirect: "/dashboard" })
 
