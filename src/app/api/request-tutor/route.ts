@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import { validateDiscountCode, applyDiscountCode } from "@/lib/discounts"
+import { applyDiscountCode } from "@/lib/discounts"
 
 export async function POST(request: Request) {
   const formData = await request.formData()

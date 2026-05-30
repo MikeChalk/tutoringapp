@@ -14,13 +14,11 @@ export async function POST(request: Request) {
     select: { id: true },
   })
 
-  let sent = 0
   for (const d of drafts) {
     await prisma.invoice.update({
       where: { id: d.id },
       data: { status: "SENT", sentAt: new Date() },
     })
-    sent++
   }
 
   return NextResponse.redirect(new URL(`/dashboard/invoices?status=DRAFT`, request.url), 303)

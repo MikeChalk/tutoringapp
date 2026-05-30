@@ -14,15 +14,12 @@ export async function POST(request: Request) {
   const formData = await request.formData()
   const clientId = formData.get("clientId") as string
   const linesJson = formData.get("lines") as string
-  const date = formData.get("date") as string
   const dueDateStr = formData.get("dueDate") as string
   const notes = formData.get("notes") as string
   const subtotal = parseFloat((formData.get("subtotal") as string) || "0")
   const taxRate = parseFloat((formData.get("taxRate") as string) || "0")
   const taxAmount = parseFloat((formData.get("taxAmount") as string) || "0")
-  const totalAmount = parseFloat((formData.get("totalAmount") as string) || "0")
   const discountCode = formData.get("discountCode") as string
-  const discountAmount = parseFloat((formData.get("discountAmount") as string) || "0")
 
   if (!clientId) {
     return NextResponse.json({ error: "Missing clientId" }, { status: 400 })

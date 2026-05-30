@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/db"
 import { requireAuth, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
 import { redirect } from "next/navigation"
-import { StatusBadge } from "@/components/ui"
 import { CityFilter } from "@/components/city-filter"
 import AddExpenseForm from "@/components/add-expense-form"
 

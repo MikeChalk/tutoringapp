@@ -13,7 +13,7 @@ J.A.S.S. Tutoring ("J.A.S.S.", "we", "us") provides tutoring matching services c
 Clients agree to pay for tutoring sessions at the rates established in their invoice. Payment is due within 30 days of invoice date unless otherwise specified.
 
 3. CANCELLATION
-Sessions cancelled with less than 24 hours notice may be subject to a cancellation fee at the tutor's discretion.
+Sessions cancelled with less than 24 hours notice may be subject to a cancellation fee at the discretion of the tutor.
 
 4. LIABILITY
 J.A.S.S. acts as a matching service. While we vet all tutors, we are not liable for disputes between clients and tutors. Any concerns should be reported immediately.
@@ -120,12 +120,12 @@ export default async function ContractPage() {
             <div className="border border-blue-200 dark:border-blue-800 rounded-lg p-4 bg-blue-50/50 dark:bg-blue-900/10">
               <p className="text-sm font-medium text-blue-700 dark:text-blue-300 mb-1">Contact Your Client</p>
               <p className="text-xs text-blue-600 dark:text-blue-400 mb-3">
-                Reach out to your assigned client to introduce yourself and arrange the first session. Once you've made contact, mark this step complete.
+                Reach out to your assigned client to introduce yourself and arrange the first session. Once you&apos;ve made contact, mark this step complete.
               </p>
               <form action="/api/tutor/advance" method="POST">
                 <input type="hidden" name="step" value="5" />
                 <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-medium text-white hover:bg-blue-700 transition-colors">
-                  I've Contacted the Client
+                  I&apos;ve Contacted the Client
                 </button>
               </form>
             </div>
@@ -141,7 +141,7 @@ export default async function ContractPage() {
               {!tutorRecord.stripeConnectId && process.env.STRIPE_SECRET_KEY && (
                 <div className="mb-3 p-3 bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700">
                   <p className="text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">Connect Your Bank Account</p>
-                  <p className="text-xs text-zinc-500 mb-2">Required to receive payments. You'll be redirected to Stripe to complete this.</p>
+                  <p className="text-xs text-zinc-500 mb-2">Required to receive payments. You&apos;ll be redirected to Stripe to complete this.</p>
                   <form action="/api/stripe/connect" method="POST">
                     <button type="submit" className="rounded bg-purple-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-purple-700 transition-colors">
                       Connect Bank Account
@@ -171,7 +171,7 @@ export default async function ContractPage() {
               <form action="/api/tutor/advance" method="POST">
                 <input type="hidden" name="step" value="6" />
                 <button type="submit" className="rounded-lg bg-green-600 px-4 py-2 text-xs font-medium text-white hover:bg-green-700 transition-colors">
-                  I've Completed Onboarding
+                  I&apos;ve Completed Onboarding
                 </button>
               </form>
             </div>

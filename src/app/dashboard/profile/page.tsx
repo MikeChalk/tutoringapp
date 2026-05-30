@@ -14,8 +14,6 @@ export default function ProfilePage() {
   const [newPassword, setNewPassword] = useState("")
   const [message, setMessage] = useState("")
   const [error, setError] = useState("")
-  const [emailNotif, setEmailNotif] = useState(true)
-  const [smsNotif, setSmsNotif] = useState(false)
 
   async function handleProfile(e: React.FormEvent) {
     e.preventDefault()
