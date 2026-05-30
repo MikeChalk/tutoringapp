@@ -28,3 +28,20 @@ After fixing any bug or error:
 1. Add a short `.md` entry in `.opencode/troubleshooting/` with: date, error message, root cause, fix, prevention
 2. Reference this folder whenever encountering similar issues
 <!-- END:troubleshooting -->
+
+<!-- BEGIN:coding-rules -->
+# Data Integrity & Existing Records
+
+Before answering "does X exist" or creating new records/accounts:
+1. **Read the seed file** (`prisma/seed.ts`) — it's the source of truth for test data. Over 500 lines. Check it before assuming something doesn't exist.
+2. **Check the database** — if unsure, query with `prisma db execute` or read the schema relations.
+3. **Never create duplicates** — if a user asks "is there an account for X", verify before creating. Pierre Lavoie (pierre@tutoring.com) is the existing program supervisor.
+
+# Shared Constants
+
+When defining arrays of values used in multiple places (grade levels, categories, contract types):
+1. **Put them in `src/lib/constants.ts`** as exported arrays/objects
+2. **Import from constants** everywhere — never hardcode the same array twice
+3. **Document the structure** with comments explaining what each array represents
+4. This prevents mismatches between seed data, UI displays, and business logic
+<!-- END:coding-rules -->
