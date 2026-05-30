@@ -61,7 +61,7 @@ export async function POST(request: Request) {
       // Use the selected category as the grade level for rate lookup
       lookupGrade = category
     } else if (project.projectType === "STUDY_HALL" && stdGrades.includes(project.gradeLevel)) {
-      lookupGrade = "STUDY_HALL"
+      lookupGrade = "STUDY_HALL_TUTOR"
     } else {
       lookupGrade = project.gradeLevel
     }

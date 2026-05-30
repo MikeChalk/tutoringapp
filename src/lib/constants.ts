@@ -5,21 +5,20 @@ export const GRADE_LABELS: Record<string, string> = {
   SEC4_5: "Sec 4-5",
   CEGEP: "CEGEP",
   UNI: "University",
-  STUDY_HALL: "Study Hall Tutor",
+  STUDY_HALL_TUTOR: "Study Hall Tutor",
   IN_PERSON_MGMT: "In-Person Mgmt",
   ONLINE_MGMT: "Online Mgmt",
   SUPERVISION: "Supervision",
   MARKETING: "Marketing",
-  PROGRAM_SUPERVISOR: "Program Supervisor",
 }
 
 // Rate structure:
 // PRIVATE_TUTORING: ELEMENTARY → UNI (student rates)
-// STUDY_HALL/TUTOR: STUDY_HALL (30/32/35)
-// PROGRAM_SUPERVISOR: IN_PERSON_MGMT, ONLINE_MGMT, SUPERVISION, MARKETING (varying rates)
+// STUDY_HALL_TUTOR: STUDY_HALL_TUTOR (shared between tutors and supervisors)
+// PROGRAM_SUPERVISOR: IN_PERSON_MGMT, ONLINE_MGMT, SUPERVISION, MARKETING
 export const STUDENT_GRADES = ["ELEMENTARY", "SEC1_2", "SEC3", "SEC4_5", "CEGEP", "UNI"]
-export const TUTOR_STUDY_HALL_GRADES = ["STUDY_HALL"]
-export const SUPERVISOR_GRADES = ["STUDY_HALL", "IN_PERSON_MGMT", "ONLINE_MGMT", "SUPERVISION", "MARKETING", "PROGRAM_SUPERVISOR"]
+export const TUTOR_STUDY_HALL_GRADES = ["STUDY_HALL_TUTOR"]
+export const SUPERVISOR_GRADES = ["STUDY_HALL_TUTOR", "IN_PERSON_MGMT", "ONLINE_MGMT", "SUPERVISION", "MARKETING"]
 
 export const TENURE_LABELS: Record<string, string> = {
   "1ST_YEAR": "Year 1",
