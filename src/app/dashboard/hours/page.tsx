@@ -345,13 +345,11 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
           if (tutorSelect) tutorSelect.addEventListener('change', filterProjects);
           if (categorySelect) {
             categorySelect.addEventListener('change', function() {
-              if (!categoryRate) return;
               var val = categorySelect.value;
-              if (val && CONTRACT_RATES[val] !== undefined) {
-                categoryRate.textContent = 'Rate: $' + CONTRACT_RATES[val] + '/hr (from contract)';
-              } else {
-                categoryRate.textContent = '';
-              }
+              var rate = (val && CONTRACT_RATES[val] !== undefined) ? '$' + CONTRACT_RATES[val] + '/hr' : '--';
+              if (categoryRate) categoryRate.textContent = val ? 'Rate: $' + CONTRACT_RATES[val] + '/hr (from contract)' : '';
+              var payDisplay = document.getElementById('payRateDisplay');
+              if (payDisplay) payDisplay.textContent = rate;
             });
           }
           filterProjects();
