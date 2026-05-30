@@ -93,7 +93,6 @@ export default async function ContractPage(props: { searchParams: Promise<{ filt
 
   const latestActive = active[0]
 
-  // Fetch pay scales for all year levels once
   const allPayScales = await prisma.payScale.findMany({
     orderBy: [{ gradeLevel: "asc" }, { mode: "asc" }, { projectType: "asc" }],
   })
@@ -105,7 +104,7 @@ export default async function ContractPage(props: { searchParams: Promise<{ filt
     return { student, studyHall }
   }
 
-  const latestRates = latestActive ? getRates(latestActive.yearLevel) : null
+  // Fetch pay scales for all year levels once
 
   return (
     <div>
@@ -226,7 +225,7 @@ export default async function ContractPage(props: { searchParams: Promise<{ filt
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-amber-600 dark:text-amber-400">Pending ({pending.length})</h3>
               {pending.map(c => (
-                <ContractCard key={c.id} contract={c} showSign rates={getRates(c.yearLevel)} />
+                <ContractCard key={c.id} contract={c} showSign />
               ))}
             </div>
           )}
@@ -246,52 +245,8 @@ export default async function ContractPage(props: { searchParams: Promise<{ filt
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-zinc-400">Expired ({expired.length})</h3>
               {expired.map(c => (
-                <ContractCard key={c.id} contract={c} rates={getRates(c.yearLevel)} />
+                <ContractCard key={c.id} contract={c} />
               ))}
-            </div>
-          )}
-
-          {/* Pay scales for latest active contract */}
-          {latestActive && latestRates && (
-            <div className="lg:col-span-2 space-y-6">
-              <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
-                <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Private Tutoring Rates ({TENURE_LABELS[latestActive.yearLevel]})</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-                  {STUDENT_GRADES.map((grade) => {
-                    const onlineRate = latestRates.student.find((p) => p.gradeLevel === grade && p.mode === "ONLINE")
-                  const inPersonRate = latestRates.student.find((p) => p.gradeLevel === grade && p.mode === "IN_PERSON")
-                    return (
-                      <div key={grade} className="bg-zinc-50 dark:bg-zinc-900 rounded-lg p-3 text-center">
-                        <p className="text-xs text-zinc-500 mb-2 font-medium">{grade.replace(/_/g, " ")}</p>
-                        <div className="space-y-1">
-                          <p className="text-xs text-purple-600 dark:text-purple-400">Online ${onlineRate?.rate?.toFixed(0) || "-"}</p>
-                          <p className="text-xs text-cyan-600 dark:text-cyan-400">In-person ${inPersonRate?.rate?.toFixed(0) || "-"}</p>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-              {latestRates.studyHall.length > 0 && (
-                <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
-                  <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Study Hall Rates ({TENURE_LABELS[latestActive.yearLevel]})</h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-                    {STUDENT_GRADES.map((grade) => {
-                      const onlineRate = latestRates.studyHall.find((p) => p.gradeLevel === grade && p.mode === "ONLINE")
-                      const inPersonRate = latestRates.studyHall.find((p) => p.gradeLevel === grade && p.mode === "IN_PERSON")
-                      return (
-                        <div key={grade} className="bg-zinc-50 dark:bg-zinc-900 rounded-lg p-3 text-center">
-                          <p className="text-xs text-zinc-500 mb-2 font-medium">{grade.replace(/_/g, " ")}</p>
-                          <div className="space-y-1">
-                            <p className="text-xs text-purple-600 dark:text-purple-400">Online ${onlineRate?.rate?.toFixed(0) || "-"}</p>
-                            <p className="text-xs text-cyan-600 dark:text-cyan-400">In-person ${inPersonRate?.rate?.toFixed(0) || "-"}</p>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </div>

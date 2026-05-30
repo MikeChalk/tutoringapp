@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
-import { isAdmin, getTutorId } from "@/lib/auth-helpers"
+import { isAdmin, isSuperAdmin, getTutorId } from "@/lib/auth-helpers"
 import { logActivity } from "@/lib/activity"
 
 async function canModify(session: { user?: { id: string; role: string } } | null, hourLogId: string): Promise<boolean> {
@@ -44,24 +44,29 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const date = formData.get("date") as string
     const mode = (formData.get("mode") as string) || "IN_PERSON"
     const description = formData.get("description") as string
-    const billingRate = parseFloat((formData.get("billingRate") as string) || "0")
-    const tutorPayRate = parseFloat((formData.get("tutorPayRate") as string) || "0")
+    const superAdmin = isSuperAdmin(session!.user!.role)
+    const billingRate = superAdmin ? parseFloat((formData.get("billingRate") as string) || "0") : undefined
+    const tutorPayRate = superAdmin ? parseFloat((formData.get("tutorPayRate") as string) || "0") : undefined
 
     if (!date || !hours) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 })
     }
 
-    await prisma.hourLog.update({
-      where: { id },
-      data: { hours, date: new Date(date), mode, description: description || null, billingRate, tutorPayRate },
-    })
+    const updateData: Record<string, unknown> = { hours, date: new Date(date), mode, description: description || null }
+    if (superAdmin) {
+      updateData.billingRate = billingRate
+      updateData.tutorPayRate = tutorPayRate
+    }
+
+    await prisma.hourLog.update({ where: { id }, data: updateData })
 
     const log = await prisma.hourLog.findUnique({
       where: { id },
       include: { tutor: { include: { user: { select: { name: true } } } }, project: { select: { name: true, clientId: true, cityId: true } } },
     })
     if (log) {
-      const expenseAmount = hours * tutorPayRate
+      const effectivePayRate = superAdmin ? (tutorPayRate as number) : log.tutorPayRate
+      const expenseAmount = hours * effectivePayRate
       await prisma.expense.upsert({
         where: { hourLogId: id },
         create: {
@@ -83,7 +88,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       })
     }
 
-    await logActivity(session!.user!.id, "edited", "HourLog", id, `${hours}h, $${tutorPayRate}/h`)
+    await logActivity(session!.user!.id, "edited", "HourLog", id, `${hours}h${superAdmin ? `, $${tutorPayRate}/h` : ""}`)
     const referer = request.headers.get("referer") || "/dashboard/hours"
     return NextResponse.redirect(new URL(referer, request.url), 303)
   }

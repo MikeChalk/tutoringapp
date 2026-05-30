@@ -307,7 +307,7 @@ export const TUTOR_NAV_LINKS: NavLink[] = [
   { href: "/dashboard/clients", label: "My Clients" },
   { href: "/dashboard/projects", label: "My Projects" },
   { href: "/dashboard/hours", label: "Log Hours" },
-  { href: "/dashboard/requests", label: "Offers" },
+  { href: "/dashboard/requests", label: "Tutoring Offers" },
   { href: "/dashboard/payments", label: "My Payments" },
   { href: "/dashboard/contract", label: "My Contract" },
 ]

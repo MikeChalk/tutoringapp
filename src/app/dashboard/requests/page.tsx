@@ -112,7 +112,7 @@ function RequestsContent() {
     <div>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-          {isTutorRole ? "My Offers" : "Tutoring Requests"}
+          {isTutorRole ? "Tutoring Offers" : "Tutoring Requests"}
         </h2>
         <div className="flex gap-2">
           {session?.user?.role === "ADMIN" && (
