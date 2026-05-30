@@ -45,6 +45,14 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
 
   if (!project) notFound()
 
+  // Fetch client-level invoices (invoices linked to this client but not a specific project)
+  const clientInvoices = project.clientId ? await prisma.invoice.findMany({
+    where: { clientId: project.clientId, projectId: null },
+    orderBy: { createdAt: "desc" },
+  }) : []
+
+  const allInvoices = [...project.invoices, ...clientInvoices]
+
   const totalHours = project.hourLogs.reduce((sum, h) => sum + h.hours, 0)
   const totalBilled = project.hourLogs.reduce((sum, h) => sum + h.hours * h.billingRate, 0)
   const totalPay = project.hourLogs.reduce((sum, h) => sum + h.hours * h.tutorPayRate, 0)
@@ -146,13 +154,13 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
 
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Invoices</h3>
-          {project.invoices.length === 0 ? (
+          {allInvoices.length === 0 ? (
             <p className="text-sm text-zinc-500">No invoices yet.</p>
           ) : (
             <ul className="space-y-2">
-              {project.invoices.map((inv) => (
+              {allInvoices.map((inv) => (
                 <li key={inv.id} className="text-sm flex justify-between">
-                  <span className="text-zinc-900 dark:text-zinc-100">{inv.number}</span>
+                  <a href={`/dashboard/invoices/${inv.id}`} className="text-blue-600 dark:text-blue-400 hover:underline">{inv.number}</a>
                   <span className="text-zinc-500">${inv.totalAmount.toFixed(2)}</span>
                 </li>
               ))}
