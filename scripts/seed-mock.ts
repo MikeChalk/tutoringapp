@@ -36,6 +36,20 @@ async function main() {
   })
   console.log(`  Linked ${rwaProjectId} to school`)
 
+  console.log("\n=== Assigning Pierre (supervisor) to study hall project ===")
+  const pierreTutor = await p.tutor.findFirst({
+    where: { user: { email: "pierre@tutoring.com" } },
+    select: { id: true },
+  })
+  if (pierreTutor) {
+    await p.projectTutor.create({
+      data: { projectId: rwaProjectId, tutorId: pierreTutor.id },
+    })
+    console.log(`  Pierre assigned to ${rwaProjectId}`)
+  } else {
+    console.log(`  Pierre not found — skipping`)
+  }
+
   console.log("\n=== Creating study hall invoice ===")
   const due = new Date()
   due.setDate(due.getDate() + 30)
