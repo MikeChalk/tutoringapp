@@ -2,7 +2,6 @@ import { prisma } from "@/lib/db"
 import { requireAuth, isTutor, getTutorId, isClient, getClientId } from "@/lib/auth-helpers"
 import { CONTRACT_TYPE_LABELS, TENURE_LABELS, GRADE_LABELS, STUDENT_GRADES, TUTOR_STUDY_HALL_GRADES, SUPERVISOR_GRADES } from "@/lib/constants"
 import { redirect } from "next/navigation"
-import Script from "next/script"
 
 const TOS_TEXT = `J.A.S.S. Tutoring Services — Terms of Service
 
@@ -79,8 +78,6 @@ export default async function ContractPage(props: { searchParams: Promise<{ filt
   const pending = allContracts.filter(c => !c.signed && c.status !== "EXPIRED")
   const active = allContracts.filter(c => c.signed && c.status === "ACTIVE")
   const expired = allContracts.filter(c => c.status === "EXPIRED" || (!c.signed && c.status === "EXPIRED"))
-
-  const latestActive = active[0]
 
   return (
     <div>
