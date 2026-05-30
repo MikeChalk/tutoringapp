@@ -201,7 +201,6 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
     links: [
       { href: "/dashboard/clients", label: "Clients" },
       { href: "/dashboard/leads", label: "Leads" },
-      { href: "/dashboard/discounts", label: "Discounts" },
     ],
   },
   {
@@ -219,6 +218,7 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
       { href: "/dashboard/payments-admin", label: "Payouts" },
       { href: "/dashboard/expenses", label: "Finance" },
       { href: "/dashboard/rates", label: "Rates & Cities" },
+      { href: "/dashboard/discounts", label: "Discounts" },
     ],
   },
   {
