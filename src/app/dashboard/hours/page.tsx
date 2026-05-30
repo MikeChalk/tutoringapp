@@ -252,7 +252,7 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
                   <option key={p.id} value={p.id} data-grade={p.gradeLevel} data-type={p.projectType || "STUDENT"}
                     data-client-type={p.client?.type || ""}
                     data-tutors={p.projectTutors.map(pt => pt.tutorId).join(",")}>
-                    {p.name} — {p.client?.user.name || "Other"} ({GRADE_LABELS[p.gradeLevel] || p.gradeLevel})
+                    {p.name} — {p.client?.user.name || "Other"} ({GRADE_LABELS[p.gradeLevel] || p.gradeLevel}) — {p.client?.user.name || "Other"} ({GRADE_LABELS[p.gradeLevel] || p.gradeLevel})
                   </option>
                 ))}
               </select>
@@ -380,6 +380,7 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
           function suggestRates() {
             autoSelectCategory();
             var projectOpt = projectSelect && projectSelect.selectedOptions[0];
+            var hasProject = projectOpt && projectOpt.value;
             var grade = projectOpt && projectOpt.dataset.grade;
             var projectType = projectOpt && projectOpt.dataset.type || 'STUDENT';
             var mode = modeSelect && modeSelect.value || 'IN_PERSON';
@@ -387,19 +388,19 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
             var tutorId = tutorSelect && tutorSelect.value;
             var lookupGrade = category || grade;
 
-            if (billingInput && lookupGrade && mode && projectType) {
+            if (billingInput && hasProject && lookupGrade && mode && projectType) {
               var brKey = lookupGrade + '|' + mode + '|' + projectType;
               var br = BILLING_RATES[brKey];
               if (br !== undefined) billingInput.value = br;
             }
 
-            if (tutorId && TUTOR_CONTRACTS[tutorId]) {
+            if (tutorId && TUTOR_CONTRACTS[tutorId] && hasProject) {
               var rates = TUTOR_CONTRACTS[tutorId];
               var cr = getContractRate(rates, lookupGrade, mode);
               if (cr !== undefined && payRateInput) payRateInput.value = cr;
             }
 
-            if (IS_TUTOR && payRateDisplay && category) {
+            if (IS_TUTOR && payRateDisplay && hasProject && category) {
               var cr = getContractRate(CONTRACT_RATES, category, mode);
               payRateDisplay.textContent = cr !== undefined ? '$' + cr + '/hr' : '--';
             }
@@ -439,7 +440,9 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
 
           if (typeSelect) typeSelect.addEventListener('change', filterProjects);
           if (tutorSelect) tutorSelect.addEventListener('change', function() {
-            if (categorySelect) categorySelect.dataset.manual = '0';
+            if (categorySelect) { categorySelect.dataset.manual = '0'; categorySelect.value = ''; }
+            if (billingInput) billingInput.value = '';
+            if (payRateInput) payRateInput.value = '';
             filterProjects();
           });
           if (projectSelect) projectSelect.addEventListener('change', function() {
