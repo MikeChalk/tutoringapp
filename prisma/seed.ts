@@ -197,6 +197,22 @@ async function main() {
     },
   })
 
+  // Program Supervisor
+  const supUser = await prisma.user.create({
+    data: { name: "Program Supervisor", email: "supervisor@tutoring.com", password: hash, role: "TUTOR", cityId: montreal.id },
+  })
+  const supervisor = await prisma.tutor.create({
+    data: {
+      userId: supUser.id,
+      bio: "Program supervisor overseeing study hall operations and tutor coordination.",
+      subjects: "Study Hall, Program Supervisor",
+      tenure: "3RD_YEAR",
+      isActive: true,
+      onboarded: true,
+      onboardedAt: new Date("2025-06-01"),
+    },
+  })
+
   // Contracts for onboarded tutors
   await prisma.contract.create({
     data: {
@@ -247,6 +263,20 @@ async function main() {
       endDate: new Date("2026-07-01"),
       signed: true,
       signedAt: new Date("2025-11-10"),
+    },
+  })
+
+  // Program Supervisor contract
+  await prisma.contract.create({
+    data: {
+      tutorId: supervisor.id,
+      type: "PROGRAM_SUPERVISOR",
+      yearLevel: "3RD_YEAR",
+      terms: "Program supervisor contract. Oversees study hall programs and tutor operations. Responsible for scheduling, quality control, and school communication.",
+      startDate: new Date("2025-06-01"),
+      endDate: new Date("2026-07-01"),
+      signed: true,
+      signedAt: new Date("2025-05-15"),
     },
   })
 

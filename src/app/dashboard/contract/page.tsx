@@ -333,7 +333,11 @@ function ContractCard({ contract, showSign, rates }: {
                 : contract.status === "EXPIRED" ? "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"
                 : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
               }`}>{contract.status}</span>
-              {contract.signed && <span className="ml-2 inline-flex text-xs font-medium rounded-full px-2 py-0.5 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">Signed {contract.signedAt ? new Date(contract.signedAt).toLocaleDateString() : ""}</span>}
+              {contract.signed && (
+                <span className="ml-2 inline-flex items-center gap-1 text-xs font-medium rounded-full px-2 py-0.5 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                  &#128274; Signed {contract.signedAt ? new Date(contract.signedAt).toLocaleDateString() : ""}
+                </span>
+              )}
             </dd>
           </div>
         </dl>
@@ -356,6 +360,26 @@ function ContractCard({ contract, showSign, rates }: {
               {["ELEMENTARY", "SEC1_2", "SEC3", "SEC4_5", "CEGEP", "UNI"].map((grade) => {
                 const online = rates.student.find(p => p.gradeLevel === grade && p.mode === "ONLINE")
                 const inPerson = rates.student.find(p => p.gradeLevel === grade && p.mode === "IN_PERSON")
+                return (
+                  <div key={grade} className="bg-zinc-50 dark:bg-zinc-900 rounded-lg p-2 text-center">
+                    <p className="text-[10px] text-zinc-500 mb-1">{grade.replace(/_/g, " ").replace("SEC", "Sec ")}</p>
+                    <p className="text-[10px] text-purple-600 dark:text-purple-400">O ${online?.rate?.toFixed(0) || "-"}</p>
+                    <p className="text-[10px] text-cyan-600 dark:text-cyan-400">IP ${inPerson?.rate?.toFixed(0) || "-"}</p>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {rates && rates.studyHall.length > 0 && (
+          <div>
+            <p className="text-xs text-zinc-500 mb-2">Study Hall / Supervisor Rates</p>
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+              {["ELEMENTARY", "SEC1_2", "SEC3", "SEC4_5", "CEGEP", "UNI", "STUDY_HALL", "PROGRAM_SUPERVISOR"].map((grade) => {
+                const online = rates.studyHall.find(p => p.gradeLevel === grade && p.mode === "ONLINE")
+                const inPerson = rates.studyHall.find(p => p.gradeLevel === grade && p.mode === "IN_PERSON")
+                if (!online && !inPerson) return null
                 return (
                   <div key={grade} className="bg-zinc-50 dark:bg-zinc-900 rounded-lg p-2 text-center">
                     <p className="text-[10px] text-zinc-500 mb-1">{grade.replace(/_/g, " ").replace("SEC", "Sec ")}</p>
