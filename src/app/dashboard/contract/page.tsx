@@ -297,47 +297,54 @@ export default async function ContractPage(props: { searchParams: Promise<{ filt
 
 function ContractCard({ contract, showSign }: { contract: { id: string; type: string; yearLevel: string; startDate: Date; endDate: Date; signed: boolean; signedAt: Date | null; status: string; terms: string }; showSign?: boolean }) {
   return (
-    <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
-      <dl className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 text-sm">
-        <div>
-          <dt className="text-xs text-zinc-500">Type</dt>
-          <dd className="text-zinc-900 dark:text-zinc-100 font-medium">{CONTRACT_TYPE_LABELS[contract.type] || contract.type}</dd>
-        </div>
-        <div>
-          <dt className="text-xs text-zinc-500">Year Level</dt>
-          <dd className="text-zinc-900 dark:text-zinc-100 font-medium">{TENURE_LABELS[contract.yearLevel] || contract.yearLevel}</dd>
-        </div>
-        <div>
-          <dt className="text-xs text-zinc-500">Start Date</dt>
-          <dd className="text-zinc-600 dark:text-zinc-400">{new Date(contract.startDate).toLocaleDateString()}</dd>
-        </div>
-        <div>
-          <dt className="text-xs text-zinc-500">End Date</dt>
-          <dd className="text-zinc-600 dark:text-zinc-400">{new Date(contract.endDate).toLocaleDateString()}</dd>
-        </div>
-        <div>
-          <dt className="text-xs text-zinc-500">Status</dt>
-          <dd>
-            <span className={`inline-flex text-xs font-medium rounded-full px-2 py-0.5 ${
-              contract.status === "ACTIVE" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-              : contract.status === "EXPIRED" ? "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"
-              : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-            }`}>{contract.status}</span>
-            {contract.signed && <span className="ml-2 inline-flex text-xs font-medium rounded-full px-2 py-0.5 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">Signed {contract.signedAt ? new Date(contract.signedAt).toLocaleDateString() : ""}</span>}
-          </dd>
-        </div>
-      </dl>
-      {contract.terms && (
-        <div className="mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-700/50">
-          <p className="text-xs text-zinc-500 mb-1">Terms</p>
-          <p className="text-sm text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap leading-relaxed">{contract.terms}</p>
-        </div>
-      )}
-      {showSign && !contract.signed && (
-        <form action="/api/contracts/sign" method="POST" className="mt-4">
-          <button type="submit" className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 transition-colors">Sign Contract</button>
-        </form>
-      )}
-    </div>
+    <details className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 group">
+      <summary className="p-6 cursor-pointer list-none flex items-center justify-between">
+        <dl className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 text-sm flex-1">
+          <div>
+            <dt className="text-xs text-zinc-500">Type</dt>
+            <dd className="text-zinc-900 dark:text-zinc-100 font-medium">{CONTRACT_TYPE_LABELS[contract.type] || contract.type}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-zinc-500">Year Level</dt>
+            <dd className="text-zinc-900 dark:text-zinc-100 font-medium">{TENURE_LABELS[contract.yearLevel] || contract.yearLevel}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-zinc-500">Start Date</dt>
+            <dd className="text-zinc-600 dark:text-zinc-400">{new Date(contract.startDate).toLocaleDateString()}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-zinc-500">End Date</dt>
+            <dd className="text-zinc-600 dark:text-zinc-400">{new Date(contract.endDate).toLocaleDateString()}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-zinc-500">Status</dt>
+            <dd>
+              <span className={`inline-flex text-xs font-medium rounded-full px-2 py-0.5 ${
+                contract.status === "ACTIVE" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                : contract.status === "EXPIRED" ? "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"
+                : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+              }`}>{contract.status}</span>
+              {contract.signed && <span className="ml-2 inline-flex text-xs font-medium rounded-full px-2 py-0.5 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">Signed {contract.signedAt ? new Date(contract.signedAt).toLocaleDateString() : ""}</span>}
+            </dd>
+          </div>
+        </dl>
+        <span className="text-xs text-zinc-400 ml-2 group-open:hidden">Details</span>
+        <span className="text-xs text-zinc-400 ml-2 hidden group-open:inline">Close</span>
+      </summary>
+      <div className="px-6 pb-6 border-t border-zinc-100 dark:border-zinc-700/50 pt-4">
+        {contract.terms && (
+          <div className="mb-4">
+            <p className="text-xs text-zinc-500 mb-1">Terms</p>
+            <p className="text-sm text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap leading-relaxed">{contract.terms}</p>
+          </div>
+        )}
+        {!contract.terms && <p className="text-sm text-zinc-400 mb-4">No terms specified.</p>}
+        {showSign && !contract.signed && (
+          <form action="/api/contracts/sign" method="POST">
+            <button type="submit" className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 transition-colors">Sign Contract</button>
+          </form>
+        )}
+      </div>
+    </details>
   )
 }
