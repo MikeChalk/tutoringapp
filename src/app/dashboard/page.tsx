@@ -151,7 +151,6 @@ export default async function DashboardPage(props: { searchParams: Promise<{ cit
         {(admin || tutor) && <StatCard label="Clients" value={stats.clientCount} href="/dashboard/clients" />}
         {client && <StatCard label="My Students" value={stats.projectCount} href="/dashboard/projects" />}
         {!client && <StatCard label="Total Hours" value={stats.totalHours} href="/dashboard/hours" />}
-        {tutor && <StatCard label="Total Earned" value={`$${stats.totalEarned.toFixed(0)}`} href="/dashboard/payments" green />}
         {tutor && <StatCard label="Paid to Date" value={`$${stats.totalPaid.toFixed(0)}`} href="/dashboard/payments" green />}
         {tutor && stats.totalEarned > stats.totalPaid && <StatCard label="Unpaid" value={`$${(stats.totalEarned - stats.totalPaid).toFixed(0)}`} href="/dashboard/payments" highlight />}
         {admin && <StatCard label="Outstanding" value={`$${stats.pendingInvoices}`} href="/dashboard/invoices" highlight />}
