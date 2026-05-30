@@ -101,7 +101,7 @@ export default function ProfilePage() {
               <input type="checkbox" name="smsNotifications" className="rounded" />
               <div>
                 <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">SMS notifications</span>
-                <p className="text-xs text-zinc-500">Receive text message alerts (requires Twilio setup)</p>
+                <p className="text-xs text-zinc-500">Receive text message alerts</p>
               </div>
             </label>
             <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">Save Preferences</button>
