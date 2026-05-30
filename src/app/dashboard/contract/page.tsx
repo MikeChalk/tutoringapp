@@ -89,7 +89,7 @@ export default async function ContractPage(props: { searchParams: Promise<{ filt
 
   const pending = allContracts.filter(c => !c.signed && c.status !== "EXPIRED")
   const active = allContracts.filter(c => c.signed && c.status === "ACTIVE")
-  const past = allContracts.filter(c => c.status === "EXPIRED" || (!c.signed && c.status === "EXPIRED"))
+  const expired = allContracts.filter(c => c.status === "EXPIRED" || (!c.signed && c.status === "EXPIRED"))
 
   const latestActive = active[0]
   const payScales = latestActive
@@ -200,7 +200,7 @@ export default async function ContractPage(props: { searchParams: Promise<{ filt
             {[
               { value: "pending", label: "Pending", count: pending.length, color: "text-amber-600 dark:text-amber-400" },
               { value: "active", label: "Active", count: active.length, color: "text-green-600 dark:text-green-400" },
-              { value: "past", label: "Past", count: past.length, color: "text-zinc-400" },
+              { value: "expired", label: "Expired", count: expired.length, color: "text-zinc-400" },
             ].map(tab => (
               <a
                 key={tab.value}
@@ -236,11 +236,11 @@ export default async function ContractPage(props: { searchParams: Promise<{ filt
             </div>
           )}
 
-          {/* Past / Expired */}
-          {(activeFilter === "past" || !activeFilter) && past.length > 0 && (
+          {/* Expired */}
+          {(activeFilter === "expired" || !activeFilter) && expired.length > 0 && (
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-zinc-400">Past ({past.length})</h3>
-              {past.map(c => (
+              <h3 className="text-lg font-semibold text-zinc-400">Expired ({expired.length})</h3>
+              {expired.map(c => (
                 <ContractCard key={c.id} contract={c} />
               ))}
             </div>
