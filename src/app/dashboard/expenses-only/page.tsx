@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin, isCityAdmin, getActiveCityId, isSuperAdmin } from "@/lib/auth-helpers"
 import { redirect } from "next/navigation"
 import { CityFilter } from "@/components/city-filter"
+import AddExpenseForm from "@/components/add-expense-form"
 import Link from "next/link"
 
 const CATEGORIES = ["ALL", "TUTOR_PAY", "SOFTWARE", "MARKETING", "SUPPLIES", "RENT", "TRAVEL", "OTHER"]
@@ -31,11 +32,18 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
   if (effectiveCityId) where.cityId = effectiveCityId
   if (selectedCategory !== "ALL") where.category = selectedCategory
 
-  const expenses = await prisma.expense.findMany({
-    where,
-    include: { client: { select: { id: true, user: { select: { name: true } } } } },
-    orderBy: { date: "desc" },
-  })
+  const [expenses, clients] = await Promise.all([
+    prisma.expense.findMany({
+      where,
+      include: { client: { select: { id: true, user: { select: { name: true } } } } },
+      orderBy: { date: "desc" },
+    }),
+    prisma.client.findMany({
+      where: effectiveCityId ? { user: { cityId: effectiveCityId } } : {},
+      include: { user: { select: { name: true } } },
+      orderBy: { user: { name: "asc" } },
+    }),
+  ])
 
   const totalAmount = expenses.reduce((s, e) => s + e.amount, 0)
 
@@ -48,6 +56,8 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
         </div>
         {superAdmin && <CityFilter selected={selectedCity} />}
       </div>
+
+      <AddExpenseForm clients={clients} />
 
       {/* Category filter toggles */}
       <div className="flex flex-wrap gap-2 mb-6">

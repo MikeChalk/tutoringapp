@@ -22,31 +22,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     } else {
       await prisma.hourLog.update({ where: { id }, data: { paidAt: new Date() } })
       await logActivity(session.user.id, "paid", "HourLog", id)
-      // Create expense under the client
-      if (log) {
-        const hourLog = await prisma.hourLog.findUnique({
-          where: { id },
-          include: { project: { select: { clientId: true, name: true } }, tutor: { include: { user: { select: { name: true } } } } },
-        })
-        if (hourLog?.project?.clientId) {
-          await prisma.expense.create({
-            data: {
-              description: `Tutor payment: ${hourLog.tutor.user.name} — ${hourLog.project.name} (${hourLog.hours}h)`,
-              amount: hourLog.hours * hourLog.tutorPayRate,
-              category: "TUTOR_PAY",
-              date: new Date(),
-              clientId: hourLog.project.clientId,
-            },
-          })
-        }
-      }
     }
     const referer = request.headers.get("referer") || "/dashboard/expenses"
     return NextResponse.redirect(new URL(referer, request.url), 303)
   }
 
-  // Delete
+  // Delete hour log + corresponding expense
+  await prisma.expense.deleteMany({ where: { hourLogId: id } })
   await prisma.hourLog.delete({ where: { id } })
+  await logActivity(session.user.id, "deleted", "HourLog", id)
 
   const referer = request.headers.get("referer") || "/dashboard/hours"
   return NextResponse.redirect(new URL(referer, request.url), 303)

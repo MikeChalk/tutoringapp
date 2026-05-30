@@ -42,7 +42,7 @@ export async function POST(request: Request) {
   }
 
   const project = await prisma.project.findUnique({ where: { id: projectId } })
-  const tutor = await prisma.tutor.findUnique({ where: { id: tutorId } })
+  const tutor = await prisma.tutor.findUnique({ where: { id: tutorId }, include: { user: { select: { name: true } } } })
 
   if (!project || !tutor) {
     return NextResponse.json({ error: "Project or tutor not found" }, { status: 400 })
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
     tutorPayRate = ps.rate
   }
 
-  await prisma.hourLog.create({
+  const hourLog = await prisma.hourLog.create({
     data: {
       tutorId,
       projectId,
@@ -87,7 +87,20 @@ export async function POST(request: Request) {
     },
   })
 
-  await logActivity(session.user.id, "logged_hours", "HourLog", null, `${hours}h on project ${projectId}`)
+  // Accrual: create expense immediately when hours are logged
+  const expenseAmount = hours * tutorPayRate
+  await prisma.expense.create({
+    data: {
+      description: `Tutor: ${tutor.user.name} — ${project.name} (${hours}h)`,
+      amount: expenseAmount,
+      category: "TUTOR_PAY",
+      date: new Date(date),
+      clientId: project.clientId,
+      hourLogId: hourLog.id,
+    },
+  })
+
+  await logActivity(session.user.id, "logged_hours", "HourLog", hourLog.id, `${hours}h on project ${projectId}`)
 
   return NextResponse.redirect(new URL("/dashboard/hours", request.url), 303)
 }

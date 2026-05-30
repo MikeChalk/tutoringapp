@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db"
 import { requireAuth, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
 import { redirect } from "next/navigation"
 import { CityFilter } from "@/components/city-filter"
-import AddExpenseForm from "@/components/add-expense-form"
+import Link from "next/link"
 
 export default async function ExpensesPage(props: { searchParams: Promise<{ city?: string }> }) {
   const session = await requireAuth()
@@ -141,7 +141,10 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
-          <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Revenue Breakdown</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Revenue</h3>
+            <Link href="/dashboard/invoices" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">View Invoices →</Link>
+          </div>
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
               <span className="text-zinc-600 dark:text-zinc-400">Total Invoiced</span>
@@ -159,15 +162,14 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
         </div>
 
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
-          <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Expense Breakdown</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Costs</h3>
+            <Link href="/dashboard/expenses-only" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">View Expenses →</Link>
+          </div>
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
-              <span className="text-zinc-600 dark:text-zinc-400">Tutor Pay (All)</span>
+              <span className="text-zinc-600 dark:text-zinc-400">Tutor Pay</span>
               <span className="font-medium text-amber-600 dark:text-amber-400">${totalTutorPay.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-zinc-600 dark:text-zinc-400">Tutor Pay (Paid)</span>
-              <span className="font-medium text-green-600 dark:text-green-400">${totalTutorPaid.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-zinc-600 dark:text-zinc-400">Other Expenses</span>
@@ -175,146 +177,11 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
             </div>
             <div className="flex justify-between text-sm pt-2 border-t border-zinc-200 dark:border-zinc-700">
               <span className="font-semibold text-zinc-700 dark:text-zinc-300">Total Costs</span>
-              <span className="font-semibold text-zinc-900 dark:text-zinc-100">${(totalTutorPaid + totalOtherExpenses).toFixed(2)}</span>
+              <span className="font-semibold text-zinc-900 dark:text-zinc-100">${(totalTutorPay + totalOtherExpenses).toFixed(2)}</span>
             </div>
           </div>
         </div>
       </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
-          <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Tutor Payments</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-zinc-200 dark:border-zinc-700">
-                  <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Date</th>
-                  <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Tutor</th>
-                  <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Student</th>
-                  <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Hrs</th>
-                  <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Rate</th>
-                  <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Amount</th>
-                  <th className="text-center px-2 py-2 text-xs font-medium text-zinc-500">Paid</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700/50">
-                {hourLogs.slice(0, 30).map((log) => (
-                  <tr key={log.id} className="text-sm">
-                    <td className="px-2 py-2 text-zinc-600 dark:text-zinc-400">{new Date(log.date).toLocaleDateString()}</td>
-                    <td className="px-2 py-2 text-zinc-900 dark:text-zinc-100">{log.tutor.user.name}</td>
-                    <td className="px-2 py-2 text-zinc-600 dark:text-zinc-400">{log.project.name}</td>
-                    <td className="px-2 py-2 text-right text-zinc-900 dark:text-zinc-100">{log.hours}</td>
-                    <td className="px-2 py-2 text-right text-zinc-600 dark:text-zinc-400">${log.tutorPayRate.toFixed(2)}</td>
-                    <td className="px-2 py-2 text-right font-medium text-amber-600 dark:text-amber-400">${(log.hours * log.tutorPayRate).toFixed(2)}</td>
-                    <td className="px-2 py-2">
-                      <form action={`/api/hours/${log.id}`} method="POST">
-                        <input type="hidden" name="_action" value="pay" />
-                        <button type="submit" className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                          log.paidAt
-                            ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                            : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                        }`}>
-                          {log.paidAt ? "Paid" : "Unpaid"}
-                        </button>
-                      </form>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div>
-          <AddExpenseForm clients={clients} />
-
-          {expenses.length > 0 && (
-            <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
-              <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Additional Expenses</h3>
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-zinc-200 dark:border-zinc-700">
-                    <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Date</th>
-                    <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Description</th>
-                    <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Client</th>
-                    <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Category</th>
-                    <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Amount</th>
-                    <th className="text-center px-2 py-2 text-xs font-medium text-zinc-500">Receipt</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700/50">
-                  {expenses.map((e) => (
-                    <tr key={e.id} className="text-sm">
-                      <td className="px-2 py-2 text-zinc-600 dark:text-zinc-400 whitespace-nowrap">{new Date(e.date).toLocaleDateString()}</td>
-                      <td className="px-2 py-2 text-zinc-900 dark:text-zinc-100">{e.description}</td>
-                      <td className="px-2 py-2 text-zinc-600 dark:text-zinc-400">{e.client?.user?.name || "-"}</td>
-                      <td className="px-2 py-2">
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                          e.category === "TUTOR_PAY" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" : "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"
-                        }`}>
-                          {e.category === "TUTOR_PAY" ? "Tutor Pay" : e.category}
-                        </span>
-                      </td>
-                      <td className="px-2 py-2 text-right font-medium text-red-600 dark:text-red-400">${e.amount.toFixed(2)}</td>
-                      <td className="px-2 py-2 text-center">
-                        {e.receiptFileName ? (
-                          <a href={`/api/expenses/receipts?file=${e.receiptFileName}`} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">View</a>
-                        ) : (
-                          <span className="text-xs text-zinc-400">-</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-          </div>
-
-          {/* Tutor Payment Summary */}
-          {(() => {
-            const tutorMap = new Map<string, { name: string; totalOwed: number; totalPaid: number; count: number }>()
-            for (const log of hourLogs) {
-              const name = log.tutor.user.name
-              const amount = log.hours * log.tutorPayRate
-              const existing = tutorMap.get(name) || { name, totalOwed: 0, totalPaid: 0, count: 0 }
-              existing.totalOwed += amount
-              existing.count++
-              if (log.paidAt) existing.totalPaid += amount
-              tutorMap.set(name, existing)
-            }
-            const summaries = [...tutorMap.values()].sort((a, b) => b.totalOwed - a.totalOwed)
-
-            if (summaries.length === 0) return null
-            return (
-              <div className="mt-6 bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
-                <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Payment Summary by Tutor</h3>
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-zinc-200 dark:border-zinc-700">
-                      <th className="text-left px-3 py-2 text-xs font-medium text-zinc-500">Tutor</th>
-                      <th className="text-center px-3 py-2 text-xs font-medium text-zinc-500">Sessions</th>
-                      <th className="text-right px-3 py-2 text-xs font-medium text-zinc-500">Total Owed</th>
-                      <th className="text-right px-3 py-2 text-xs font-medium text-zinc-500">Paid</th>
-                      <th className="text-right px-3 py-2 text-xs font-medium text-zinc-500">Unpaid</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700/50">
-                    {summaries.map(s => (
-                      <tr key={s.name} className="text-sm">
-                        <td className="px-3 py-2 font-medium text-zinc-900 dark:text-zinc-100">{s.name}</td>
-                        <td className="px-3 py-2 text-center text-zinc-500">{s.count}</td>
-                        <td className="px-3 py-2 text-right text-zinc-700 dark:text-zinc-300">${s.totalOwed.toFixed(2)}</td>
-                        <td className="px-3 py-2 text-right text-green-600 dark:text-green-400">${s.totalPaid.toFixed(2)}</td>
-                        <td className="px-3 py-2 text-right text-amber-600 dark:text-amber-400">${(s.totalOwed - s.totalPaid).toFixed(2)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )
-          })()}
-        </div>
+    </div>
   )
 }
