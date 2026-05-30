@@ -3,7 +3,7 @@ import { requireAuth, isAdmin, isTutor, isClient, getClientId, getTutorId, isSup
 import { CityFilter } from "@/components/city-filter"
 import { CLIENT_TYPE_LABELS } from "@/lib/constants"
 import { AddClientForm } from "@/components/add-client-form"
-import DataTable from "@/components/data-table"
+import ClientsTable from "@/components/clients-table"
 import Link from "next/link"
 
 const TYPE_FILTERS = [
@@ -100,31 +100,7 @@ export default async function ClientsPage(props: { searchParams: Promise<{ type?
       {admin && <AddClientForm />}
 
       <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
-        <DataTable
-          data={tableData}
-          searchPlaceholder="Search clients..."
-          columns={[
-            { key: "name", label: "Name", render: (row) => (
-              <Link href={`/dashboard/clients/${row.id}`} className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline">
-                {row.name}
-              </Link>
-            )},
-            { key: "email", label: "Email" },
-            { key: "city", label: "City" },
-            { key: "type", label: "Type", render: (row) => (
-              <span className={`inline-flex text-xs font-medium rounded-full px-2 py-0.5 ${
-                row.type === "SCHOOL" ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-              }`}>
-                {row.typeLabel}
-              </span>
-            )},
-            ...(admin ? [
-              { key: "company" as const, label: "Company" },
-              { key: "projects" as const, label: "Projects" },
-              { key: "invoices" as const, label: "Invoices" },
-            ] : []),
-          ]}
-        />
+        <ClientsTable data={tableData} showAdminColumns={admin} />
       </div>
 
       {totalPages > 1 && (
