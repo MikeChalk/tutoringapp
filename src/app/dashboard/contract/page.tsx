@@ -208,11 +208,13 @@ function ContractCard({ contract, showSign }: {
             <p className="text-xs text-zinc-500 mb-2">{contract.type === "PROGRAM_SUPERVISOR" ? "Supervisor Rates" : "Rates"}</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {grades.map((grade) => {
-                const rate = ratesMap[grade]
+                const onlineRate = ratesMap[`${grade}|ONLINE`] ?? ratesMap[grade]
+                const inPersonRate = ratesMap[`${grade}|IN_PERSON`] ?? ratesMap[grade]
                 return (
                   <div key={grade} className="bg-zinc-50 dark:bg-zinc-900 rounded-lg p-2 text-center">
                     <p className="text-[10px] text-zinc-500 mb-1">{GRADE_LABELS[grade] || grade}</p>
-                    <p className="text-xs font-medium text-zinc-700 dark:text-zinc-300">${rate !== undefined ? rate.toFixed(0) : "—"}/hr</p>
+                    <p className="text-xs text-purple-600 dark:text-purple-400">Online ${onlineRate !== undefined ? onlineRate.toFixed(0) : "—"}</p>
+                    <p className="text-xs text-cyan-600 dark:text-cyan-400">In-person ${inPersonRate !== undefined ? inPersonRate.toFixed(0) : "—"}</p>
                   </div>
                 )
               })}

@@ -252,7 +252,7 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
                   <option key={p.id} value={p.id} data-grade={p.gradeLevel} data-type={p.projectType || "STUDENT"}
                     data-client-type={p.client?.type || ""}
                     data-tutors={p.projectTutors.map(pt => pt.tutorId).join(",")}>
-                    {p.name} — {p.client?.user.name || "Other"} ({GRADE_LABELS[p.gradeLevel] || p.gradeLevel}) — {p.client?.user.name || "Other"} ({GRADE_LABELS[p.gradeLevel] || p.gradeLevel})
+                    {p.name}
                   </option>
                 ))}
               </select>

@@ -57,12 +57,22 @@ export function ContractTemplateForm({ editing, onCancel }: {
     ...PROGRAM_CATEGORIES,
   }
 
+  function getExistingRate(category: string, mode: string): number | "" {
+    const modeKey = `${category}|${mode}`
+    if (existingRates[modeKey] !== undefined) return existingRates[modeKey]
+    if (existingRates[category] !== undefined) return existingRates[category]
+    return ""
+  }
+
   function serializeRates(): string {
     const obj: Record<string, unknown> = {}
     for (const k of rateKeys) {
-      const input = document.getElementById(`rate_${k}`) as HTMLInputElement
-      const val = input ? parseFloat(input.value) : existingRates[k] || 0
-      if (val > 0) obj[k] = val
+      const online = document.getElementById(`rate_${k}_online`) as HTMLInputElement
+      const inperson = document.getElementById(`rate_${k}_inperson`) as HTMLInputElement
+      const onlineVal = online ? parseFloat(online.value) || 0 : 0
+      const inpersonVal = inperson ? parseFloat(inperson.value) || 0 : 0
+      if (onlineVal > 0) obj[`${k}|ONLINE`] = onlineVal
+      if (inpersonVal > 0) obj[`${k}|IN_PERSON`] = inpersonVal
     }
     if (customCategories.length > 0) {
       obj.custom = customCategories.filter(c => c.label && c.rate > 0)
@@ -139,18 +149,25 @@ export function ContractTemplateForm({ editing, onCancel }: {
         </div>
 
         <div>
-          <label className="block text-xs text-zinc-500 mb-2">
-            Rates by Category ($/hr)
-          </label>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <label className="block text-xs text-zinc-500 mb-2">Rates by Category ($/hr)</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {rateKeys.map((key) => (
-              <div key={key}>
-                <label className="block text-xs text-zinc-500 mb-0.5">
-                  {rateLabels[key] || key}
-                </label>
-                <input type="number" id={`rate_${key}`} min="0" step="0.01" placeholder="0.00"
-                  defaultValue={existingRates[key] || ""}
-                  className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1.5 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <div key={key} className="bg-zinc-50 dark:bg-zinc-900 rounded-lg p-2 border border-zinc-200 dark:border-zinc-700">
+                <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1.5">{rateLabels[key] || key}</p>
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <label className="block text-[10px] text-zinc-400 mb-0.5">Online</label>
+                    <input type="number" id={`rate_${key}_online`} min="0" step="0.01" placeholder="0.00"
+                      defaultValue={getExistingRate(key, "ONLINE")}
+                      className="w-full rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-[10px] text-zinc-400 mb-0.5">In-Person</label>
+                    <input type="number" id={`rate_${key}_inperson`} min="0" step="0.01" placeholder="0.00"
+                      defaultValue={getExistingRate(key, "IN_PERSON")}
+                      className="w-full rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                </div>
               </div>
             ))}
           </div>
