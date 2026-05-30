@@ -27,21 +27,17 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
     ? { client: { user: { cityId: effectiveCityId } } }
     : {}
 
-  const [hourLogs, expenses, invoices, allInvoices, allExpenses] = await Promise.all([
+  const [hourLogs, expenses, invoices, allInvoices, allExpenses, tutorPayAgg, expenseAgg] = await Promise.all([
     prisma.hourLog.findMany({
       where: cityFilter,
-      include: {
-        tutor: { include: { user: { select: { name: true } } } },
-        project: { select: { name: true } },
-      },
+      select: { hours: true, tutorPayRate: true, paidAt: true, tutor: { select: { user: { select: { name: true } } } }, project: { select: { name: true } }, date: true },
       orderBy: { date: "desc" },
-      take: 500,
     }),
     prisma.expense.findMany({
       where: expenseCityFilter,
       include: { client: { select: { user: { select: { name: true } } } } },
       orderBy: { date: "desc" },
-      take: 200,
+      take: 100,
     }),
     prisma.invoice.findMany({
       where: { status: { in: ["SENT", "PAID"] }, ...invoiceCityFilter },
@@ -54,13 +50,16 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
     prisma.expense.findMany({
       select: { amount: true, cityId: true },
     }),
+    // Aggregates for financial totals (always reads ALL data)
+    prisma.hourLog.aggregate({ where: cityFilter, _sum: { hours: true }, _count: true }),
+    prisma.expense.aggregate({ where: expenseCityFilter, _sum: { amount: true } }),
   ])
 
   const totalBilled = invoices.reduce((s, i) => s + i.totalAmount, 0)
   const totalPaidInvoices = invoices.filter((i) => i.status === "PAID").reduce((s, i) => s + i.totalAmount, 0)
   const totalTutorPay = hourLogs.reduce((s, h) => s + h.hours * h.tutorPayRate, 0)
   const totalTutorPaid = hourLogs.filter((h) => h.paidAt).reduce((s, h) => s + h.hours * h.tutorPayRate, 0)
-  const totalOtherExpenses = expenses.reduce((s, e) => s + e.amount, 0)
+  const totalOtherExpenses = expenseAgg._sum.amount || 0
 
   const cityName = selectedCity !== "all" ? cities.find((c) => c.id === selectedCity)?.name || selectedCity : "All Cities"
 
