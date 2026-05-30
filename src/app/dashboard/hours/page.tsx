@@ -109,7 +109,7 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
                     {!tutor && <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Bill $/hr</th>}
                     <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Pay $/hr</th>
                     <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Total Pay</th>
-                    {admin && <th className="text-center px-2 py-2 text-xs font-medium text-zinc-500">Actions</th>}
+                    {(admin || tutor) && <th className="text-center px-2 py-2 text-xs font-medium text-zinc-500">Actions</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700/50">
@@ -139,6 +139,22 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
                       <td className="px-2 py-2 text-right font-medium text-green-600 dark:text-green-400">${log.tutorPayRate.toFixed(2)}</td>
                       <td className="px-2 py-2 text-right font-medium text-green-600 dark:text-green-400">${(log.hours * log.tutorPayRate).toFixed(2)}</td>
                       {admin && (
+                        <td className="px-2 py-2 text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <EditHourLog
+                              id={log.id}
+                              hours={log.hours}
+                              date={new Date(log.date).toISOString().split("T")[0]}
+                              mode={log.mode}
+                              billingRate={log.billingRate}
+                              tutorPayRate={log.tutorPayRate}
+                              description={log.description}
+                            />
+                            <DeleteHourButton id={log.id} />
+                          </div>
+                        </td>
+                      )}
+                      {tutor && (
                         <td className="px-2 py-2 text-center">
                           <div className="flex items-center justify-center gap-1">
                             <EditHourLog

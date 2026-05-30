@@ -1,16 +1,28 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
-import { isAdmin } from "@/lib/auth-helpers"
+import { isAdmin, getTutorId } from "@/lib/auth-helpers"
 import { logActivity } from "@/lib/activity"
+
+async function canModify(session: { user?: { id: string; role: string } } | null, hourLogId: string): Promise<boolean> {
+  if (!session?.user) return false
+  if (isAdmin(session.user.role)) return true
+
+  const tutorId = await getTutorId(session.user.id, (session.user as { email?: string }).email || "")
+  if (!tutorId) return false
+
+  const log = await prisma.hourLog.findUnique({ where: { id: hourLogId }, select: { tutorId: true } })
+  return log?.tutorId === tutorId
+}
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
-  if (!session?.user || !isAdmin(session.user.role)) {
+  const { id } = await params
+
+  if (!(await canModify(session, id))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { id } = await params
   const formData = await request.formData()
   const action = formData.get("_action") as string
 
@@ -18,10 +30,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const log = await prisma.hourLog.findUnique({ where: { id } })
     if (log?.paidAt) {
       await prisma.hourLog.update({ where: { id }, data: { paidAt: null } })
-      await logActivity(session.user.id, "unpaid", "HourLog", id)
+      await logActivity(session!.user!.id, "unpaid", "HourLog", id)
     } else {
       await prisma.hourLog.update({ where: { id }, data: { paidAt: new Date() } })
-      await logActivity(session.user.id, "paid", "HourLog", id)
+      await logActivity(session!.user!.id, "paid", "HourLog", id)
     }
     const referer = request.headers.get("referer") || "/dashboard/expenses"
     return NextResponse.redirect(new URL(referer, request.url), 303)
@@ -41,17 +53,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     await prisma.hourLog.update({
       where: { id },
-      data: {
-        hours,
-        date: new Date(date),
-        mode,
-        description: description || null,
-        billingRate,
-        tutorPayRate,
-      },
+      data: { hours, date: new Date(date), mode, description: description || null, billingRate, tutorPayRate },
     })
 
-    // Sync the corresponding expense
     const log = await prisma.hourLog.findUnique({
       where: { id },
       include: { tutor: { include: { user: { select: { name: true } } } }, project: { select: { name: true, clientId: true, cityId: true } } },
@@ -79,7 +83,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       })
     }
 
-    await logActivity(session.user.id, "edited", "HourLog", id, `${hours}h, $${tutorPayRate}/h`)
+    await logActivity(session!.user!.id, "edited", "HourLog", id, `${hours}h, $${tutorPayRate}/h`)
     const referer = request.headers.get("referer") || "/dashboard/hours"
     return NextResponse.redirect(new URL(referer, request.url), 303)
   }
@@ -87,7 +91,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   // Delete hour log + corresponding expense
   await prisma.expense.deleteMany({ where: { hourLogId: id } })
   await prisma.hourLog.delete({ where: { id } })
-  await logActivity(session.user.id, "deleted", "HourLog", id)
+  await logActivity(session!.user!.id, "deleted", "HourLog", id)
 
   const referer = request.headers.get("referer") || "/dashboard/hours"
   return NextResponse.redirect(new URL(referer, request.url), 303)
