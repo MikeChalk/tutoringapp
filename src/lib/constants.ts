@@ -9,6 +9,13 @@ export const GRADE_LABELS: Record<string, string> = {
   PROGRAM_SUPERVISOR: "Program Supervisor",
 }
 
+// Rate structure:
+// PRIVATE_TUTORING: ELEMENTARY → UNI (student rates) + STUDY_HALL (1 extra)
+// PROGRAM_SUPERVISOR: ELEMENTARY → UNI + STUDY_HALL + PROGRAM_SUPERVISOR
+export const STUDENT_GRADES = ["ELEMENTARY", "SEC1_2", "SEC3", "SEC4_5", "CEGEP", "UNI"]
+export const TUTOR_STUDY_HALL_GRADES = ["STUDY_HALL"]
+export const SUPERVISOR_GRADES = ["ELEMENTARY", "SEC1_2", "SEC3", "SEC4_5", "CEGEP", "UNI", "STUDY_HALL", "PROGRAM_SUPERVISOR"]
+
 export const TENURE_LABELS: Record<string, string> = {
   "1ST_YEAR": "Year 1",
   "2ND_YEAR": "Year 2",

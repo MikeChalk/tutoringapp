@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db"
 import { requireAuth, isTutor, getTutorId, isClient, getClientId } from "@/lib/auth-helpers"
-import { CONTRACT_TYPE_LABELS, TENURE_LABELS } from "@/lib/constants"
+import { CONTRACT_TYPE_LABELS, TENURE_LABELS, STUDENT_GRADES, TUTOR_STUDY_HALL_GRADES, SUPERVISOR_GRADES } from "@/lib/constants"
 import { redirect } from "next/navigation"
 import Script from "next/script"
 
@@ -257,8 +257,8 @@ export default async function ContractPage(props: { searchParams: Promise<{ filt
               <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
                 <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Private Tutoring Rates ({TENURE_LABELS[latestActive.yearLevel]})</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-                  {["ELEMENTARY", "SEC1_2", "SEC3", "SEC4_5", "CEGEP", "UNI"].map((grade) => {
-                  const onlineRate = latestRates.student.find((p) => p.gradeLevel === grade && p.mode === "ONLINE")
+                  {STUDENT_GRADES.map((grade) => {
+                    const onlineRate = latestRates.student.find((p) => p.gradeLevel === grade && p.mode === "ONLINE")
                   const inPersonRate = latestRates.student.find((p) => p.gradeLevel === grade && p.mode === "IN_PERSON")
                     return (
                       <div key={grade} className="bg-zinc-50 dark:bg-zinc-900 rounded-lg p-3 text-center">
@@ -276,7 +276,7 @@ export default async function ContractPage(props: { searchParams: Promise<{ filt
                 <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
                   <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Study Hall Rates ({TENURE_LABELS[latestActive.yearLevel]})</h3>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-                    {["ELEMENTARY", "SEC1_2", "SEC3", "SEC4_5", "CEGEP", "UNI"].map((grade) => {
+                    {STUDENT_GRADES.map((grade) => {
                       const onlineRate = latestRates.studyHall.find((p) => p.gradeLevel === grade && p.mode === "ONLINE")
                       const inPersonRate = latestRates.studyHall.find((p) => p.gradeLevel === grade && p.mode === "IN_PERSON")
                       return (
@@ -357,7 +357,7 @@ function ContractCard({ contract, showSign, rates }: {
           <div>
             <p className="text-xs text-zinc-500 mb-2">Private Tutoring Rates</p>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-              {["ELEMENTARY", "SEC1_2", "SEC3", "SEC4_5", "CEGEP", "UNI"].map((grade) => {
+              {STUDENT_GRADES.map((grade) => {
                 const online = rates.student.find(p => p.gradeLevel === grade && p.mode === "ONLINE")
                 const inPerson = rates.student.find(p => p.gradeLevel === grade && p.mode === "IN_PERSON")
                 return (
@@ -376,10 +376,7 @@ function ContractCard({ contract, showSign, rates }: {
           <div>
             <p className="text-xs text-zinc-500 mb-2">{contract.type === "PROGRAM_SUPERVISOR" ? "Study Hall / Supervisor Rates" : "Study Hall Rates"}</p>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-              {(contract.type === "PROGRAM_SUPERVISOR"
-                ? ["ELEMENTARY", "SEC1_2", "SEC3", "SEC4_5", "CEGEP", "UNI", "STUDY_HALL", "PROGRAM_SUPERVISOR"]
-                : ["STUDY_HALL"]
-              ).map((grade) => {
+              {(contract.type === "PROGRAM_SUPERVISOR" ? SUPERVISOR_GRADES : TUTOR_STUDY_HALL_GRADES).map((grade) => {
                 const online = rates.studyHall.find(p => p.gradeLevel === grade && p.mode === "ONLINE")
                 const inPerson = rates.studyHall.find(p => p.gradeLevel === grade && p.mode === "IN_PERSON")
                 if (!online && !inPerson) return null
