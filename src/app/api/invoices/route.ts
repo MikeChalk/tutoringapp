@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { isAdmin } from "@/lib/auth-helpers"
+import { applyDiscountCode, calculateDiscount } from "@/lib/discounts"
 
 export async function POST(request: Request) {
   const session = await auth()
@@ -37,17 +38,30 @@ export async function POST(request: Request) {
       const invoiceCount = await prisma.invoice.count()
       const number = `INV-${String(invoiceCount + 1).padStart(4, "0")}`
 
+      // Validate and recalculate discount server-side
+      let finalDiscountCode: string | null = null
+      let finalDiscountAmount = 0
+      if (discountCode) {
+        const result = await applyDiscountCode(discountCode)
+        if (result.valid) {
+          finalDiscountCode = discountCode.toUpperCase()
+          finalDiscountAmount = calculateDiscount(subtotal, result.discountPct, result.discountAmt)
+        }
+      }
+
+      const finalTotal = Math.max(0, subtotal + taxAmount - finalDiscountAmount)
+
       await prisma.invoice.create({
         data: {
           number,
           clientId,
           dueDate,
-          totalAmount,
+          totalAmount: finalTotal,
           subtotal,
           taxRate,
           taxAmount,
-          discountCode: discountCode || null,
-          discountAmount,
+          discountCode: finalDiscountCode,
+          discountAmount: finalDiscountAmount,
           status: "DRAFT",
           notes: notes || null,
           items: {

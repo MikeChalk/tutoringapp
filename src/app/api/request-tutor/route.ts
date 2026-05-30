@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
+import { validateDiscountCode, applyDiscountCode } from "@/lib/discounts"
 
 export async function POST(request: Request) {
   const formData = await request.formData()
@@ -29,6 +30,15 @@ export async function POST(request: Request) {
   // Build a descriptive subject from selected subjects
   const subjectField = subject || "General tutoring"
 
+  // Validate discount code
+  let validDiscountCode: string | null = null
+  if (discountCode) {
+    const result = await applyDiscountCode(discountCode)
+    if (result.valid) {
+      validDiscountCode = discountCode.toUpperCase()
+    }
+  }
+
   // Build description with all details
   const parts: string[] = []
   if (studentName) parts.push(`Student: ${studentName}`)
@@ -36,7 +46,8 @@ export async function POST(request: Request) {
   if (school) parts.push(`School: ${school}`)
   if (tutoringPreference) parts.push(`Preference: ${tutoringPreference}`)
   if (address) parts.push(`Address: ${address}`)
-  if (discountCode) parts.push(`Discount Code: ${discountCode}`)
+  if (validDiscountCode) parts.push(`Discount Code: ${validDiscountCode}`)
+  else if (discountCode) parts.push(`Discount Code (invalid): ${discountCode}`)
   if (description) parts.push(`Details: ${description}`)
 
   const fullDescription = parts.join("\n")
@@ -53,7 +64,7 @@ export async function POST(request: Request) {
       school: school || null,
       tutoringPreference,
       address,
-      discountCode,
+      discountCode: validDiscountCode,
       status: "NEW",
     },
   })

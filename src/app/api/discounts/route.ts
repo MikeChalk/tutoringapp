@@ -23,11 +23,44 @@ export async function POST(request: Request) {
     return NextResponse.redirect(new URL("/dashboard/discounts", request.url), 303)
   }
 
+  if (action === "toggle") {
+    const id = formData.get("id") as string
+    if (id) {
+      const existing = await prisma.discountCode.findUnique({ where: { id } })
+      if (existing) {
+        await prisma.discountCode.update({ where: { id }, data: { isActive: !existing.isActive } })
+      }
+    }
+    return NextResponse.redirect(new URL("/dashboard/discounts", request.url), 303)
+  }
+
+  if (action === "edit") {
+    const id = formData.get("id") as string
+    const description = (formData.get("description") as string)?.trim()
+    const discountPct = parseFloat((formData.get("discountPct") as string) || "0") || 0
+    const discountAmt = parseFloat((formData.get("discountAmt") as string) || "0") || 0
+    const maxUses = parseInt((formData.get("maxUses") as string) || "0") || 0
+
+    if (id) {
+      await prisma.discountCode.update({
+        where: { id },
+        data: {
+          ...(description !== undefined && { description }),
+          discountPct,
+          discountAmt,
+          maxUses,
+        },
+      })
+    }
+    return NextResponse.redirect(new URL("/dashboard/discounts", request.url), 303)
+  }
+
+  // Create
   const code = (formData.get("code") as string)?.trim().toUpperCase()
   const description = (formData.get("description") as string)?.trim() || ""
-  const discountPct = parseFloat((formData.get("discountPct") as string) || "0")
-  const discountAmt = parseFloat((formData.get("discountAmt") as string) || "0")
-  const maxUses = parseInt((formData.get("maxUses") as string) || "0")
+  const discountPct = parseFloat((formData.get("discountPct") as string) || "0") || 0
+  const discountAmt = parseFloat((formData.get("discountAmt") as string) || "0") || 0
+  const maxUses = parseInt((formData.get("maxUses") as string) || "0") || 0
 
   if (!code) return NextResponse.json({ error: "Code required" }, { status: 400 })
 

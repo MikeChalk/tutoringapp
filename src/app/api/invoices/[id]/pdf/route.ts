@@ -28,6 +28,10 @@ export async function GET(request: Request, props: { params: Promise<{ id: strin
     ? `<tr><td colspan="3" style="padding:4px 8px;text-align:right;color:#666">Tax (${invoice.taxRate}%)</td><td style="padding:4px 8px;text-align:right">$${invoice.taxAmount.toFixed(2)}</td></tr>`
     : ""
 
+  const discountRow = invoice.discountAmount > 0
+    ? `<tr><td colspan="3" style="padding:4px 8px;text-align:right;color:#dc2626">Discount${invoice.discountCode ? ` (${invoice.discountCode})` : ""}</td><td style="padding:4px 8px;text-align:right;color:#dc2626">-$${invoice.discountAmount.toFixed(2)}</td></tr>`
+    : ""
+
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${invoice.number}</title>
 <style>body{font-family:Arial,sans-serif;margin:40px;color:#333;font-size:13px}
 .header{margin-bottom:24px}.header h1{font-size:20px;margin:0 0 4px}.header p{margin:2px 0;color:#666}
@@ -38,7 +42,7 @@ th{background:#f5f5f5;text-align:left;padding:8px;font-size:11px;text-transform:
 </style></head><body>
 <div class="header"><h1>${companyName}</h1><p>${companyAddress}</p><p>${companyEmail}${companyPhone ? " · " + companyPhone : ""}</p></div>
 <div class="client"><h2>Invoice ${invoice.number}</h2><p>Bill to: ${invoice.client.user.name} · ${invoice.client.user.email}</p><p>Date: ${new Date().toLocaleDateString()} · Due: ${new Date(invoice.dueDate).toLocaleDateString()}</p><p>Status: ${invoice.status}</p></div>
-<table><thead><tr><th>Description</th><th style="text-align:right">Hours</th><th style="text-align:right">Rate</th><th style="text-align:right">Amount</th></tr></thead><tbody>${itemsHtml}${taxRow}<tr class="total"><td colspan="3" style="padding:8px;text-align:right">Total</td><td style="padding:8px;text-align:right">$${invoice.totalAmount.toFixed(2)}</td></tr></tbody></table>
+<table><thead><tr><th>Description</th><th style="text-align:right">Hours</th><th style="text-align:right">Rate</th><th style="text-align:right">Amount</th></tr></thead><tbody>${itemsHtml}${taxRow}${discountRow}<tr class="total"><td colspan="3" style="padding:8px;text-align:right">Total</td><td style="padding:8px;text-align:right">$${invoice.totalAmount.toFixed(2)}</td></tr></tbody></table>
 <div class="footer"><p>${settings?.invoiceNotes || "Thank you for your business!"}</p>${settings?.taxNumber ? `<p>Tax ID: ${settings.taxNumber}</p>` : ""}</div>
 </body></html>`
 

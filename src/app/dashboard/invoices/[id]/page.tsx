@@ -133,6 +133,14 @@ export default async function InvoiceDetailPage(props: { params: Promise<{ id: s
                         <td className="px-2 py-1 text-right text-zinc-700 dark:text-zinc-300">${invoice.taxAmount.toFixed(2)}</td>
                       </tr>
                     )}
+                    {invoice.discountAmount > 0 && (
+                      <tr className="text-sm text-red-600 dark:text-red-400">
+                        <td colSpan={3} className="px-2 py-1 text-right">
+                          Discount {invoice.discountCode && <span className="font-mono">({invoice.discountCode})</span>}
+                        </td>
+                        <td className="px-2 py-1 text-right">-${invoice.discountAmount.toFixed(2)}</td>
+                      </tr>
+                    )}
                     <tr className="text-sm font-bold border-t border-zinc-200 dark:border-zinc-700">
                       <td colSpan={3} className="px-2 py-3 text-right text-zinc-900 dark:text-zinc-100">Total</td>
                       <td className="px-2 py-3 text-right text-zinc-900 dark:text-zinc-100">${invoice.totalAmount.toFixed(2)}</td>

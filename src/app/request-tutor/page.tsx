@@ -13,6 +13,11 @@ function RequestTutorForm() {
 
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([])
   const [otherSubject, setOtherSubject] = useState("")
+  const [discountCodes, setDiscountCodes] = useState<Array<{ code: string; description: string; discountPct: number; discountAmt: number }>>([])
+
+  useEffect(() => {
+    fetch("/api/discounts").then(r => r.json()).then(d => setDiscountCodes(d.codes?.filter((c: { isActive: boolean }) => c.isActive) || []))
+  }, [])
 
   function toggleSubject(s: string) {
     setSelectedSubjects(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s])
@@ -128,7 +133,18 @@ function RequestTutorForm() {
 
           <div>
             <label className="block text-sm font-medium text-zinc-700 mb-1">Discount Code (if applicable)</label>
-            <input type="text" name="discountCode" className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            {discountCodes.length > 0 ? (
+              <select name="discountCode" className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                <option value="">None</option>
+                {discountCodes.map(c => (
+                  <option key={c.code} value={c.code}>
+                    {c.code}{c.description ? ` — ${c.description}` : ""} ({c.discountPct > 0 ? `${c.discountPct}%` : `$${c.discountAmt.toFixed(2)}`})
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input type="text" name="discountCode" className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter code" />
+            )}
           </div>
 
           <button type="submit" className="w-full rounded-lg bg-zinc-900 px-4 py-3 text-sm font-medium text-white hover:opacity-90 transition-opacity">
