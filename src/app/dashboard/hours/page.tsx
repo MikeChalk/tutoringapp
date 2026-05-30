@@ -23,7 +23,7 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
     tutorId = await getTutorId(session.user.id, session.user.email)
   }
 
-  const [hourLogs, projects, tutors, billingRates, payScales] = await Promise.all([
+  const [hourLogs, projects, tutors] = await Promise.all([
     prisma.hourLog.findMany({
       where: tutor && tutorId
         ? { tutorId }
@@ -60,8 +60,6 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
           where: { isActive: true, ...(effectiveCityId ? { user: { cityId: effectiveCityId } } : {}) },
           include: { user: { select: { name: true } } },
         }),
-    prisma.billingRate.findMany(),
-    prisma.payScale.findMany(),
   ])
 
   // Fetch contract rates for the logged-in tutor
@@ -70,11 +68,6 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
     const contract = await prisma.contract.findFirst({ where: { tutorId, status: "ACTIVE" }, select: { rates: true } })
     if (contract?.rates) contractRatesJson = contract.rates
   }
-
-  const ratesJson = JSON.stringify({
-    billing: billingRates.map(r => ({ g: r.gradeLevel, m: r.mode, p: r.projectType, r: r.rate })),
-    pay: payScales.map(s => ({ t: s.tenure, g: s.gradeLevel, m: s.mode, p: s.projectType, r: s.rate })),
-  })
 
   const tutorProjectsMap: Record<string, string[]> = {}
   for (const p of projects) {

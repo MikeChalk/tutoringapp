@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin, isSuperAdmin } from "@/lib/auth-helpers"
+import { requireAuth, isAdmin } from "@/lib/auth-helpers"
 import { redirect } from "next/navigation"
 
 export default async function AnalyticsPage() {

@@ -6,16 +6,17 @@ import { CreateProjectForm } from "@/components/create-project-form"
 import Link from "next/link"
 import Script from "next/script"
 
-export default async function ProjectsPage(props: { searchParams: Promise<{ status?: string; type?: string; city?: string; page?: string }> }) {
+export default async function ProjectsPage(props: { searchParams: Promise<{ status?: string; type?: string; city?: string; page?: string; view?: string }> }) {
   const session = await requireAuth()
   const admin = isAdmin(session.user.role)
   const tutor = isTutor(session.user.role)
 
-  const { status: statusFilter, type: typeFilter, city: cityParam, page: pageParam } = await props.searchParams
+  const { status: statusFilter, type: typeFilter, city: cityParam, page: pageParam, view: viewParam } = await props.searchParams
   const projectType = typeFilter || "ALL"
   const selectedCity = cityParam || "all"
   const page = parseInt(pageParam || "1") || 1
   const pageSize = 50
+  const view = viewParam || "grid"
   const superAdmin = isSuperAdmin(session.user.role)
   const cityAdminId = isCityAdmin(session.user.role) ? await getActiveCityId(session.user.role, session.user.id) : null
   const effectiveCityId = cityAdminId || (superAdmin && selectedCity !== "all" ? selectedCity : null)
@@ -30,8 +31,6 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
   } else {
     if (statusFilter && statusFilter !== "ALL") {
       whereClause = { ...whereClause, status: statusFilter }
-    } else if (!statusFilter) {
-      whereClause = { ...whereClause, status: "IN_PROGRESS" }
     }
   }
 
@@ -79,7 +78,25 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
     <div>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Projects</h2>
-        {superAdmin && <CityFilter selected={selectedCity} />}
+        <div className="flex items-center gap-2">
+          {/* View toggle */}
+          <div className="flex rounded-lg border border-zinc-300 dark:border-zinc-600 overflow-hidden mr-2">
+            {(["grid", "list"] as const).map(v => {
+              const vParams = new URLSearchParams()
+              vParams.set("view", v)
+              if (statusFilter && statusFilter !== "ALL") vParams.set("status", statusFilter)
+              if (projectType !== "ALL") vParams.set("type", projectType)
+              if (selectedCity !== "all") vParams.set("city", selectedCity)
+              return (
+                <Link key={v} href={`/dashboard/projects?${vParams.toString()}`}
+                  className={`px-3 py-1 text-xs ${view === v ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900" : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700"}`}>
+                  {v === "grid" ? "▦" : "☰"}
+                </Link>
+              )
+            })}
+          </div>
+          {superAdmin && <CityFilter selected={selectedCity} />}
+        </div>
       </div>
 
       <div className="flex gap-2 mb-4">
@@ -95,8 +112,8 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
           )
         })}
         {admin && (
-          <form id="statusForm" className="ml-auto">
-            <select name="status" defaultValue={statusFilter || "IN_PROGRESS"} id="statusFilterSelect"
+          <form id="statusForm" method="GET" className="ml-auto">
+            <select name="status" defaultValue={statusFilter || "ALL"} id="statusFilterSelect"
               className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-1.5 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="ALL">All</option>
               <option value="IN_PROGRESS">In Progress</option>
@@ -119,6 +136,65 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
         />
       )}
 
+      {view === "list" ? (
+        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-zinc-200 dark:border-zinc-700">
+                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Name</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Client</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Grade</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Status</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Hours</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Tutors</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Created</th>
+                {admin && <th className="text-center px-4 py-3 text-xs font-medium text-zinc-500 uppercase w-16"></th>}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700/50">
+              {projects.map((project) => {
+                const totalHours = project.hourLogs.reduce((sum, h) => sum + h.hours, 0)
+                return (
+                  <tr key={project.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-700/50">
+                    <td className="px-4 py-3">
+                      <Link href={`/dashboard/projects/${project.id}`} className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline">
+                        {project.name}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
+                      {project.client?.user.name || "Other"}
+                      {project.city?.name && <span className="inline-flex text-xs font-medium rounded-full px-2 py-0.5 bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400 ml-2">{project.city.name}</span>}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
+                      {project.projectType === "STUDY_HALL" ? "—" : (GRADE_LABELS[project.gradeLevel] || project.gradeLevel)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex text-xs font-medium rounded-full px-2 py-0.5 ${STATUS_COLORS[project.status] || ""}`}>
+                        {STATUS_LABELS[project.status] || project.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{totalHours}h</td>
+                    <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
+                      {project.projectTutors.map((pt) => pt.tutor.user.name).join(", ") || "-"}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-zinc-500 whitespace-nowrap">
+                      {new Date(project.createdAt).toLocaleDateString()}
+                    </td>
+                    {admin && (
+                      <td className="px-4 py-3 text-center">
+                        <Link href={`/dashboard/projects/${project.id}`} className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Edit</Link>
+                      </td>
+                    )}
+                  </tr>
+                )
+              })}
+              {projects.length === 0 && (
+                <tr><td colSpan={admin ? 8 : 7} className="px-4 py-8 text-center text-sm text-zinc-500">No projects.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {projects.map((project) => {
           const totalHours = project.hourLogs.reduce((sum, h) => sum + h.hours, 0)
@@ -142,8 +218,9 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
                   {STATUS_LABELS[project.status] || project.status}
                 </span>
               </div>
-              <div className="flex items-center gap-4 mt-4 text-sm">
+              <div className="flex items-center justify-between mt-4 text-sm">
                 <span className="text-zinc-600 dark:text-zinc-400">{totalHours}h logged</span>
+                {admin && <Link href={`/dashboard/projects/${project.id}`} className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Edit</Link>}
               </div>
               <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-2">
                 {project.projectTutors.map((pt) => pt.tutor.user.name).join(", ") || "None"}
@@ -153,6 +230,7 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
         })}
         {projects.length === 0 && <p className="text-sm text-zinc-500 col-span-full">No projects.</p>}
       </div>
+      )}
 
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 mt-4">

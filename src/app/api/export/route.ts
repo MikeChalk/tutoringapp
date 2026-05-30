@@ -9,7 +9,6 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url)
   const type = searchParams.get("type") || "hours"
-  const city = searchParams.get("city")
 
   const headers: string[] = []
   const rows: string[][] = []

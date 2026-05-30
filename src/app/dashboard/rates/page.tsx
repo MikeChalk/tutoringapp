@@ -16,8 +16,6 @@ export default async function RatesPage(props: { searchParams: Promise<{ tab?: s
   const billingRates = activeTab === "billing" ? await prisma.billingRate.findMany({ orderBy: [{ gradeLevel: "asc" }, { mode: "asc" }] }) : []
   const payScales = activeTab === "payscales" ? await prisma.payScale.findMany({ orderBy: [{ tenure: "asc" }, { gradeLevel: "asc" }, { mode: "asc" }] }) : []
 
-  const MODES = ["ONLINE", "IN_PERSON"] as const
-  const PROJECT_TYPES = ["STUDENT", "STUDY_HALL"] as const
   const GRADES = Object.keys(GRADE_LABELS)
   const TENURES = Object.keys(TENURE_LABELS)
 

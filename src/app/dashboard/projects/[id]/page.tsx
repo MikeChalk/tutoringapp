@@ -62,10 +62,6 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
 
   const allCities = admin ? await prisma.city.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }) : []
 
-  const grades = await prisma.billingRate.findMany({
-    where: { gradeLevel: project.gradeLevel },
-  })
-
   const subjectList = project.subjects ? project.subjects.split(",").map((s) => s.trim()).filter(Boolean) : []
 
   return (
@@ -84,6 +80,14 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
             {subject}
           </span>
         ))}
+        {admin && (
+          <form action="/api/projects/clone" method="POST">
+            <input type="hidden" name="projectId" value={project.id} />
+            <button type="submit" className="text-xs font-medium px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-600">
+              + Clone
+            </button>
+          </form>
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">

@@ -1,4 +1,7 @@
-import NextAuth from "next-auth"
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import type { DefaultSession } from "next-auth"
+
+// Module augmentation for next-auth — adds custom fields to session/JWT types
 
 declare module "next-auth" {
   interface User {

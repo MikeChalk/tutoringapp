@@ -4,15 +4,19 @@ import { prisma } from "@/lib/db"
 import { isAdmin } from "@/lib/auth-helpers"
 import { GRADE_LABELS } from "@/lib/constants"
 import bcrypt from "bcryptjs"
+function normalizeProjectType(val: string | undefined): string {
+  const cleaned = (val || "").toUpperCase().replace(/[\s-]/g, "_")
+  return cleaned === "STUDY_HALL" ? "STUDY_HALL" : "STUDENT"
+}
 
 function parseCSV(text: string): { headers: string[]; rows: Record<string, string>[] } {
-  function parseLine(line: string): string[] {
+  function parseLine(line: string, delimiter: string): string[] {
     const fields: string[] = []
     let current = ""
     let inQuotes = false
     for (const ch of line) {
       if (ch === '"') { inQuotes = !inQuotes; continue }
-      if (ch === "," && !inQuotes) { fields.push(current.trim()); current = ""; continue }
+      if (ch === delimiter && !inQuotes) { fields.push(current.trim()); current = ""; continue }
       current += ch
     }
     fields.push(current.trim())
@@ -22,9 +26,13 @@ function parseCSV(text: string): { headers: string[]; rows: Record<string, strin
   const lines = text.split("\n").map(l => l.trim()).filter(Boolean)
   if (lines.length < 2) return { headers: [], rows: [] }
 
-  const headers = parseLine(lines[0]).map(h => h.trim().toLowerCase())
+  // Auto-detect delimiter: tab or comma
+  const firstLine = lines[0]
+  const delimiter = firstLine.includes("\t") ? "\t" : ","
+
+  const headers = parseLine(firstLine, delimiter).map(h => h.trim().toLowerCase())
   const rows = lines.slice(1).map(line => {
-    const values = parseLine(line)
+    const values = parseLine(line, delimiter)
     const obj: Record<string, string> = {}
     headers.forEach((h, i) => { obj[h] = values[i] || "" })
     return obj
@@ -33,7 +41,7 @@ function parseCSV(text: string): { headers: string[]; rows: Record<string, strin
   return { headers, rows }
 }
 
-export async function GET(request: Request) {
+export async function GET() {
   return NextResponse.json({ error: "Use POST" }, { status: 405 })
 }
 
@@ -161,7 +169,7 @@ async function handlePreview(formData: FormData, type: string) {
           resolved.clientName = user.name
           // Auto-generate project name: "StudentName - Grade (ParentName)" or "ProjectName (ParentName)" for study hall
           const gradeKey = row.grade_level || "ELEMENTARY"
-          const projectType = row.project_type?.toUpperCase() === "STUDY_HALL" ? "STUDY_HALL" : "STUDENT"
+          const projectType = normalizeProjectType(row.project_type)
           const student = row.student_name?.trim()
           // Naming priority: student_name > school (study hall) > description
           if (student) {
@@ -183,7 +191,7 @@ async function handlePreview(formData: FormData, type: string) {
       resolved.gradeLevel = row.grade_level || "ELEMENTARY"
       resolved.subjects = row.subjects || ""
       resolved.description = row.description || "-"
-      resolved.projectType = row.project_type?.toUpperCase() === "STUDY_HALL" ? "STUDY_HALL" : "STUDENT"
+      resolved.projectType = normalizeProjectType(row.project_type)
       resolved.school = row.school || ""
       resolved.status = row.status || "ON_HOLD"
       resolved.created = row.created_at || row.created_date || new Date().toISOString().split("T")[0]
@@ -389,7 +397,7 @@ async function handleImport(formData: FormData, type: string, request: Request) 
           if (match) cityId = match.id
         }
 
-        const projectType = row.project_type?.toUpperCase() === "STUDY_HALL" ? "STUDY_HALL" : "STUDENT"
+        const projectType = normalizeProjectType(row.project_type)
         const gradeLevel = row.grade_level || "ELEMENTARY"
         const name = (() => {
           if (studentName) {

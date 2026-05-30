@@ -242,7 +242,7 @@ function FormatHelp({ type }: { type: string }) {
       <p className="text-zinc-500">CSV columns (header row required):</p>
       <code className="block bg-zinc-50 dark:bg-zinc-900 rounded p-3 text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">{"first_name, last_name, email, tenure, role, subjects, grade_levels, phone, city, created_at\nSarah, Chen, sarah@email.com, 1ST_YEAR, TUTOR, \"Math, Physics\", \"ELEMENTARY, SEC3\", 514-555-0101, Montreal, 2024-09-01"}</code>
       <div className="text-xs text-zinc-400 space-y-1 mt-2">
-        <p><strong>first_name, last_name</strong> — required (or use single "name" column)</p>
+        <p><strong>first_name, last_name</strong> — required (or use single &ldquo;name&rdquo; column)</p>
         <p><strong>email</strong> — required, unique</p>
         <p><strong>tenure</strong> — 1ST_YEAR, 2ND_YEAR, 3RD_YEAR</p>
         <p><strong>role</strong> — TUTOR or CITY_ADMIN (default: TUTOR)</p>
@@ -258,9 +258,9 @@ function FormatHelp({ type }: { type: string }) {
     <div className="space-y-2 text-sm">
       <p className="text-zinc-500">CSV columns:</p>
       <code className="block bg-zinc-50 dark:bg-zinc-900 rounded p-3 text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">first_name, last_name, email, type, company, phone, address, city, province, country, postal_code, notes, created_at
-John, Smith, john@email.com, PARENT,, 514-555-0100, 123 Main St, Montreal, QC, CA, H3A 1A1, "Referred by Sarah", 2025-01-15</code>
+John, Smith, john@email.com, PARENT,, 514-555-0100, 123 Main St, Montreal, QC, CA, H3A 1A1, &ldquo;Referred by Sarah&rdquo;, 2025-01-15</code>
       <div className="text-xs text-zinc-400 space-y-1 mt-2">
-        <p><strong>first_name, last_name</strong> — required (or use single "name" column)</p>
+        <p><strong>first_name, last_name</strong> — required (or use single &ldquo;name&rdquo; column)</p>
         <p><strong>type</strong> — PARENT or SCHOOL</p>
         <p><strong>company, phone, address, city</strong> — optional</p>
         <p><strong>province, country, postal_code</strong> — optional</p>

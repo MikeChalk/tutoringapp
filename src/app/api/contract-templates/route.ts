@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     })
   }
 
-  const template = await prisma.contractTemplate.create({
+    await prisma.contractTemplate.create({
     data: {
       name, type, yearLevel, terms, gradeLevels, rates,
       startDate: startDate ? new Date(startDate) : null,
