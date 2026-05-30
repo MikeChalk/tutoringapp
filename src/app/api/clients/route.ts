@@ -33,6 +33,30 @@ export async function POST(request: Request) {
     return NextResponse.redirect(new URL("/dashboard/clients", request.url), 303)
   }
 
+  // Edit existing client
+  const id = formData.get("id") as string
+  if (id) {
+    const client = await prisma.client.findUnique({ where: { id } })
+    if (client) {
+      const name = (formData.get("name") as string)?.trim()
+      const email = (formData.get("email") as string)?.trim().toLowerCase()
+      const clientType = (formData.get("clientType") as string) || "PARENT"
+      const company = (formData.get("company") as string)?.trim() || null
+      const phone = (formData.get("phone") as string)?.trim() || null
+      const address = (formData.get("address") as string)?.trim() || null
+
+      await prisma.user.update({
+        where: { id: client.userId },
+        data: { name, email },
+      })
+      await prisma.client.update({
+        where: { id },
+        data: { type: clientType, company, phone, address },
+      })
+    }
+    return NextResponse.redirect(new URL(`/dashboard/clients/${id}`, request.url), 303)
+  }
+
   const name = (formData.get("name") as string)?.trim()
   const email = (formData.get("email") as string)?.trim().toLowerCase()
   const clientType = (formData.get("clientType") as string) || "PARENT"

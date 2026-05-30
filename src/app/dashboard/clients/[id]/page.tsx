@@ -2,7 +2,6 @@ import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin, isTutor, getTutorId } from "@/lib/auth-helpers"
 import { notFound } from "next/navigation"
 import Link from "next/link"
-
 import { CLIENT_TYPE_LABELS } from "@/lib/constants"
 
 const STATUS_COLORS: Record<string, string> = {
@@ -99,20 +98,56 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Details</h3>
-          <dl className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <dt className="text-zinc-500">Company</dt>
-              <dd className="text-zinc-900 dark:text-zinc-100">{client.company || "-"}</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="text-zinc-500">Phone</dt>
-              <dd className="text-zinc-900 dark:text-zinc-100">{client.phone || "-"}</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="text-zinc-500">Address</dt>
-              <dd className="text-zinc-900 dark:text-zinc-100">{client.address || "-"}</dd>
-            </div>
-          </dl>
+          {admin ? (
+            <form action="/api/clients" method="POST" className="space-y-3">
+              <input type="hidden" name="id" value={client.id} />
+              <div>
+                <label className="block text-xs text-zinc-500 mb-1">Name</label>
+                <input type="text" name="name" defaultValue={client.user.name} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs text-zinc-500 mb-1">Email</label>
+                <input type="email" name="email" defaultValue={client.user.email} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-zinc-500 mb-1">Type</label>
+                  <select name="clientType" defaultValue={client.type} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="PARENT">Parent</option>
+                    <option value="SCHOOL">School</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-zinc-500 mb-1">Company</label>
+                  <input type="text" name="company" defaultValue={client.company || ""} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-zinc-500 mb-1">Phone</label>
+                <input type="text" name="phone" defaultValue={client.phone || ""} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs text-zinc-500 mb-1">Address</label>
+                <input type="text" name="address" defaultValue={client.address || ""} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">Save Changes</button>
+            </form>
+          ) : (
+            <dl className="space-y-3 text-sm">
+              <div className="flex justify-between">
+                <dt className="text-zinc-500">Company</dt>
+                <dd className="text-zinc-900 dark:text-zinc-100">{client.company || "-"}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-zinc-500">Phone</dt>
+                <dd className="text-zinc-900 dark:text-zinc-100">{client.phone || "-"}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-zinc-500">Address</dt>
+                <dd className="text-zinc-900 dark:text-zinc-100">{client.address || "-"}</dd>
+              </div>
+            </dl>
+          )}
         </div>
 
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">

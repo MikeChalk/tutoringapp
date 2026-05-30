@@ -241,6 +241,7 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
       { href: "/dashboard/invoices", label: "Invoices" },
       { href: "/dashboard/payments-admin", label: "Payouts" },
       { href: "/dashboard/expenses", label: "Finance" },
+      { href: "/dashboard/expenses-only", label: "Expenses" },
       { href: "/dashboard/rates", label: "Rates & Cities" },
       { href: "/dashboard/discounts", label: "Discounts" },
     ],
