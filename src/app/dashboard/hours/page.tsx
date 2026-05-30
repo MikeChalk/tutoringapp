@@ -223,11 +223,12 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
                 <option value="ONLINE">Online</option>
               </select>
             </div>
-            <div id="categoryGroup" className="hidden">
+            <div id="categoryGroup">
               <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Category</label>
               <select name="category" id="categorySelect"
                 className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="">--</option>
+                <option value="STUDY_HALL_TUTOR">Study Hall Tutor</option>
                 <option value="IN_PERSON_MGMT">In-Person Program Management</option>
                 <option value="ONLINE_MGMT">Online Program Management</option>
                 <option value="SUPERVISION">Supervision</option>
@@ -307,9 +308,6 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
                 modeField.style.display = '';
                 modeSelectEl.required = true;
               }
-            }
-            if (categoryGroup) {
-              categoryGroup.style.display = type === 'STUDY_HALL' ? '' : 'none';
             }
             var tutorId = tutorSelect && tutorSelect.value;
             var assignedProjects = tutorId ? (ASSIGN[tutorId] || []) : null;
