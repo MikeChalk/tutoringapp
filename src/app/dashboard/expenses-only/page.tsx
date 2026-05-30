@@ -68,7 +68,12 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
           <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Expenses</h2>
           <p className="text-sm text-zinc-500">${totalAmount.toFixed(2)} total · {expenses.length} entries</p>
         </div>
-        {superAdmin && <CityFilter selected={selectedCity} />}
+        <div className="flex items-center gap-3">
+          <form action="/api/expenses/seed" method="POST">
+            <button type="submit" className="text-xs text-amber-600 dark:text-amber-400 hover:underline">Sync Historical Logs</button>
+          </form>
+          {superAdmin && <CityFilter selected={selectedCity} />}
+        </div>
       </div>
 
       <AddExpenseSection clients={clients} />
