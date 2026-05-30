@@ -2,7 +2,6 @@
 
 import { useSession } from "next-auth/react"
 import { useState } from "react"
-import { stopImpersonating } from "@/lib/stop-impersonate-action"
 
 export default function ImpersonationBanner() {
   const { data: session } = useSession()
@@ -13,7 +12,10 @@ export default function ImpersonationBanner() {
   async function stop() {
     setLoading(true)
     try {
-      await stopImpersonating()
+      const res = await fetch("/api/admin/stop-impersonate", { method: "POST" })
+      const data = await res.json()
+      if (data.redirect) window.location.href = data.redirect
+      else window.location.reload()
     } catch {
       window.location.reload()
     }

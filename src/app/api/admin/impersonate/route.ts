@@ -18,9 +18,7 @@ export async function POST(request: Request) {
   if (!target) return NextResponse.json({ error: "User not found" }, { status: 404 })
 
   const secret = process.env.AUTH_SECRET
-  if (!secret) return NextResponse.json({ error: "Auth secret not configured" }, { status: 500 })
-
-  console.log("[IMPERSONATE] Target:", target.email, "Role:", target.role)
+  if (typeof secret !== "string") return NextResponse.json({ error: "Secret not configured" }, { status: 500 })
 
   const token = await encode({
     token: {
@@ -35,8 +33,6 @@ export async function POST(request: Request) {
     maxAge: 3600,
   })
 
-  console.log("[IMPERSONATE] Token length:", token.length)
-
   logActivity(session.user.id, "impersonated", "User", target.id, `Impersonated ${target.name} (${target.email})`)
 
   const response = NextResponse.json({ success: true, redirect: "/dashboard" })
@@ -47,8 +43,6 @@ export async function POST(request: Request) {
     path: "/",
     maxAge: 3600,
   })
-
-  console.log("[IMPERSONATE] Cookie set, returning response")
 
   return response
 }

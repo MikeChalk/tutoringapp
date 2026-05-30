@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { impersonateUser } from "@/lib/impersonate-action"
 
 export default function ImpersonateButton({ userId }: { userId: string }) {
   const [loading, setLoading] = useState(false)
@@ -9,9 +8,20 @@ export default function ImpersonateButton({ userId }: { userId: string }) {
   async function handleClick() {
     setLoading(true)
     try {
-      await impersonateUser(userId)
-    } catch (e) {
-      alert((e as Error).message || "Failed to impersonate")
+      const res = await fetch("/api/admin/impersonate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      })
+      const data = await res.json()
+      if (data.redirect) {
+        window.location.href = data.redirect
+      } else {
+        alert(data.error || "Failed")
+        setLoading(false)
+      }
+    } catch {
+      alert("Network error")
       setLoading(false)
     }
   }
