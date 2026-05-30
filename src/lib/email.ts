@@ -39,12 +39,14 @@ export async function sendCareerApplicationEmail(to: string, name: string, uploa
   })
 }
 
-export async function sendOnboardingEmail(to: string, name: string, message: string) {
-  const template = await getTemplate("onboarding_welcome")
-  const subject = template?.subject || "Welcome to J.A.S.S. — Next Steps"
+export async function sendOnboardingEmail(to: string, name: string, message: string, trigger: "onboarding_welcome" | "contract_signed" = "onboarding_welcome") {
+  const template = await getTemplate(trigger)
+  const subject = template?.subject || (trigger === "contract_signed" ? "Contract Signed — Welcome to J.A.S.S." : "Welcome to J.A.S.S. — Next Steps")
   const html = template
     ? render(template.htmlBody, { name, message })
-    : `<p>Hi ${name},</p>${message}<p style="margin-top:16px">— J.A.S.S. Tutors</p>`
+    : trigger === "contract_signed"
+      ? `<p>Hi ${name},</p>${message}<p style="margin-top:16px">— J.A.S.S. Tutors</p>`
+      : `<p>Hi ${name},</p>${message}<p style="margin-top:16px">— J.A.S.S. Tutors</p>`
 
   if (!resend) { log({ to, subject }); return }
   await resend.emails.send({
@@ -55,12 +57,21 @@ export async function sendOnboardingEmail(to: string, name: string, message: str
   })
 }
 
-export async function sendClientInviteEmail(to: string, name: string, inviteUrl: string) {
-  const template = await getTemplate("client_invite")
-  const subject = template?.subject || "Your J.A.S.S. account — Complete Setup"
-  const html = template
-    ? render(template.htmlBody, { name, inviteUrl })
-    : `<p>Hi ${name},</p><p>You've been added as a client of J.A.S.S. Tutoring Services. Please complete your account setup to view and pay invoices.</p><p style="margin:16px 0"><a href="${inviteUrl}" style="background:#18181b;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;font-weight:500">Set Up Your Account</a></p><p>You can also paste this link: ${inviteUrl}</p><p>— J.A.S.S. Tutors</p>`
+export async function sendClientInviteEmail(to: string, name: string, inviteUrl: string, trigger: "client_invite" | "payment_received" | "invoice_reminder" = "client_invite") {
+  const template = await getTemplate(trigger)
+  const fallbackSubject = trigger === "payment_received"
+    ? "Payment Received — Thank You"
+    : trigger === "invoice_reminder"
+      ? "Reminder: Outstanding Invoice"
+      : "Your J.A.S.S. account — Complete Setup"
+  const fallbackHtml = trigger === "payment_received"
+    ? `<p>Hi ${name},</p><p>Your payment has been received. Thank you for your business!</p><p style="margin:16px 0"><a href="${inviteUrl}" style="background:#18181b;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;font-weight:500">View Invoice</a></p><p>— J.A.S.S. Tutors</p>`
+    : trigger === "invoice_reminder"
+      ? `<p>Hi ${name},</p><p>This is a friendly reminder that you have an outstanding invoice. Please log in to view and pay it.</p><p style="margin:16px 0"><a href="${inviteUrl}" style="background:#18181b;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;font-weight:500">View Invoice</a></p><p>— J.A.S.S. Tutors</p>`
+      : `<p>Hi ${name},</p><p>You've been added as a client of J.A.S.S. Tutoring Services. Please complete your account setup to view and pay invoices.</p><p style="margin:16px 0"><a href="${inviteUrl}" style="background:#18181b;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;font-weight:500">Set Up Your Account</a></p><p>You can also paste this link: ${inviteUrl}</p><p>— J.A.S.S. Tutors</p>`
+
+  const subject = template?.subject || fallbackSubject
+  const html = template ? render(template.htmlBody, { name, inviteUrl }) : fallbackHtml
 
   if (!resend) { log({ to, subject }); return }
   await resend.emails.send({

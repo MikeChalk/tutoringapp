@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     for (const inv of invoices) {
       if (inv.client?.user.email) {
         sendClientInviteEmail(inv.client.user.email, inv.client.user.name,
-          `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/dashboard/invoices/${inv.id}`)
+          `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/dashboard/invoices/${inv.id}`, "invoice_reminder")
       }
       await prisma.invoice.update({ where: { id: inv.id }, data: { status: "OVERDUE" } })
     }

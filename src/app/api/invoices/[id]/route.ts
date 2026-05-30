@@ -23,7 +23,7 @@ export async function POST(request: Request, props: { params: Promise<{ id: stri
     const invoice = await prisma.invoice.findUnique({ where: { id }, include: { client: { include: { user: { select: { name: true, email: true } } } } } })
     if (invoice?.client?.user.email) {
       sendClientInviteEmail(invoice.client.user.email, invoice.client.user.name,
-        `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/dashboard/invoices/${id}`)
+        `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/dashboard/invoices/${id}`, "payment_received")
     }
   } else if (action === "markOverdue") {
     await prisma.invoice.update({ where: { id }, data: { status: "OVERDUE" } })
@@ -31,7 +31,7 @@ export async function POST(request: Request, props: { params: Promise<{ id: stri
     const invoice = await prisma.invoice.findUnique({ where: { id }, include: { client: { include: { user: { select: { name: true, email: true } } } } } })
     if (invoice?.client?.user.email) {
       sendClientInviteEmail(invoice.client.user.email, invoice.client.user.name,
-        `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/dashboard/invoices/${id}`)
+        `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/dashboard/invoices/${id}`, "payment_received")
     }
   }
 

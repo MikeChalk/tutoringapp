@@ -31,7 +31,7 @@ export async function POST(request: Request) {
       const invoice = await prisma.invoice.findUnique({ where: { id: invoiceId }, include: { client: { include: { user: { select: { name: true, email: true } } } } } })
       if (invoice?.client?.user.email) {
         sendClientInviteEmail(invoice.client.user.email, invoice.client.user.name,
-          `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/dashboard/invoices/${invoiceId}`)
+          `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/dashboard/invoices/${invoiceId}`, "payment_received")
       }
     }
   }

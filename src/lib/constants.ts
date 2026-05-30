@@ -110,8 +110,8 @@ export const EMAIL_TRIGGERS: EmailTrigger[] = [
     value: "payment_received",
     label: "Payment received from client",
     step: "Finance — Payment Confirmation",
-    description: "Sent when an invoice is marked as paid or a Stripe payment is completed. Thanks the client for their payment.",
-    vars: ["name", "message"],
+    description: "Sent when an invoice is marked as paid or a Stripe payment is completed. Thanks the client for their payment and links to the invoice.",
+    vars: ["name", "inviteUrl"],
   },
   {
     value: "invoice_reminder",
@@ -151,7 +151,7 @@ export const EMAIL_TRIGGER_DEFAULTS: Record<string, { name: string; subject: str
   payment_received: {
     name: "Payment Received",
     subject: "Payment Received — Thank You",
-    htmlBody: `<p>Hi {{name}},</p>{{message}}<p style="margin-top:16px">— J.A.S.S. Tutors</p>`,
+    htmlBody: `<p>Hi {{name}},</p><p>Your payment has been received. Thank you for your business!</p><p style="margin:16px 0"><a href="{{inviteUrl}}" style="background:#18181b;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;font-weight:500">View Invoice</a></p><p>— J.A.S.S. Tutors</p>`,
   },
   invoice_reminder: {
     name: "Invoice Payment Reminder",

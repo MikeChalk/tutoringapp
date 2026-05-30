@@ -41,7 +41,7 @@ export async function POST(request: Request) {
     })
     const tutorUser = await prisma.user.findUnique({ where: { id: tutor.userId }, select: { name: true, email: true } })
     if (tutorUser) {
-      await sendOnboardingEmail(tutorUser.email, tutorUser.name, "<p>Your contract has been signed. We'll be in touch with the next steps.</p>")
+      await sendOnboardingEmail(tutorUser.email, tutorUser.name, "<p>Your contract has been signed. We'll be in touch with the next steps.</p>", "contract_signed")
     }
   }
 
