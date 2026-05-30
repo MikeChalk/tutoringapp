@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin, isCityAdmin, getActiveCityId, isSuperAdmin } from "@/lib/auth-helpers"
 import { redirect } from "next/navigation"
 import { CityFilter } from "@/components/city-filter"
-import AddExpenseForm from "@/components/add-expense-form"
+import AddExpenseSection from "@/components/add-expense-section"
 import Link from "next/link"
 
 const CATEGORIES = ["ALL", "TUTOR_PAY", "SOFTWARE", "MARKETING", "SUPPLIES", "RENT", "TRAVEL", "OTHER"]
@@ -57,7 +57,7 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
         {superAdmin && <CityFilter selected={selectedCity} />}
       </div>
 
-      <AddExpenseForm clients={clients} />
+      <AddExpenseSection clients={clients} />
 
       {/* Category filter toggles */}
       <div className="flex flex-wrap gap-2 mb-6">
