@@ -43,7 +43,6 @@ async function main() {
     data: {
       number: "INV-1001",
       clientId: schoolClient.id,
-      projectId: rwaProjectId,
       status: "SENT",
       dueDate: due,
       totalAmount: 2400.00,
@@ -77,7 +76,7 @@ async function main() {
 
   console.log("\n=== Creating hourly invoice for Robert Dupont ===")
   const logs1 = await p.hourLog.findMany({
-    where: { projectId: "cmpqikz45002q11u2kuouat6m", invoiceItems: { none: {} } },
+    where: { project: { clientId: "cmpqikz3g002g11u2vtg37wxp" }, invoiceItems: { none: {} } },
     orderBy: { date: "asc" },
   })
   if (logs1.length > 0) {
@@ -86,7 +85,6 @@ async function main() {
       data: {
         number: "INV-1002",
         clientId: "cmpqikz3g002g11u2vtg37wxp",
-        projectId: "cmpqikz45002q11u2kuouat6m",
         status: "SENT",
         dueDate: due,
         totalAmount: total,
@@ -107,7 +105,7 @@ async function main() {
 
   console.log("\n=== Creating hourly invoice for Marie Lambert ===")
   const logs2 = await p.hourLog.findMany({
-    where: { projectId: "cmpqikz4v002y11u2d858xp6z", invoiceItems: { none: {} } },
+    where: { project: { clientId: "cmpqikz3q002k11u2a40qxhxd" }, invoiceItems: { none: {} } },
     orderBy: { date: "asc" },
   })
   if (logs2.length > 0) {
@@ -116,7 +114,6 @@ async function main() {
       data: {
         number: "INV-1003",
         clientId: "cmpqikz3q002k11u2a40qxhxd",
-        projectId: "cmpqikz4v002y11u2d858xp6z",
         status: "DRAFT",
         dueDate: due,
         totalAmount: total,
