@@ -89,9 +89,9 @@ export default async function ClientsPage(props: { searchParams: Promise<{ type?
               <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Email</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">City</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Type</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Company</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Projects</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Invoices</th>
+              {admin && <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Company</th>}
+              {admin && <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Projects</th>}
+              {admin && <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Invoices</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700/50">
@@ -118,20 +118,20 @@ export default async function ClientsPage(props: { searchParams: Promise<{ type?
                     {CLIENT_TYPE_LABELS[client.type] || client.type}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
+                {admin && <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
                   {client.company || "-"}
-                </td>
-                <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
+                </td>}
+                {admin && <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
                   {client._count.projects}
-                </td>
-                <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
+                </td>}
+                {admin && <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
                   {client._count.invoices}
-                </td>
+                </td>}
               </tr>
             ))}
             {clients.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-sm text-zinc-500">
+                <td colSpan={admin ? 7 : 4} className="px-4 py-8 text-center text-sm text-zinc-500">
                   No clients yet.
                 </td>
               </tr>
