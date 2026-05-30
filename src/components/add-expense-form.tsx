@@ -2,12 +2,9 @@
 
 import SearchableSelect from "@/components/searchable-select"
 
-interface Project {
-  id: string
-  name: string
-}
+interface Client { id: string; user: { name: string } }
 
-export default function AddExpenseForm({ projects }: { projects: Project[] }) {
+export default function AddExpenseForm({ clients }: { clients: Client[] }) {
   return (
     <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 mb-6">
       <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Add Expense</h3>
@@ -35,11 +32,11 @@ export default function AddExpenseForm({ projects }: { projects: Project[] }) {
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">Project</label>
+            <label className="block text-xs text-zinc-500 mb-1">Client</label>
             <SearchableSelect
-              name="projectId"
-              options={projects.map(p => ({ value: p.id, label: p.name }))}
-              placeholder="Search project..."
+              name="clientId"
+              options={clients.map(c => ({ value: c.id, label: c.user.name }))}
+              placeholder="Search client..."
             />
           </div>
           <div>

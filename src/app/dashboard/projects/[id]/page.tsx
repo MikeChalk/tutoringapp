@@ -39,7 +39,6 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
         orderBy: { date: "desc" },
       },
       invoices: true,
-      expenses: { orderBy: { date: "desc" } },
     },
   })
 
@@ -56,8 +55,6 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
   const totalHours = project.hourLogs.reduce((sum, h) => sum + h.hours, 0)
   const totalBilled = project.hourLogs.reduce((sum, h) => sum + h.hours * h.billingRate, 0)
   const totalPay = project.hourLogs.reduce((sum, h) => sum + h.hours * h.tutorPayRate, 0)
-  const totalExpenses = project.expenses.reduce((sum, e) => sum + e.amount, 0)
-  const netIncome = totalBilled - totalPay - totalExpenses
 
   const availableTutors = admin ? await prisma.tutor.findMany({
     where: {
@@ -99,27 +96,18 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
         ))}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
           <p className="text-xs text-zinc-500 uppercase">Total Hours</p>
           <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{totalHours}</p>
         </div>
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
-          <p className="text-xs text-zinc-500 uppercase">Income</p>
-          <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">${totalBilled.toFixed(2)}</p>
-          <p className="text-xs text-zinc-400 mt-1">Billed to client</p>
+          <p className="text-xs text-zinc-500 uppercase">Total Billed</p>
+          <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">${totalBilled.toFixed(2)}</p>
         </div>
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
-          <p className="text-xs text-zinc-500 uppercase">Expenses</p>
-          <p className="text-2xl font-bold text-red-600 dark:text-red-400">${(totalPay + totalExpenses).toFixed(2)}</p>
-          <p className="text-xs text-zinc-400 mt-1">Pay: ${totalPay.toFixed(2)} + Other: ${totalExpenses.toFixed(2)}</p>
-        </div>
-        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
-          <p className="text-xs text-zinc-500 uppercase">Net Income</p>
-          <p className={`text-2xl font-bold ${netIncome >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
-            ${netIncome.toFixed(2)}
-          </p>
-          <p className="text-xs text-zinc-400 mt-1">Income - all costs</p>
+          <p className="text-xs text-zinc-500 uppercase">Tutor Pay Owed</p>
+          <p className="text-2xl font-bold text-green-600 dark:text-green-400">${totalPay.toFixed(2)}</p>
         </div>
       </div>
 
@@ -162,22 +150,6 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
                 <li key={inv.id} className="text-sm flex justify-between">
                   <a href={`/dashboard/invoices/${inv.id}`} className="text-blue-600 dark:text-blue-400 hover:underline">{inv.number}</a>
                   <span className="text-zinc-500">${inv.totalAmount.toFixed(2)}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
-          <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Expenses</h3>
-          {project.expenses.length === 0 ? (
-            <p className="text-sm text-zinc-500">No expenses yet.</p>
-          ) : (
-            <ul className="space-y-2">
-              {project.expenses.map((e) => (
-                <li key={e.id} className="text-sm flex justify-between">
-                  <span className="text-zinc-900 dark:text-zinc-100 truncate mr-2">{e.description}</span>
-                  <span className="text-red-600 dark:text-red-400 whitespace-nowrap">-${e.amount.toFixed(2)}</span>
                 </li>
               ))}
             </ul>

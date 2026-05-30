@@ -19,6 +19,7 @@ export async function POST(request: Request) {
   const category = (formData.get("category") as string) || "OTHER"
   const date = (formData.get("date") as string) || new Date().toISOString().split("T")[0]
   const projectId = (formData.get("projectId") as string)?.trim() || null
+  const clientId = (formData.get("clientId") as string)?.trim() || null
   const cityId = await getActiveCityId(session.user.role, session.user.id)
   const file = formData.get("receipt") as File | null
 
@@ -43,7 +44,7 @@ export async function POST(request: Request) {
       category,
       date: new Date(date),
       cityId,
-      projectId,
+      clientId,
       receiptFileName,
     },
   })

@@ -46,10 +46,15 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
         },
       },
       invoices: { orderBy: { createdAt: "desc" } },
+      expenses: { orderBy: { date: "desc" } },
     },
   })
 
   if (!client) notFound()
+
+  const totalInvoiced = client.invoices.reduce((s, i) => s + i.totalAmount, 0)
+  const totalCollected = client.invoices.filter(i => i.status === "PAID").reduce((s, i) => s + i.totalAmount, 0)
+  const totalExpenses = client.expenses.reduce((s, e) => s + e.amount, 0)
 
   return (
     <div>
@@ -57,7 +62,7 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
       <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-1">{client.user.email}</p>
       <p className="text-xs text-zinc-400 dark:text-zinc-500 mb-6">Client since {new Date(client.createdAt).toLocaleDateString()}</p>
       {admin && (
-        <form action="/api/clients" method="POST" className="mb-6" onSubmit={e => { if (!confirm("Delete this client?")) e.preventDefault() }}>
+        <form action="/api/clients" method="POST" className="mb-6">
           <input type="hidden" name="_action" value="delete" />
           <input type="hidden" name="id" value={client.id} />
           <button type="submit" className="text-sm text-red-600 dark:text-red-400 hover:underline">Delete Client</button>
@@ -74,6 +79,21 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
             {client.user.city.name}
           </span>
         )}
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
+          <p className="text-xs text-zinc-500 uppercase">Total Invoiced</p>
+          <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">${totalInvoiced.toFixed(2)}</p>
+        </div>
+        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
+          <p className="text-xs text-zinc-500 uppercase">Collected</p>
+          <p className="text-2xl font-bold text-green-600 dark:text-green-400">${totalCollected.toFixed(2)}</p>
+        </div>
+        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
+          <p className="text-xs text-zinc-500 uppercase">Expenses</p>
+          <p className="text-2xl font-bold text-red-600 dark:text-red-400">${totalExpenses.toFixed(2)}</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
@@ -174,6 +194,36 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
               ))}
             </tbody>
           </table>
+        )}
+      </div>
+
+      <div className="mb-6">
+        <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Expenses</h3>
+        {client.expenses.length === 0 ? (
+          <p className="text-sm text-zinc-500">No expenses yet.</p>
+        ) : (
+          <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-zinc-200 dark:border-zinc-700">
+                  <th className="text-left px-3 py-2 text-xs font-medium text-zinc-500">Date</th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-zinc-500">Description</th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-zinc-500">Category</th>
+                  <th className="text-right px-3 py-2 text-xs font-medium text-zinc-500">Amount</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700/50">
+                {client.expenses.map(e => (
+                  <tr key={e.id} className="text-sm">
+                    <td className="px-3 py-2 text-zinc-500 whitespace-nowrap">{new Date(e.date).toLocaleDateString()}</td>
+                    <td className="px-3 py-2 text-zinc-900 dark:text-zinc-100">{e.description}</td>
+                    <td className="px-3 py-2 text-zinc-600 dark:text-zinc-400">{e.category}</td>
+                    <td className="px-3 py-2 text-right text-red-600 dark:text-red-400">${e.amount.toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>

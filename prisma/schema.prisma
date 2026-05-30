@@ -110,6 +110,7 @@ model Client {
   user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   projects         Project[]
   invoices         Invoice[]
+  expenses         Expense[]
   tutoringRequests TutoringRequest[] @relation("RequestClient")
 
   @@map("clients")
@@ -134,7 +135,6 @@ model Project {
   projectTutors ProjectTutor[]
   hourLogs      HourLog[]
   invoices      Invoice[]
-  expenses      Expense[]
 
   @@map("projects")
 }
@@ -308,13 +308,13 @@ model Expense {
   category        String   @default("OTHER")
   date            DateTime @default(now())
   cityId          String?
-  projectId       String?
+  clientId        String?
   receiptFileName String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  city    City?    @relation(fields: [cityId], references: [id])
-  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  city   City?   @relation(fields: [cityId], references: [id])
+  client Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
 
   @@map("expenses")
 }
