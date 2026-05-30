@@ -11,7 +11,6 @@ function LoginContent() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
-  const [role, setRole] = useState<"TUTOR" | "CLIENT">("TUTOR")
   const justSetup = searchParams.get("setup") === "1"
 
   async function handleSubmit(e: React.FormEvent) {
@@ -53,31 +52,6 @@ function LoginContent() {
             </div>
           )}
 
-          <div className="flex gap-2 mb-4">
-            <button
-              type="button"
-              onClick={() => setRole("TUTOR")}
-              className={`flex-1 text-sm px-3 py-1.5 rounded-lg transition-colors ${
-                role === "TUTOR"
-                  ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900"
-                  : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700 border border-zinc-300 dark:border-zinc-600"
-              }`}
-            >
-              Team Member
-            </button>
-            <button
-              type="button"
-              onClick={() => setRole("CLIENT")}
-              className={`flex-1 text-sm px-3 py-1.5 rounded-lg transition-colors ${
-                role === "CLIENT"
-                  ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900"
-                  : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700 border border-zinc-300 dark:border-zinc-600"
-              }`}
-            >
-              Client
-            </button>
-          </div>
-
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div>
               <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
@@ -108,7 +82,7 @@ function LoginContent() {
               disabled={loading}
               className="w-full rounded-lg bg-zinc-900 dark:bg-white px-4 py-2.5 text-sm font-medium text-white dark:text-zinc-900 hover:opacity-90 transition-opacity disabled:opacity-50"
             >
-              {loading ? "Signing in..." : `Sign In as ${role === "CLIENT" ? "Client" : "Team Member"}`}
+              {loading ? "Signing in..." : "Sign In"}
             </button>
           </form>
 
@@ -117,6 +91,15 @@ function LoginContent() {
               Forgot password?
             </a>
           </p>
+        </div>
+
+        <div className="mt-6 grid grid-cols-2 gap-2">
+          <a href="/careers" className="text-center text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 border border-zinc-200 dark:border-zinc-700 rounded-lg py-2 px-3">
+            Apply as a Tutor
+          </a>
+          <a href="/request-tutor" className="text-center text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 border border-zinc-200 dark:border-zinc-700 rounded-lg py-2 px-3">
+            Request a Tutor
+          </a>
         </div>
       </div>
     </div>
