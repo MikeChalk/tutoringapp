@@ -54,22 +54,25 @@ export default async function DashboardPage(props: { searchParams: Promise<{ cit
       onboardingStep = tutorData.onboardingStep
     }
   } else if (admin) {
-    const [tc, cc, pc, pi, nr] = await Promise.all([
+    const [tc, cc, pc, outstandingInvoices, nr] = await Promise.all([
       prisma.tutor.count({ where: effectiveCityId ? { user: { cityId: effectiveCityId } } : {} }),
       prisma.client.count({ where: effectiveCityId ? { user: { cityId: effectiveCityId } } : {} }),
       prisma.project.count({ where: cityFilter }),
-      prisma.invoice.count({ where: { status: { in: ["SENT", "OVERDUE"] }, ...(effectiveCityId ? { client: { user: { cityId: effectiveCityId } } } : {}) } }),
+      prisma.invoice.aggregate({
+        where: { status: { in: ["SENT", "OVERDUE"] }, ...(effectiveCityId ? { client: { user: { cityId: effectiveCityId } } } : {}) },
+        _sum: { totalAmount: true },
+      }),
       prisma.tutoringRequest.count({ where: { status: "NEW" } }),
     ])
     const logs = await prisma.hourLog.findMany({ select: { hours: true } })
-    stats = { tutorCount: tc, clientCount: cc, projectCount: pc, pendingInvoices: pi, newRequests: nr, totalHours: logs.reduce((s, h) => s + h.hours, 0), totalEarned: 0, totalPaid: 0 }
+    stats = { tutorCount: tc, clientCount: cc, projectCount: pc, pendingInvoices: outstandingInvoices._sum.totalAmount || 0, newRequests: nr, totalHours: logs.reduce((s, h) => s + h.hours, 0), totalEarned: 0, totalPaid: 0 }
   } else if (client) {
     const clientId = await getClientId(session.user.id, session.user.email)
     if (clientId) {
-      const [, pc, pi] = await Promise.all([
+      const [, pc, unpaidAgg] = await Promise.all([
         Promise.resolve(0),
         prisma.project.count({ where: { clientId } }),
-        prisma.invoice.count({ where: { clientId, status: { in: ["SENT", "OVERDUE"] } } }),
+        prisma.invoice.aggregate({ where: { clientId, status: { in: ["SENT", "OVERDUE"] } }, _sum: { totalAmount: true } }),
       ])
       recentInvoices = await prisma.invoice.findMany({
         where: { clientId },
@@ -77,7 +80,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ cit
         orderBy: { createdAt: "desc" },
         take: 5,
       })
-      stats = { tutorCount: 0, clientCount: 0, projectCount: pc, pendingInvoices: pi, totalHours: 0, newRequests: 0, totalEarned: 0, totalPaid: 0 }
+      stats = { tutorCount: 0, clientCount: 0, projectCount: pc, pendingInvoices: unpaidAgg._sum.totalAmount || 0, totalHours: 0, newRequests: 0, totalEarned: 0, totalPaid: 0 }
     }
   }
 
@@ -153,8 +156,8 @@ export default async function DashboardPage(props: { searchParams: Promise<{ cit
         {!client && <StatCard label="Total Hours" value={stats.totalHours} href="/dashboard/hours" />}
         {tutor && <StatCard label="Paid to Date" value={`$${stats.totalPaid.toFixed(0)}`} href="/dashboard/payments" green />}
         {tutor && stats.totalEarned > stats.totalPaid && <StatCard label="Unpaid" value={`$${(stats.totalEarned - stats.totalPaid).toFixed(0)}`} href="/dashboard/payments" highlight />}
-        {admin && <StatCard label="Outstanding" value={`$${stats.pendingInvoices}`} href="/dashboard/invoices" highlight />}
-        {client && <StatCard label="Unpaid Invoices" value={stats.pendingInvoices} href="/dashboard/invoices" highlight />}
+        {admin && <StatCard label="Outstanding" value={`$${stats.pendingInvoices.toFixed(0)}`} href="/dashboard/invoices" highlight />}
+        {client && <StatCard label="Unpaid Invoices" value={`$${stats.pendingInvoices.toFixed(0)}`} href="/dashboard/invoices" highlight />}
         {tutor && <StatCard label="New Offers" value={stats.newRequests} href="/dashboard/requests" highlight />}
         {admin && <StatCard label="New Requests" value={stats.newRequests} href="/dashboard/requests" highlight />}
       </div>
