@@ -99,7 +99,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ cit
           <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
             Onboarding in progress — Step {onboardingStep + 1} of 7
           </p>
-          <Link href="/dashboard/contract" className="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1 inline-block">
+          <Link href="/dashboard/onboarding" className="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1 inline-block">
             View onboarding progress →
           </Link>
         </div>
