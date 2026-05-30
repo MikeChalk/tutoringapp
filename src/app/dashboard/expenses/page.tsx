@@ -27,7 +27,7 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
     ? { client: { user: { cityId: effectiveCityId } } }
     : {}
 
-  const [hourLogs, expenses, invoices, allInvoices, allExpenses, expenseAgg] = await Promise.all([
+  const [hourLogs, expenses, invoices, allInvoices, allExpenses] = await Promise.all([
     prisma.hourLog.findMany({
       where: cityFilter,
       select: { hours: true, tutorPayRate: true, paidAt: true, tutor: { select: { user: { select: { name: true } } } }, project: { select: { name: true } }, date: true },
@@ -50,10 +50,9 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
     prisma.expense.findMany({
       select: { amount: true, cityId: true },
     }),
-    // Aggregates for financial totals (always reads ALL data)
-    prisma.hourLog.aggregate({ where: cityFilter, _sum: { hours: true }, _count: true }),
-    prisma.expense.aggregate({ where: expenseCityFilter, _sum: { amount: true } }),
   ])
+
+  const expenseAgg = await prisma.expense.aggregate({ where: expenseCityFilter, _sum: { amount: true } })
 
   const totalBilled = invoices.reduce((s, i) => s + i.totalAmount, 0)
   const totalPaidInvoices = invoices.filter((i) => i.status === "PAID").reduce((s, i) => s + i.totalAmount, 0)
