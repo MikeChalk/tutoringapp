@@ -64,6 +64,13 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
     prisma.payScale.findMany(),
   ])
 
+  // Fetch contract rates for the logged-in tutor
+  let contractRatesJson = "{}"
+  if (tutor && tutorId) {
+    const contract = await prisma.contract.findFirst({ where: { tutorId, status: "ACTIVE" }, select: { rates: true } })
+    if (contract?.rates) contractRatesJson = contract.rates
+  }
+
   const ratesJson = JSON.stringify({
     billing: billingRates.map(r => ({ g: r.gradeLevel, m: r.mode, p: r.projectType, r: r.rate })),
     pay: payScales.map(s => ({ t: s.tenure, g: s.gradeLevel, m: s.mode, p: s.projectType, r: s.rate })),
@@ -228,12 +235,8 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
               <select name="category" id="categorySelect"
                 className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="">--</option>
-                <option value="STUDY_HALL_TUTOR">Study Hall Tutor</option>
-                <option value="IN_PERSON_MGMT">In-Person Program Management</option>
-                <option value="ONLINE_MGMT">Online Program Management</option>
-                <option value="SUPERVISION">Supervision</option>
-                <option value="MARKETING">Marketing</option>
               </select>
+              <p className="text-xs text-zinc-500 mt-1" id="categoryRate"></p>
             </div>
             <div className="bg-zinc-50 dark:bg-zinc-900 rounded-lg p-3 border border-zinc-200 dark:border-zinc-700">
               {!tutor ? (
@@ -291,6 +294,8 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
           var modeSelect = document.getElementById('modeSelect');
           var typeSelect = document.getElementById('projectTypeSelect');
           var categorySelect = document.getElementById('categorySelect');
+          var categoryRate = document.getElementById('categoryRate');
+          var CONTRACT_RATES = ${contractRatesJson};
 
           function filterProjects() {
             var type = typeSelect && typeSelect.value;
@@ -338,6 +343,17 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
 
           if (typeSelect) typeSelect.addEventListener('change', filterProjects);
           if (tutorSelect) tutorSelect.addEventListener('change', filterProjects);
+          if (categorySelect) {
+            categorySelect.addEventListener('change', function() {
+              if (!categoryRate) return;
+              var val = categorySelect.value;
+              if (val && CONTRACT_RATES[val] !== undefined) {
+                categoryRate.textContent = 'Rate: $' + CONTRACT_RATES[val] + '/hr (from contract)';
+              } else {
+                categoryRate.textContent = '';
+              }
+            });
+          }
           filterProjects();
         })();
       `}</Script>
