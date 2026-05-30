@@ -44,8 +44,8 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
           },
         },
       },
-      invoices: { orderBy: { createdAt: "desc" } },
-      expenses: { orderBy: { date: "desc" } },
+      invoices: { orderBy: { createdAt: "desc" }, take: 100 },
+      expenses: { orderBy: { date: "desc" }, take: 100 },
     },
   })
 

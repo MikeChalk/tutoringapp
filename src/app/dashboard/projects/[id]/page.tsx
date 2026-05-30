@@ -37,6 +37,7 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
       hourLogs: {
         include: { tutor: { include: { user: { select: { name: true } } } } },
         orderBy: { date: "desc" },
+        take: 200,
       },
     },
   })

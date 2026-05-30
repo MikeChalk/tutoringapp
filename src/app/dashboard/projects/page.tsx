@@ -49,6 +49,7 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
       hourLogs: { select: { hours: true } },
     },
     orderBy: { createdAt: "desc" },
+    take: 100,
   })
 
   const tabs = [

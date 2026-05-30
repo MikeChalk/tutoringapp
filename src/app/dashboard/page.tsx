@@ -28,15 +28,16 @@ export default async function DashboardPage(props: { searchParams: Promise<{ cit
     if (tutorId) {
       const [tutorData] = await Promise.all([
         (async () => {
-          const [tc, cc, pc, nc, ct, tt] = await Promise.all([
+          const [tc, cc, pc, nc, ct, tt, hAgg] = await Promise.all([
             prisma.tutor.count({ where: { id: tutorId } }),
             prisma.client.count({ where: { projects: { some: { projectTutors: { some: { tutorId } } } } } }),
             prisma.project.count({ where: { projectTutors: { some: { tutorId } } } }),
             prisma.tutoringRequest.count({ where: { matchedTutorId: tutorId, status: "MATCHED" } }),
             prisma.contract.findFirst({ where: { tutorId, status: "ACTIVE" }, select: { type: true, yearLevel: true, endDate: true, signed: true } }),
             prisma.tutor.findUnique({ where: { id: tutorId }, select: { onboardingStep: true } }),
+            prisma.hourLog.aggregate({ where: { tutorId }, _sum: { hours: true }, _count: true }),
           ])
-          const logs = await prisma.hourLog.findMany({ where: { tutorId }, select: { hours: true, tutorPayRate: true, paidAt: true } })
+          const logs = await prisma.hourLog.findMany({ where: { tutorId }, select: { hours: true, tutorPayRate: true, paidAt: true }, take: 500, orderBy: { date: "desc" } })
           return {
             tc, cc, pc, nc, ct, onboardingStep: tt?.onboardingStep ?? 6,
             totalHours: logs.reduce((s, h) => s + h.hours, 0),
@@ -64,8 +65,8 @@ export default async function DashboardPage(props: { searchParams: Promise<{ cit
       }),
       prisma.tutoringRequest.count({ where: { status: "NEW" } }),
     ])
-    const logs = await prisma.hourLog.findMany({ select: { hours: true } })
-    stats = { tutorCount: tc, clientCount: cc, projectCount: pc, pendingInvoices: outstandingInvoices._sum.totalAmount || 0, newRequests: nr, totalHours: logs.reduce((s, h) => s + h.hours, 0), totalEarned: 0, totalPaid: 0 }
+    const hAgg = await prisma.hourLog.aggregate({ _sum: { hours: true } })
+    stats = { tutorCount: tc, clientCount: cc, projectCount: pc, pendingInvoices: outstandingInvoices._sum.totalAmount || 0, newRequests: nr, totalHours: hAgg._sum.hours || 0, totalEarned: 0, totalPaid: 0 }
   } else if (client) {
     const clientId = await getClientId(session.user.id, session.user.email)
     if (clientId) {

@@ -8,17 +8,27 @@ export async function POST(request: Request) {
   const action = searchParams.get("action")
 
   if (action === "generate") {
-    const clients = await prisma.client.findMany({ include: { user: { select: { name: true, email: true } }, projects: { select: { id: true } } } })
+    // Find all unbilled hour logs grouped by client in a single query
+    const logs = await prisma.hourLog.findMany({
+      where: { invoiceItems: { none: {} } },
+      include: { project: { select: { clientId: true } } },
+      orderBy: { date: "asc" },
+    })
+
+    // Group by client
+    const clientLogs = new Map<string, typeof logs>()
+    for (const log of logs) {
+      if (!log.project.clientId) continue
+      const existing = clientLogs.get(log.project.clientId) || []
+      existing.push(log)
+      clientLogs.set(log.project.clientId, existing)
+    }
+
     let created = 0
+    for (const [clientId, clientHourLogs] of clientLogs) {
+      if (clientHourLogs.length === 0) continue
 
-    for (const client of clients) {
-      const logs = await prisma.hourLog.findMany({
-        where: { invoiceItems: { none: {} }, project: { clientId: client.id } },
-        include: { project: true },
-      })
-      if (logs.length === 0) continue
-
-      const items = logs.map(log => ({
+      const items = clientHourLogs.map(log => ({
         description: log.description || `Tutoring on ${new Date(log.date).toLocaleDateString()}`,
         hours: log.hours, rate: log.billingRate, amount: log.hours * log.billingRate, hourLogId: log.id,
       }))
@@ -29,7 +39,7 @@ export async function POST(request: Request) {
       await prisma.invoice.create({
         data: {
           number: `INV-${String(count + 1).padStart(4, "0")}`,
-          clientId: client.id, dueDate, totalAmount: total, status: "DRAFT",
+          clientId, dueDate, totalAmount: total, status: "DRAFT",
           items: { create: items },
         },
       })

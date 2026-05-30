@@ -35,11 +35,13 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
         project: { select: { name: true } },
       },
       orderBy: { date: "desc" },
+      take: 500,
     }),
     prisma.expense.findMany({
       where: expenseCityFilter,
       include: { client: { select: { user: { select: { name: true } } } } },
       orderBy: { date: "desc" },
+      take: 200,
     }),
     prisma.invoice.findMany({
       where: { status: { in: ["SENT", "PAID"] }, ...invoiceCityFilter },

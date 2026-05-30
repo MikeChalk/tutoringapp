@@ -54,6 +54,7 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
         hourLog: { select: { paidAt: true } },
       },
       orderBy: { date: "desc" },
+      take: 200,
     }),
     prisma.client.findMany({
       where: effectiveCityId ? { user: { cityId: effectiveCityId } } : {},

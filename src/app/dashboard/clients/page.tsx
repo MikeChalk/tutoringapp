@@ -50,10 +50,10 @@ export default async function ClientsPage(props: { searchParams: Promise<{ type?
     where: whereClause,
     include: {
       user: { select: { name: true, email: true, city: { select: { name: true } } } },
-      projects: { select: { id: true } },
-      invoices: { select: { id: true } },
+      _count: { select: { projects: true, invoices: true } },
     },
     orderBy: { createdAt: "desc" },
+    take: 100,
   })
 
   return (
@@ -115,10 +115,10 @@ export default async function ClientsPage(props: { searchParams: Promise<{ type?
                   {client.company || "-"}
                 </td>
                 <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
-                  {client.projects.length}
+                  {client._count.projects}
                 </td>
                 <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
-                  {client.invoices.length}
+                  {client._count.invoices}
                 </td>
               </tr>
             ))}

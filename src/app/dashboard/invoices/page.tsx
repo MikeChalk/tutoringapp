@@ -47,6 +47,7 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
       client: { include: { user: { select: { name: true, city: { select: { name: true } } } } } },
     },
     orderBy: { createdAt: "desc" },
+    take: 100,
   })
 
   // Always fetch all for stats

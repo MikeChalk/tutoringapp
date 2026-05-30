@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useMemo, useDeferredValue } from "react"
 
 export interface SelectOption {
   value: string
@@ -47,10 +47,15 @@ export default function SearchableSelect({
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
-  const filtered = options.filter(o =>
-    o.label.toLowerCase().includes(search.toLowerCase()) ||
-    o.value.toLowerCase().includes(search.toLowerCase())
-  ).slice(0, 50)
+  const deferredSearch = useDeferredValue(search)
+
+  const filtered = useMemo(() =>
+    options.filter(o =>
+      o.label.toLowerCase().includes(deferredSearch.toLowerCase()) ||
+      o.value.toLowerCase().includes(deferredSearch.toLowerCase())
+    ).slice(0, 50),
+    [options, deferredSearch]
+  )
 
   function select(opt: SelectOption) {
     setSelectedValue(opt.value)
