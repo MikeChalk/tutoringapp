@@ -8,15 +8,17 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  password  String
-  role      String   @default("CLIENT")
-  cityId    String?
-  signupToken String? @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String   @id @default(cuid())
+  name              String
+  email             String   @unique
+  password          String
+  role              String   @default("CLIENT")
+  cityId            String?
+  signupToken       String?  @unique
+  emailNotifications Boolean @default(true)
+  smsNotifications  Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   tutor    Tutor?
   client   Client?
@@ -406,4 +408,16 @@ model EmailLog {
   createdAt DateTime @default(now())
 
   @@map("email_logs")
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  entity    String
+  entityId  String?
+  details   String?
+  createdAt DateTime @default(now())
+
+  @@map("activity_logs")
 }

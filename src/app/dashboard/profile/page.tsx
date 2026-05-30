@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 
 export default function ProfilePage() {
   const { data: session } = useSession()
@@ -13,6 +14,8 @@ export default function ProfilePage() {
   const [newPassword, setNewPassword] = useState("")
   const [message, setMessage] = useState("")
   const [error, setError] = useState("")
+  const [emailNotif, setEmailNotif] = useState(true)
+  const [smsNotif, setSmsNotif] = useState(false)
 
   async function handleProfile(e: React.FormEvent) {
     e.preventDefault()
@@ -85,7 +88,41 @@ export default function ProfilePage() {
             <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">Change Password</button>
           </form>
         </div>
+
+        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
+          <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Notification Preferences</h3>
+          <form action="/api/profile/notifications" method="POST" className="space-y-4">
+            <label className="flex items-center gap-3">
+              <input type="checkbox" name="emailNotifications" defaultChecked className="rounded" />
+              <div>
+                <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Email notifications</span>
+                <p className="text-xs text-zinc-500">Receive automatic emails from J.A.S.S.</p>
+              </div>
+            </label>
+            <label className="flex items-center gap-3">
+              <input type="checkbox" name="smsNotifications" className="rounded" />
+              <div>
+                <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">SMS notifications</span>
+                <p className="text-xs text-zinc-500">Receive text message alerts (requires Twilio setup)</p>
+              </div>
+            </label>
+            <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">Save Preferences</button>
+          </form>
+        </div>
       </div>
+
+      {session?.user?.role === "CLIENT" && (
+        <div className="mt-6 bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
+          <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Request a Tutor</h3>
+          <p className="text-sm text-zinc-500 mb-4">Need academic support? Submit a tutoring request and we&apos;ll match you with the perfect tutor.</p>
+          <Link
+            href="/request-tutor"
+            className="inline-block rounded-lg bg-zinc-900 dark:bg-white px-4 py-2 text-sm font-medium text-white dark:text-zinc-900 hover:opacity-90 transition-opacity"
+          >
+            Request a Tutor
+          </Link>
+        </div>
+      )}
     </div>
   )
 }

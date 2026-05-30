@@ -52,6 +52,11 @@ export async function POST(request: Request) {
 
   const fullDescription = parts.join("\n")
 
+  // Auto-link to existing client or lead
+  const existingUser = await prisma.user.findUnique({ where: { email }, include: { client: true } })
+  const existingClient = existingUser?.client || null
+  const existingLead = await prisma.lead.findFirst({ where: { email } })
+
   await prisma.tutoringRequest.create({
     data: {
       name,
@@ -65,13 +70,24 @@ export async function POST(request: Request) {
       tutoringPreference,
       address,
       discountCode: validDiscountCode,
+      clientId: existingClient?.id || null,
       status: "NEW",
     },
   })
 
-  // Also create a lead
-  const existingLead = await prisma.lead.findFirst({ where: { email } })
-  if (!existingLead) {
+  // Update or create lead
+  if (existingLead) {
+    await prisma.lead.update({
+      where: { id: existingLead.id },
+      data: {
+        name,
+        phone: phone || null,
+        subject: subjectField,
+        notes: fullDescription || null,
+        ...(existingClient ? { convertedToClientId: existingClient.id, status: "CONVERTED" } : { status: "CONTACTED" }),
+      },
+    })
+  } else {
     await prisma.lead.create({
       data: {
         name,
@@ -79,7 +95,8 @@ export async function POST(request: Request) {
         phone: phone || null,
         subject: subjectField,
         notes: fullDescription || null,
-        status: "NEW",
+        status: existingClient ? "CONVERTED" : "NEW",
+        ...(existingClient ? { convertedToClientId: existingClient.id } : {}),
       },
     })
   }
