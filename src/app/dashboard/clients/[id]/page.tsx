@@ -1,8 +1,11 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin, isTutor, isClient, getClientId, getTutorId } from "@/lib/auth-helpers"
+import { requireAuth, isAdmin, isTutor, isClient, getClientId, getTutorId, isSuperAdmin } from "@/lib/auth-helpers"
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import { CLIENT_TYPE_LABELS, INVOICE_STATUS_COLORS } from "@/lib/constants"
+import ClientDetailEdit from "@/components/client-detail-edit"
+import SendInviteButton from "@/components/send-invite-button"
+import ImpersonateButton from "@/components/impersonate-button"
 
 const STATUS_COLORS: Record<string, string> = {
   IN_PROGRESS: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
@@ -16,6 +19,7 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
   const admin = isAdmin(session.user.role)
   const tutor = isTutor(session.user.role)
   const isClientRole = isClient(session.user.role)
+  const superAdmin = isSuperAdmin(session.user.role)
 
   const { id } = await props.params
 
@@ -42,7 +46,7 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
   const client = await prisma.client.findUnique({
     where: { id },
     include: {
-      user: { select: { name: true, email: true, city: { select: { name: true } } } },
+      user: { select: { id: true, name: true, email: true, signupToken: true, city: { select: { name: true } } } },
       projects: {
         where: projectFilter,
         include: {
@@ -67,11 +71,36 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
   const totalCollected = paidInvoiceAgg._sum.totalAmount ?? 0
   const totalExpenses = expenseAgg._sum.amount ?? 0
 
+  const serializedClient = {
+    id: client.id,
+    type: client.type,
+    company: client.company,
+    phone: client.phone,
+    address: client.address,
+    province: client.province,
+    country: client.country,
+    postalCode: client.postalCode,
+    notes: client.notes,
+    user: {
+      name: client.user.name,
+      email: client.user.email,
+      city: client.user.city ? { name: client.user.city.name } : null,
+    },
+  }
+
   return (
     <div>
       <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">{client.user.name}</h2>
       <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-1">{client.user.email}</p>
-      <p className="text-xs text-zinc-400 dark:text-zinc-500 mb-6">Client since {new Date(client.createdAt).toLocaleDateString()}</p>
+      <div className="flex items-center gap-3 mb-6">
+        <p className="text-xs text-zinc-400 dark:text-zinc-500">Client since {new Date(client.createdAt).toLocaleDateString()}</p>
+        {admin && (
+          <>
+            {superAdmin && <ImpersonateButton userId={client.user.id} />}
+            <SendInviteButton userId={client.user.id} label={client.user.signupToken ? "Resend Invite" : "Send Invite"} />
+          </>
+        )}
+      </div>
       {admin && (
         <form action="/api/clients" method="POST" className="mb-6" data-confirm="Permanently delete this client and all associated data?">
           <input type="hidden" name="_action" value="delete" />
@@ -110,61 +139,11 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
-          <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Details</h3>
-          {admin ? (
-            <form action="/api/clients" method="POST" className="space-y-3">
-              <input type="hidden" name="id" value={client.id} />
-              <div>
-                <label className="block text-xs text-zinc-500 mb-1">Name</label>
-                <input type="text" name="name" defaultValue={client.user.name} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              </div>
-              <div>
-                <label className="block text-xs text-zinc-500 mb-1">Email</label>
-                <input type="email" name="email" defaultValue={client.user.email} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs text-zinc-500 mb-1">Type</label>
-                  <select name="clientType" defaultValue={client.type} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="PARENT">Parent</option>
-                    <option value="SCHOOL">School</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs text-zinc-500 mb-1">Company</label>
-                  <input type="text" name="company" defaultValue={client.company || ""} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs text-zinc-500 mb-1">Phone</label>
-                <input type="text" name="phone" defaultValue={client.phone || ""} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              </div>
-              <div>
-                <label className="block text-xs text-zinc-500 mb-1">Address</label>
-                <input type="text" name="address" defaultValue={client.address || ""} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs text-zinc-500 mb-1">Province</label>
-                  <input type="text" name="province" defaultValue={client.province || ""} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
-                <div>
-                  <label className="block text-xs text-zinc-500 mb-1">Country</label>
-                  <input type="text" name="country" defaultValue={client.country || ""} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
-                <div>
-                  <label className="block text-xs text-zinc-500 mb-1">Postal Code</label>
-                  <input type="text" name="postalCode" defaultValue={client.postalCode || ""} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs text-zinc-500 mb-1">Notes</label>
-                <textarea name="notes" rows={3} defaultValue={client.notes || ""} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              </div>
-              <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">Save Changes</button>
-            </form>
-          ) : (
+        {admin ? (
+          <ClientDetailEdit client={serializedClient} canImpersonate={superAdmin} userId={client.user.id} />
+        ) : (
+          <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
+            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Details</h3>
             <dl className="space-y-3 text-sm">
               <div className="flex justify-between">
                 <dt className="text-zinc-500">Company</dt>
@@ -178,18 +157,6 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
                 <dt className="text-zinc-500">Address</dt>
                 <dd className="text-zinc-900 dark:text-zinc-100">{client.address || "-"}</dd>
               </div>
-              <div className="flex justify-between">
-                <dt className="text-zinc-500">Province</dt>
-                <dd className="text-zinc-900 dark:text-zinc-100">{client.province || "-"}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-zinc-500">Country</dt>
-                <dd className="text-zinc-900 dark:text-zinc-100">{client.country || "-"}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-zinc-500">Postal Code</dt>
-                <dd className="text-zinc-900 dark:text-zinc-100">{client.postalCode || "-"}</dd>
-              </div>
               {client.notes && (
                 <div>
                   <dt className="text-zinc-500 mb-1">Notes</dt>
@@ -197,8 +164,8 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
                 </div>
               )}
             </dl>
-          )}
-        </div>
+          </div>
+        )}
 
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Projects</h3>
@@ -283,7 +250,7 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
         )}
 
       {admin && (
-        <div className="mb-6">
+        <div className="mb-6 mt-6">
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Expenses</h3>
         {client.expenses.length === 0 ? (
           <p className="text-sm text-zinc-500">No expenses yet.</p>

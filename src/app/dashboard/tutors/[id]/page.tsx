@@ -1,7 +1,10 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin } from "@/lib/auth-helpers"
-import { TENURE_LABELS, GRADE_LABELS } from "@/lib/constants"
+import { requireAuth, isAdmin, isSuperAdmin } from "@/lib/auth-helpers"
+import { GRADE_LABELS } from "@/lib/constants"
 import { redirect, notFound } from "next/navigation"
+import ImpersonateButton from "@/components/impersonate-button"
+import SendInviteButton from "@/components/send-invite-button"
+import TutorDetailEdit from "@/components/tutor-detail-edit"
 
 export default async function TutorDetailPage(props: { params: Promise<{ id: string }> }) {
   const session = await requireAuth()
@@ -12,7 +15,7 @@ export default async function TutorDetailPage(props: { params: Promise<{ id: str
   const tutor = await prisma.tutor.findUnique({
     where: { id },
     include: {
-      user: { select: { name: true, email: true, city: { select: { name: true } } } },
+      user: { select: { id: true, name: true, email: true, signupToken: true, city: { select: { name: true } } } },
       hourLogs: {
         include: { project: { select: { name: true, gradeLevel: true } } },
         orderBy: { date: "desc" },
@@ -25,6 +28,8 @@ export default async function TutorDetailPage(props: { params: Promise<{ id: str
   })
 
   if (!tutor) notFound()
+
+  const superAdmin = isSuperAdmin(session.user.role)
 
   const [hoursAgg, payResult] = await Promise.all([
     prisma.hourLog.aggregate({ where: { tutorId: id }, _sum: { hours: true } }),
@@ -41,16 +46,30 @@ export default async function TutorDetailPage(props: { params: Promise<{ id: str
   const studentPayScales = payScales.filter(p => p.projectType === "STUDENT")
   const studyHallPayScales = payScales.filter(p => p.projectType === "STUDY_HALL")
 
+  const serializedTutor = {
+    id: tutor.id,
+    tenure: tutor.tenure,
+    gradeLevels: tutor.gradeLevels,
+    subjects: tutor.subjects,
+    bio: tutor.bio,
+    phone: tutor.phone,
+    isActive: tutor.isActive,
+  }
+
   return (
     <div>
       <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">{tutor.user.name}</h2>
       <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-1">{tutor.user.email}</p>
-      <form action="/api/tutors/deactivate" method="POST" className="mb-4" data-confirm={tutor.isActive ? "Deactivate this tutor?" : "Reactivate this tutor?"}>
-        <input type="hidden" name="tutorId" value={tutor.id} />
-        <button type="submit" className="text-xs text-red-600 dark:text-red-400 hover:underline">
-          {tutor.isActive ? "Deactivate Tutor" : "Activate Tutor"}
-        </button>
-      </form>
+      <div className="flex items-center gap-3 mb-4">
+        {superAdmin && <ImpersonateButton userId={tutor.user.id} />}
+        <SendInviteButton userId={tutor.user.id} label={tutor.user.signupToken ? "Resend Invite" : "Send Invite"} />
+        <form action="/api/tutors/deactivate" method="POST" data-confirm={tutor.isActive ? "Deactivate this tutor?" : "Reactivate this tutor?"}>
+          <input type="hidden" name="tutorId" value={tutor.id} />
+          <button type="submit" className="text-xs text-red-600 dark:text-red-400 hover:underline">
+            {tutor.isActive ? "Deactivate" : "Activate"}
+          </button>
+        </form>
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
@@ -64,42 +83,10 @@ export default async function TutorDetailPage(props: { params: Promise<{ id: str
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
-          <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Profile</h3>
-          <dl className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <dt className="text-zinc-500">City</dt>
-              <dd className="text-zinc-900 dark:text-zinc-100 font-medium">{tutor.user.city?.name || "-"}</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="text-zinc-500">Tenure</dt>
-              <dd className="text-zinc-900 dark:text-zinc-100 font-medium">{TENURE_LABELS[tutor.tenure] || tutor.tenure}</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="text-zinc-500">Grades</dt>
-              <dd className="text-zinc-900 dark:text-zinc-100">{tutor.gradeLevels ? tutor.gradeLevels.split(",").map(g => GRADE_LABELS[g] || g).join(", ") : "-"}</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="text-zinc-500">Subjects</dt>
-              <dd className="text-zinc-900 dark:text-zinc-100">{tutor.subjects || "-"}</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="text-zinc-500">Status</dt>
-              <dd className="text-zinc-900 dark:text-zinc-100">
-                {tutor.onboarded ? "Active" : tutor.isActive ? "Waitlist" : "Inactive"}
-              </dd>
-            </div>
-            {tutor.bio && (
-              <div>
-                <dt className="text-zinc-500 mb-1">Bio</dt>
-                <dd className="text-zinc-900 dark:text-zinc-100">{tutor.bio}</dd>
-              </div>
-            )}
-          </dl>
-        </div>
+        <TutorDetailEdit tutor={serializedTutor} />
 
         <div className="lg:col-span-2 bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
-          <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Pay Scale ({TENURE_LABELS[tutor.tenure]})</h3>
+          <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Pay Scale ({GRADE_LABELS[tutor.tenure] || tutor.tenure})</h3>
 
           <div className="space-y-6">
             <div>
