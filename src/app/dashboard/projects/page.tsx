@@ -138,6 +138,7 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
 
       {view === "list" ? (
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-zinc-200 dark:border-zinc-700">
@@ -191,9 +192,10 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
               {projects.length === 0 && (
                 <tr><td colSpan={admin ? 8 : 7} className="px-4 py-8 text-center text-sm text-zinc-500">No projects.</td></tr>
               )}
-            </tbody>
-          </table>
-        </div>
+</tbody>
+           </table>
+          </div>
+         </div>
       ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {projects.map((project) => {

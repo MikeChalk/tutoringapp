@@ -63,6 +63,7 @@ export default async function RatesPage(props: { searchParams: Promise<{ tab?: s
           </div>
 
           <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
+            <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-zinc-200 dark:border-zinc-700">
@@ -76,11 +77,12 @@ export default async function RatesPage(props: { searchParams: Promise<{ tab?: s
                   <tr key={c.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-700/50">
                     <td className="px-4 py-3 text-sm text-zinc-900 dark:text-zinc-100">{c.name}</td>
                     <td className="px-4 py-3 text-sm text-zinc-500">{c.slug}</td>
-                    <td className="px-4 py-3 text-sm text-right text-zinc-600 dark:text-zinc-400">{c.profitPct}%</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+<td className="px-4 py-3 text-sm text-right text-zinc-600 dark:text-zinc-400">{c.profitPct}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
@@ -123,6 +125,7 @@ export default async function RatesPage(props: { searchParams: Promise<{ tab?: s
           </div>
 
           <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
+            <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-zinc-200 dark:border-zinc-700">
@@ -151,6 +154,7 @@ export default async function RatesPage(props: { searchParams: Promise<{ tab?: s
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
       )}
@@ -199,6 +203,7 @@ export default async function RatesPage(props: { searchParams: Promise<{ tab?: s
           </div>
 
           <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
+            <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-zinc-200 dark:border-zinc-700">
@@ -229,6 +234,7 @@ export default async function RatesPage(props: { searchParams: Promise<{ tab?: s
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
       )}

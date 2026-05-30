@@ -245,6 +245,7 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
         {client.invoices.length === 0 ? (
           <p className="text-sm text-zinc-500">No invoices yet.</p>
         ) : (
+          <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-zinc-200 dark:border-zinc-700">
@@ -274,11 +275,12 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
                   </td>
                 </tr>
               ))}
-            </tbody>
-          </table>
+</tbody>
+</table>
+             </div>
+          )}
+        </div>
         )}
-      </div>
-      )}
 
       {admin && (
         <div className="mb-6">
@@ -287,6 +289,7 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
           <p className="text-sm text-zinc-500">No expenses yet.</p>
         ) : (
           <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
+            <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-zinc-200 dark:border-zinc-700">
@@ -306,13 +309,14 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
                   </tr>
                 ))}
               </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-      )}
-    </div>
-  )
+</table>
+             </div>
+           </div>
+         )}
+       </div>
+       )}
+     </div>
+   )
 }
 
 function invoiceStatusBadge(status: string) {

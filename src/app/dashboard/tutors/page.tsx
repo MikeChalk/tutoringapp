@@ -63,6 +63,7 @@ export default async function TutorsPage(props: { searchParams: Promise<{ type?:
       </div>
 
       <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
             <tr className="border-b border-zinc-200 dark:border-zinc-700">
@@ -80,9 +81,10 @@ export default async function TutorsPage(props: { searchParams: Promise<{ type?:
                   <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{u.city?.name || "-"}</td>
                   <td className="px-4 py-3"><span className="inline-flex text-xs font-medium rounded-full px-2 py-0.5 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">City Admin</span></td>
                 </tr>
-              ))}
+))}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
     )
@@ -147,6 +149,7 @@ export default async function TutorsPage(props: { searchParams: Promise<{ type?:
       <AddTutorForm templates={templates} cities={cities} />
 
       <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
               <tr className="border-b border-zinc-200 dark:border-zinc-700">
@@ -175,8 +178,9 @@ export default async function TutorsPage(props: { searchParams: Promise<{ type?:
                   <td className="px-4 py-3"><ImpersonateButton userId={tutor.userId} /></td>
               </tr>
             ))}
-          </tbody>
-        </table>
+</tbody>
+         </table>
+        </div>
       </div>
 
       {totalPages > 1 && (

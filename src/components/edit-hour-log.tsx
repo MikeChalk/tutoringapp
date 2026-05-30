@@ -10,9 +10,10 @@ interface EditHourLogProps {
   billingRate: number
   tutorPayRate: number
   description: string | null
+  canEditRates?: boolean
 }
 
-export default function EditHourLog({ id, hours, date, mode, billingRate, tutorPayRate, description }: EditHourLogProps) {
+export default function EditHourLog({ id, hours, date, mode, billingRate, tutorPayRate, description, canEditRates = false }: EditHourLogProps) {
   const [editing, setEditing] = useState(false)
 
   if (!editing) {
@@ -32,8 +33,12 @@ export default function EditHourLog({ id, hours, date, mode, billingRate, tutorP
         <option value="IN_PERSON">In Person</option>
         <option value="ONLINE">Online</option>
       </select>
-      <input type="number" name="billingRate" defaultValue={billingRate} min="0" step="0.01" className="w-16 rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-1 py-0.5 text-xs" title="Billing $" />
-      <input type="number" name="tutorPayRate" defaultValue={tutorPayRate} min="0" step="0.01" className="w-16 rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-1 py-0.5 text-xs" title="Pay $" />
+      {canEditRates && (
+        <>
+          <input type="number" name="billingRate" defaultValue={billingRate} min="0" step="0.01" className="w-16 rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-1 py-0.5 text-xs" title="Billing $" />
+          <input type="number" name="tutorPayRate" defaultValue={tutorPayRate} min="0" step="0.01" className="w-16 rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-1 py-0.5 text-xs" title="Pay $" />
+        </>
+      )}
       <input type="text" name="description" defaultValue={description || ""} placeholder="Notes" className="w-24 rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-1 py-0.5 text-xs" />
       <button type="submit" className="text-xs px-1.5 py-0.5 rounded bg-green-600 text-white hover:bg-green-700">Save</button>
       <button type="button" onClick={() => setEditing(false)} className="text-xs text-zinc-400 hover:text-zinc-600">Cancel</button>

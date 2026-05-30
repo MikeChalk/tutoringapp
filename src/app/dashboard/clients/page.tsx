@@ -87,6 +87,7 @@ export default async function ClientsPage(props: { searchParams: Promise<{ type?
       {admin && <AddClientForm />}
 
       <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
             <tr className="border-b border-zinc-200 dark:border-zinc-700">
@@ -143,6 +144,7 @@ export default async function ClientsPage(props: { searchParams: Promise<{ type?
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {totalPages > 1 && (

@@ -42,6 +42,7 @@ export default async function PayoutsPage() {
             <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">Unpaid</h3>
             <p className="text-xs text-zinc-500">{unpaid.length} entries · ${totalUnpaid.toFixed(2)}</p>
           </div>
+          <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-zinc-200 dark:border-zinc-700">
@@ -63,15 +64,18 @@ export default async function PayoutsPage() {
               {unpaid.length === 0 && (
                 <tr><td colSpan={4} className="px-3 py-8 text-center text-sm text-zinc-500">All paid up.</td></tr>
               )}
-            </tbody>
-          </table>
+</tbody>
+           </table>
+          </div>
         </div>
+      </div>
 
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
           <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-700">
             <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">Paid</h3>
             <p className="text-xs text-zinc-500">{paid.length} entries · ${totalPaid.toFixed(2)}</p>
           </div>
+          <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-zinc-200 dark:border-zinc-700">

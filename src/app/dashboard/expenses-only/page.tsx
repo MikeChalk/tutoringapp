@@ -121,6 +121,7 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
       </div>
 
       <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
             <tr className="border-b border-zinc-200 dark:border-zinc-700">
@@ -175,6 +176,7 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
             ))}
           </tbody>
         </table>
+        </div>
         {expenses.length === 0 && (
           <div className="p-8 text-center text-sm text-zinc-500">No expenses found.</div>
         )}

@@ -56,6 +56,7 @@ export default async function LeadsPage(props: { searchParams: Promise<{ status?
       </div>
 
       <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full">
           <thead><tr className="border-b border-zinc-200 dark:border-zinc-700"><th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">Name</th><th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">Email</th><th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">Subject</th><th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">City</th><th className="text-center px-4 py-3 text-xs font-medium text-zinc-500">Status</th><th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">Date</th><th className="text-center px-4 py-3 text-xs font-medium text-zinc-500">Action</th></tr></thead>
           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700/50">
@@ -80,6 +81,7 @@ export default async function LeadsPage(props: { searchParams: Promise<{ status?
             ))}
           </tbody>
         </table>
+        </div>
         {leads.length === 0 && <div className="p-8 text-center text-sm text-zinc-500">{selectedStatus ? `No ${selectedStatus.toLowerCase()} leads.` : "No leads yet."}</div>}
       </div>
     </div>

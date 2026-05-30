@@ -67,6 +67,7 @@ export default async function PaymentsPage() {
       {Object.keys(monthlyGrouped).length > 0 && (
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 mb-6">
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Monthly Payment Periods</h3>
+          <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-zinc-200 dark:border-zinc-700">
@@ -85,10 +86,12 @@ export default async function PaymentsPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 
       <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
             <tr className="border-b border-zinc-200 dark:border-zinc-700">
@@ -131,6 +134,7 @@ export default async function PaymentsPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   )

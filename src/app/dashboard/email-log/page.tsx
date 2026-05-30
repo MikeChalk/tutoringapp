@@ -39,6 +39,7 @@ export default async function EmailLogPage() {
       <p className="text-sm text-zinc-500 mb-6">Every email sent through the platform. Latest 200 entries.</p>
 
       <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
             <tr className="border-b border-zinc-200 dark:border-zinc-700">
@@ -70,6 +71,7 @@ export default async function EmailLogPage() {
             ))}
           </tbody>
         </table>
+        </div>
         {logs.length === 0 && (
           <div className="p-8 text-center text-sm text-zinc-500">No emails sent yet.</div>
         )}

@@ -88,6 +88,7 @@ export default async function InvoiceDetailPage(props: { params: Promise<{ id: s
           {invoice.items.length === 0 ? (
             <p className="text-sm text-zinc-500">No line items.</p>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-zinc-200 dark:border-zinc-700">
@@ -154,6 +155,7 @@ export default async function InvoiceDetailPage(props: { params: Promise<{ id: s
                 )}
               </tfoot>
             </table>
+            </div>
           )}
           {settings?.invoiceNotes && (
             <p className="text-xs text-zinc-400 mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-700">{settings.invoiceNotes}</p>

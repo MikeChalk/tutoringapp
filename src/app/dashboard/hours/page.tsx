@@ -183,6 +183,7 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
                               billingRate={log.billingRate}
                               tutorPayRate={log.tutorPayRate}
                               description={log.description}
+                              canEditRates={superAdmin}
                             />
                             <DeleteHourButton id={log.id} />
                           </div>
@@ -199,6 +200,7 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
                               billingRate={log.billingRate}
                               tutorPayRate={log.tutorPayRate}
                               description={log.description}
+                              canEditRates={false}
                             />
                             <DeleteHourButton id={log.id} />
                           </div>
