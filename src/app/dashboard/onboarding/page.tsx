@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
+import { requireAuth, isAdmin, isSuperAdmin, isCityAdmin, isTutor, getTutorId, getActiveCityId } from "@/lib/auth-helpers"
 import { CityFilter } from "@/components/city-filter"
 import { GRADE_LABELS } from "@/lib/constants"
 import { redirect } from "next/navigation"
@@ -20,7 +20,59 @@ const ADMIN_ADVANCE_STEPS = new Set([2, 3, 4])
 
 export default async function OnboardingPage(props: { searchParams: Promise<{ created?: string; pw?: string; city?: string }> }) {
   const session = await requireAuth()
-  if (!isAdmin(session.user.role)) redirect("/dashboard")
+  const admin = isAdmin(session.user.role)
+  const tutor = isTutor(session.user.role)
+  if (!admin && !tutor) redirect("/dashboard")
+
+  // Tutor view: show onboarding progress
+  if (tutor) {
+    const tutorId = await getTutorId(session.user.id, session.user.email)
+    if (!tutorId) redirect("/dashboard")
+    const tutorRecord = await prisma.tutor.findUnique({ where: { id: tutorId } })
+    if (!tutorRecord) redirect("/dashboard")
+    const step = tutorRecord.onboardingStep
+
+    return (
+      <div>
+        <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-6">My Onboarding</h2>
+        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
+          {step >= 6 ? (
+            <div className="text-center py-4">
+              <div className="text-3xl mb-2">&#10003;</div>
+              <p className="text-lg font-medium text-green-600 dark:text-green-400">Onboarding Complete</p>
+              <p className="text-sm text-zinc-500 mt-1">Platform onboarding complete.</p>
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-1.5 mb-4">
+              {ONBOARDING_STEPS.map((label, i) => {
+                const done = step > i
+                const current = step === i
+                return (
+                  <div key={i} className="flex items-center gap-1">
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${done ? "bg-green-500 text-white" : current ? "bg-blue-500 text-white" : "bg-zinc-200 dark:bg-zinc-700 text-zinc-400"}`}>
+                      {done ? "✓" : i + 1}
+                    </div>
+                    <span className={`text-[10px] ${current ? "text-blue-600 dark:text-blue-400 font-medium" : "text-zinc-400"}`}>{label}</span>
+                    {i < ONBOARDING_STEPS.length - 1 && <div className={`w-2 h-0.5 ${done ? "bg-green-300" : "bg-zinc-200 dark:bg-zinc-700"}`} />}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+          {step === 5 && (
+            <div className="border border-blue-200 dark:border-blue-800 rounded-lg p-4 bg-blue-50/50 dark:bg-blue-900/10">
+              <p className="text-sm font-medium text-blue-700 dark:text-blue-300 mb-1">Contact Your Client</p>
+              <p className="text-xs text-blue-600 dark:text-blue-400 mb-3">Reach out to your assigned client and mark this step complete.</p>
+              <form action="/api/tutor/advance" method="POST">
+                <input type="hidden" name="step" value="5" />
+                <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-medium text-white hover:bg-blue-700">I&apos;ve Contacted the Client</button>
+              </form>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   const { created, pw, city: cityParam } = await props.searchParams
   const selectedCity = cityParam || "all"
