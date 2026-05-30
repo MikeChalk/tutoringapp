@@ -231,6 +231,7 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
     label: "Forms",
     links: [
       { href: "/careers", label: "Career Application" },
+      { href: "/request-tutor", label: "Tutor Request" },
     ],
   },
   {
