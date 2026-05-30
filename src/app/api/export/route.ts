@@ -71,6 +71,83 @@ export async function GET(request: Request) {
         t.user.city?.name || "",
       ])
     }
+  } else if (type === "accounting") {
+    // QuickBooks / Xero compatible general ledger export
+    headers.push("Date", "Account", "Description", "Debit", "Credit", "Reference", "Client")
+    
+    const invoices = await prisma.invoice.findMany({
+      where: { status: { in: ["SENT", "PAID"] } },
+      include: { client: { include: { user: { select: { name: true } } } } },
+      orderBy: { createdAt: "asc" },
+    })
+    for (const inv of invoices) {
+      rows.push([
+        new Date(inv.createdAt).toISOString().split("T")[0],
+        "Accounts Receivable",
+        `Invoice ${inv.number}`,
+        inv.totalAmount.toFixed(2),
+        "0.00",
+        inv.number,
+        inv.client.user.name,
+      ])
+      rows.push([
+        new Date(inv.createdAt).toISOString().split("T")[0],
+        "Tutoring Revenue",
+        `Invoice ${inv.number}`,
+        "0.00",
+        inv.totalAmount.toFixed(2),
+        inv.number,
+        inv.client.user.name,
+      ])
+    }
+
+    const paidInvoices = invoices.filter(i => i.status === "PAID")
+    for (const inv of paidInvoices) {
+      rows.push([
+        inv.paidAt ? new Date(inv.paidAt).toISOString().split("T")[0] : new Date(inv.createdAt).toISOString().split("T")[0],
+        "Cash",
+        `Payment ${inv.number}`,
+        inv.totalAmount.toFixed(2),
+        "0.00",
+        inv.number,
+        inv.client.user.name,
+      ])
+      rows.push([
+        inv.paidAt ? new Date(inv.paidAt).toISOString().split("T")[0] : new Date(inv.createdAt).toISOString().split("T")[0],
+        "Accounts Receivable",
+        `Payment ${inv.number}`,
+        "0.00",
+        inv.totalAmount.toFixed(2),
+        inv.number,
+        inv.client.user.name,
+      ])
+    }
+
+    const expenses = await prisma.expense.findMany({
+      include: { client: { include: { user: { select: { name: true } } } } },
+      orderBy: { date: "asc" },
+    })
+    for (const e of expenses) {
+      const accountName = e.category === "TUTOR_PAY" ? "Tutor Pay Expense" : "Operating Expenses"
+      rows.push([
+        new Date(e.date).toISOString().split("T")[0],
+        accountName,
+        e.description,
+        e.amount.toFixed(2),
+        "0.00",
+        e.id.slice(0, 8),
+        e.client?.user.name || "",
+      ])
+      rows.push([
+        new Date(e.date).toISOString().split("T")[0],
+        "Cash",
+        e.description,
+        "0.00",
+        e.amount.toFixed(2),
+        e.id.slice(0, 8),
+        e.client?.user.name || "",
+      ])
+    }
   }
 
   const csv = [headers.join(","), ...rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(","))].join("\n")

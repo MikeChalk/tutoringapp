@@ -202,6 +202,14 @@ export default async function InvoiceDetailPage(props: { params: Promise<{ id: s
               <p className="text-sm text-zinc-700 dark:text-zinc-300">{invoice.notes}</p>
             </div>
           )}
+          {invoice.receiptUrl && (
+            <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-700">
+              <p className="text-xs text-zinc-500 mb-1">Payment Receipt</p>
+              <a href={invoice.receiptUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+                View / Download Stripe Receipt
+              </a>
+            </div>
+          )}
           {admin && (
             <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-700">
               <p className="text-xs text-zinc-500 mb-2">Update Status</p>

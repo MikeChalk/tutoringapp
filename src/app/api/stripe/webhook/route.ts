@@ -20,15 +20,45 @@ export async function POST(request: Request) {
   }
 
   if (event.type === "checkout.session.completed") {
-    const session = event.data.object as { metadata?: { invoiceId?: string }; client_reference_id?: string }
+    const session = event.data.object as {
+      metadata?: { invoiceId?: string }
+      client_reference_id?: string
+      payment_intent?: string | { id: string }
+    }
+
     const invoiceId = session.metadata?.invoiceId || session.client_reference_id
     if (invoiceId) {
+      let receiptUrl: string | null = null
+
+      // Try to get receipt URL from payment intent
+      if (session.payment_intent && stripe) {
+        try {
+          const piId = typeof session.payment_intent === "string"
+            ? session.payment_intent
+            : session.payment_intent.id
+          const pi = await stripe.paymentIntents.retrieve(piId)
+          const chargeId = pi.latest_charge
+          if (chargeId && typeof chargeId === "string") {
+            const charge = await stripe.charges.retrieve(chargeId)
+            receiptUrl = charge.receipt_url || null
+          }
+        } catch { /* receipt URL not available */ }
+      }
+
       await prisma.invoice.update({
         where: { id: invoiceId },
-        data: { status: "PAID", paidAt: new Date(), paymentGateway: "stripe" },
+        data: {
+          status: "PAID",
+          paidAt: new Date(),
+          paymentGateway: "stripe",
+          ...(receiptUrl && { receiptUrl }),
+        },
       })
-      // Send confirmation
-      const invoice = await prisma.invoice.findUnique({ where: { id: invoiceId }, include: { client: { include: { user: { select: { name: true, email: true } } } } } })
+
+      const invoice = await prisma.invoice.findUnique({
+        where: { id: invoiceId },
+        include: { client: { include: { user: { select: { name: true, email: true } } } } },
+      })
       if (invoice?.client?.user.email) {
         sendClientInviteEmail(invoice.client.user.email, invoice.client.user.name,
           `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/dashboard/invoices/${invoiceId}`, "payment_received")

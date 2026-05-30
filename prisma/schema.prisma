@@ -191,6 +191,7 @@ model Invoice {
   taxAmount   Float     @default(0)
   discountCode String?
   discountAmount Float   @default(0)
+  receiptUrl     String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -311,6 +312,7 @@ model Expense {
   clientId        String?
   hourLogId       String?  @unique
   receiptFileName String?
+  receiptUrl      String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

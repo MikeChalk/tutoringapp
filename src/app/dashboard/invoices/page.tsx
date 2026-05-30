@@ -76,6 +76,7 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
             <button type="submit" className="text-xs text-amber-600 dark:text-amber-400 hover:underline">Send Reminders</button>
           </form>
           <a href="/api/export?type=invoices" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Export CSV</a>
+          <a href="/api/export?type=accounting" className="text-xs text-purple-600 dark:text-purple-400 hover:underline">Accounting Export</a>
           {isSuperAdmin(session.user.role) && <CityFilter selected={selectedCity} />}
         </div>
       </div>
