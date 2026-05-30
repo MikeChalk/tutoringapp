@@ -89,10 +89,10 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Invoices</h2>
         <div className="flex items-center gap-3">
-          <form action="/api/cron?action=generate" method="POST" onSubmit="return confirm('Generate invoices for all clients with unbilled hours?')">
+          <form action="/api/cron?action=generate" method="POST" data-confirm="Generate invoices for all clients with unbilled hours?">
             <button type="submit" className="text-xs text-green-600 dark:text-green-400 hover:underline">Generate Invoices</button>
           </form>
-          <form action="/api/cron?action=remind" method="POST" onSubmit="return confirm('Send payment reminders to all overdue clients?')">
+          <form action="/api/cron?action=remind" method="POST" data-confirm="Send payment reminders to all overdue clients?">
             <button type="submit" className="text-xs text-amber-600 dark:text-amber-400 hover:underline">Send Reminders</button>
           </form>
           <a href="/api/export?type=invoices" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Export CSV</a>
@@ -144,7 +144,7 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
       {/* Bulk send drafts button */}
       {(selectedStatus === "DRAFT" || !selectedStatus) && draftCount > 0 && admin && (
         <div className="mb-4">
-          <form action="/api/invoices/send-all" method="POST" className="inline" onSubmit="return confirm('Send ALL draft invoices to clients?')">
+          <form action="/api/invoices/send-all" method="POST" className="inline" data-confirm="Send ALL draft invoices to clients?">
             <button type="submit" className="text-xs px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors">
               Send All Drafts ({draftCount})
             </button>

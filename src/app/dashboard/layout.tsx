@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { signOut, useSession } from "next-auth/react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -13,6 +13,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname()
   const role = session?.user?.role
   const isAdminRole = role === "ADMIN" || role === "CITY_ADMIN"
+
+  useEffect(() => {
+    function handleConfirm(e: Event) {
+      const form = (e.target as HTMLElement).closest("form")
+      const msg = form?.getAttribute("data-confirm")
+      if (msg && !confirm(msg)) e.preventDefault()
+    }
+    document.addEventListener("click", handleConfirm)
+    return () => document.removeEventListener("click", handleConfirm)
+  }, [])
 
   return (
     <div className="flex min-h-screen">
