@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { isAdmin } from "@/lib/auth-helpers"
 
 const PROMOTION_MAP: Record<string, { grade: string; finish: boolean }> = {
   ELEMENTARY: { grade: "SEC1_2", finish: false },
@@ -13,7 +14,7 @@ const PROMOTION_MAP: Record<string, { grade: string; finish: boolean }> = {
 
 export async function POST() {
   const session = await auth()
-  if (!session?.user || session.user.role !== "ADMIN") {
+  if (!session?.user || !isAdmin(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 

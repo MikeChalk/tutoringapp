@@ -97,14 +97,18 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Invoices</h2>
         <div className="flex items-center gap-3">
-          <form action="/api/cron?action=generate" method="POST" data-confirm="Generate invoices for all clients with unbilled hours?">
-            <button type="submit" className="text-xs text-green-600 dark:text-green-400 hover:underline">Generate Invoices</button>
-          </form>
-          <form action="/api/cron?action=remind" method="POST" data-confirm="Send payment reminders to all overdue clients?">
-            <button type="submit" className="text-xs text-amber-600 dark:text-amber-400 hover:underline">Send Reminders</button>
-          </form>
-          <a href="/api/export?type=invoices" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Export CSV</a>
-          <a href="/api/export?type=accounting" className="text-xs text-purple-600 dark:text-purple-400 hover:underline">Accounting Export</a>
+          {admin && (
+            <>
+              <form action="/api/cron?action=generate" method="POST" data-confirm="Generate invoices for all clients with unbilled hours?">
+                <button type="submit" className="text-xs text-green-600 dark:text-green-400 hover:underline">Generate Invoices</button>
+              </form>
+              <form action="/api/cron?action=remind" method="POST" data-confirm="Send payment reminders to all overdue clients?">
+                <button type="submit" className="text-xs text-amber-600 dark:text-amber-400 hover:underline">Send Reminders</button>
+              </form>
+              <a href="/api/export?type=invoices" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Export CSV</a>
+              <a href="/api/export?type=accounting" className="text-xs text-purple-600 dark:text-purple-400 hover:underline">Accounting Export</a>
+            </>
+          )}
           {isSuperAdmin(session.user.role) && <CityFilter selected={selectedCity} />}
         </div>
       </div>
@@ -268,14 +272,14 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 mt-4">
           {page > 1 && (
-            <a href={`/dashboard/invoices?page=${page - 1}${selectedStatus ? `&status=${selectedStatus}` : ""}${searchQuery ? `&search=${searchQuery}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
+            <a href={`/dashboard/invoices?page=${page - 1}${selectedStatus ? `&status=${selectedStatus}` : ""}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
               className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-700">
               Previous
             </a>
           )}
           <span className="text-sm text-zinc-500">Page {page} of {totalPages} ({totalCount} total)</span>
           {page < totalPages && (
-            <a href={`/dashboard/invoices?page=${page + 1}${selectedStatus ? `&status=${selectedStatus}` : ""}${searchQuery ? `&search=${searchQuery}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
+            <a href={`/dashboard/invoices?page=${page + 1}${selectedStatus ? `&status=${selectedStatus}` : ""}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
               className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-700">
               Next
             </a>

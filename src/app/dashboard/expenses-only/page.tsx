@@ -2,27 +2,20 @@ import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin, isCityAdmin, getActiveCityId, isSuperAdmin } from "@/lib/auth-helpers"
 import { redirect } from "next/navigation"
 import { CityFilter } from "@/components/city-filter"
+import { EXPENSE_CATEGORIES } from "@/lib/constants"
 import AddExpenseSection from "@/components/add-expense-section"
 import Link from "next/link"
 
-const CATEGORIES = ["ALL", "TUTOR_PAY", "SOFTWARE", "MARKETING", "SUPPLIES", "RENT", "TRAVEL", "OFFICE_SUPPLIES", "UTILITIES", "INSURANCE", "ADVERTISING", "PROFESSIONAL_FEES", "BANK_FEES", "EQUIPMENT", "MEALS", "SUBSCRIPTIONS", "OTHER"]
+const CATEGORY_FILTERS = ["ALL", ...EXPENSE_CATEGORIES] as const
 const CATEGORY_LABELS: Record<string, string> = {
   ALL: "All",
   TUTOR_PAY: "Tutor Payments",
-  SOFTWARE: "Software",
-  MARKETING: "Marketing",
-  SUPPLIES: "Supplies",
-  RENT: "Rent",
+  MATERIALS: "Materials",
   TRAVEL: "Travel",
-  OFFICE_SUPPLIES: "Office Supplies",
-  UTILITIES: "Utilities",
-  INSURANCE: "Insurance",
-  ADVERTISING: "Advertising",
-  PROFESSIONAL_FEES: "Professional Fees",
-  BANK_FEES: "Bank Fees",
-  EQUIPMENT: "Equipment",
-  MEALS: "Meals",
-  SUBSCRIPTIONS: "Subscriptions",
+  SOFTWARE: "Software",
+  RENT: "Rent",
+  MARKETING: "Marketing",
+  OFFICE: "Office",
   OTHER: "Other",
 }
 
@@ -81,12 +74,15 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
 
   const totalPages = Math.ceil(totalCount / pageSize)
 
+  const totalExpenseAgg = await prisma.expense.aggregate({ where, _sum: { amount: true } })
+  const totalExpenseAmount = totalExpenseAgg._sum.amount ?? 0
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Expenses</h2>
-          <p className="text-sm text-zinc-500">${totalCount > 0 ? "..." : "0.00"} · {totalCount} entries</p>
+          <p className="text-sm text-zinc-500">${totalExpenseAmount.toFixed(2)} · {totalCount} entries</p>
         </div>
         <div className="flex items-center gap-3">
           <form action="/api/expenses/seed" method="POST" data-confirm="Sync all historical hour logs as expenses?">
@@ -109,7 +105,7 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
 
       {/* Category filter toggles */}
       <div className="flex flex-wrap gap-2 mb-6">
-        {CATEGORIES.map(cat => (
+        {CATEGORY_FILTERS.map(cat => (
           <Link
             key={cat}
             href={`/dashboard/expenses-only?category=${cat}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
@@ -187,14 +183,14 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 mt-4">
           {page > 1 && (
-            <a href={`/dashboard/expenses-only?page=${page - 1}${selectedCategory !== "ALL" ? `&category=${selectedCategory}` : ""}${searchQuery ? `&search=${searchQuery}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
+            <a href={`/dashboard/expenses-only?page=${page - 1}${selectedCategory !== "ALL" ? `&category=${selectedCategory}` : ""}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
               className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
               Previous
             </a>
           )}
           <span className="text-sm text-zinc-500 px-2">Page {page} of {totalPages} ({totalCount} total)</span>
           {page < totalPages && (
-            <a href={`/dashboard/expenses-only?page=${page + 1}${selectedCategory !== "ALL" ? `&category=${selectedCategory}` : ""}${searchQuery ? `&search=${searchQuery}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
+            <a href={`/dashboard/expenses-only?page=${page + 1}${selectedCategory !== "ALL" ? `&category=${selectedCategory}` : ""}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
               className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
               Next
             </a>

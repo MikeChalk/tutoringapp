@@ -98,13 +98,14 @@ export default async function TutorsPage(props: { searchParams: Promise<{ type?:
   }
 
   const cities = await prisma.city.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } })
+  const templates = await prisma.contractTemplate.findMany({ orderBy: { name: "asc" } })
 
   const [tutors, totalCount] = await Promise.all([
     prisma.tutor.findMany({
       where: baseWhere,
       include: {
         user: { select: { name: true, email: true, city: { select: { name: true } } } },
-        contract: { select: { type: true } },
+        contracts: { where: { status: "ACTIVE" }, select: { type: true }, take: 1 },
       },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * pageSize,
@@ -143,7 +144,7 @@ export default async function TutorsPage(props: { searchParams: Promise<{ type?:
         {searchQuery && <a href={`/dashboard/tutors${filter !== "ALL" ? `?type=${filter}` : ""}`} className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-500 hover:bg-zinc-100">Clear</a>}
       </form>
 
-      <AddTutorForm templates={[]} cities={cities} />
+      <AddTutorForm templates={templates} cities={cities} />
 
       <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
         <table className="w-full">
@@ -168,7 +169,7 @@ export default async function TutorsPage(props: { searchParams: Promise<{ type?:
                   <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{tutor.user.email}</td>
                   <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{tutor.user.city?.name || "-"}</td>
                   <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{TENURE_LABELS[tutor.tenure] || tutor.tenure}</td>
-                  <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{CONTRACT_TYPE_LABELS[tutor.contract?.type || ""] || tutor.contract?.type || "—"}</td>
+                  <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{CONTRACT_TYPE_LABELS[tutor.contracts[0]?.type || ""] || tutor.contracts[0]?.type || "—"}</td>
                   <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{tutor.gradeLevels ? tutor.gradeLevels.split(",").map(g => GRADE_LABELS[g] || g).join(", ") : "-"}</td>
                   <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{tutor.subjects || "-"}</td>
                   <td className="px-4 py-3"><ImpersonateButton userId={tutor.userId} /></td>
@@ -181,14 +182,14 @@ export default async function TutorsPage(props: { searchParams: Promise<{ type?:
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 mt-4">
           {page > 1 && (
-            <a href={`/dashboard/tutors?page=${page - 1}${filter !== "ALL" ? `&type=${filter}` : ""}${searchQuery ? `&search=${searchQuery}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
+            <a href={`/dashboard/tutors?page=${page - 1}${filter !== "ALL" ? `&type=${filter}` : ""}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
               className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
               Previous
             </a>
           )}
           <span className="text-sm text-zinc-500 px-2">Page {page} of {totalPages} ({totalCount} total)</span>
           {page < totalPages && (
-            <a href={`/dashboard/tutors?page=${page + 1}${filter !== "ALL" ? `&type=${filter}` : ""}${searchQuery ? `&search=${searchQuery}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
+            <a href={`/dashboard/tutors?page=${page + 1}${filter !== "ALL" ? `&type=${filter}` : ""}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
               className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
               Next
             </a>

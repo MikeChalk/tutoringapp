@@ -26,8 +26,12 @@ export default async function TutorDetailPage(props: { params: Promise<{ id: str
 
   if (!tutor) notFound()
 
-  const totalHours = tutor.hourLogs.reduce((sum, h) => sum + h.hours, 0)
-  const totalPay = tutor.hourLogs.reduce((sum, h) => sum + h.hours * h.tutorPayRate, 0)
+  const [hoursAgg, payResult] = await Promise.all([
+    prisma.hourLog.aggregate({ where: { tutorId: id }, _sum: { hours: true } }),
+    prisma.$queryRaw<Array<{ total: number }>>`SELECT COALESCE(SUM(hours * tutor_pay_rate), 0) as total FROM hour_logs WHERE tutor_id = ${id}`,
+  ])
+  const totalHours = hoursAgg._sum.hours ?? 0
+  const totalPay = payResult[0].total
 
   const payScales = await prisma.payScale.findMany({
     where: { tenure: tutor.tenure },
@@ -69,7 +73,7 @@ export default async function TutorDetailPage(props: { params: Promise<{ id: str
             </div>
             <div className="flex justify-between">
               <dt className="text-zinc-500">Tenure</dt>
-              <dd className="text-zinc-900 dark:text-zinc-100 font-medium">{TENURE_LABELS[tutor.tenure]}</dd>
+              <dd className="text-zinc-900 dark:text-zinc-100 font-medium">{TENURE_LABELS[tutor.tenure] || tutor.tenure}</dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-zinc-500">Grades</dt>

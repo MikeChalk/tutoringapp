@@ -129,7 +129,7 @@ async function getRecipientsWithNames(group: string): Promise<Array<{ email: str
 
   if (group === "supervisors") {
     const tutors = await prisma.tutor.findMany({
-      where: { contract: { type: "PROGRAM_SUPERVISOR", status: "ACTIVE" } },
+      where: { contracts: { some: { type: "PROGRAM_SUPERVISOR", status: "ACTIVE" } } },
       include: { user: { select: { email: true, name: true } } },
     })
     return tutors.map(t => ({ email: t.user.email, name: t.user.name }))

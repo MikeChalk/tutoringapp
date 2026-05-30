@@ -86,12 +86,13 @@ export async function POST(request: Request) {
   const hashed = await bcrypt.hash(tempPassword, 12)
   const signupToken = crypto.randomBytes(16).toString("hex")
 
-  const user = await prisma.user.create({
-    data: { name, email, password: hashed, role: "CLIENT", cityId, signupToken },
-  })
-
-  await prisma.client.create({
-    data: { userId: user.id, type: clientType, company, phone, address, province, country, postalCode, notes },
+  await prisma.$transaction(async (tx) => {
+    const u = await tx.user.create({
+      data: { name, email, password: hashed, role: "CLIENT", cityId, signupToken },
+    })
+    await tx.client.create({
+      data: { userId: u.id, type: clientType, company, phone, address, province, country, postalCode, notes },
+    })
   })
 
   const inviteUrl = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/invite/${signupToken}`

@@ -28,7 +28,7 @@ export default async function DataHealthPage(props: { searchParams: Promise<{ ad
 
   // 2. Tutors without active contracts
   const tutorsNoContract = await prisma.tutor.findMany({
-    where: { onboarded: true, contract: null },
+    where: { onboarded: true, contracts: { none: { status: "ACTIVE" } } },
     include: { user: { select: { name: true, email: true } } },
   })
   checks.push({

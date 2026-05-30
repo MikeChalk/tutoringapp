@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { isAdmin, getTutorId } from "@/lib/auth-helpers"
 import { logActivity } from "@/lib/activity"
+import { STUDENT_GRADES } from "@/lib/constants"
 
 export async function POST(request: Request) {
   const session = await auth()
@@ -21,7 +22,7 @@ export async function POST(request: Request) {
   const manualPay = formData.get("tutorPayRate") as string
   const category = formData.get("category") as string
 
-  if (!projectId || !tutorId || !date || !hours) {
+  if (!projectId || !tutorId || !date || isNaN(hours) || hours <= 0) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 })
   }
 
@@ -53,6 +54,9 @@ export async function POST(request: Request) {
   if (manualBilling && manualPay) {
     billingRate = parseFloat(manualBilling)
     tutorPayRate = parseFloat(manualPay)
+    if (isNaN(billingRate) || isNaN(tutorPayRate)) {
+      return NextResponse.json({ error: "Invalid rate values" }, { status: 400 })
+    }
   } else {
     // Get rates from the tutor's active contract first, fall back to PayScale
     const contract = await prisma.contract.findFirst({
@@ -60,7 +64,7 @@ export async function POST(request: Request) {
       select: { rates: true, yearLevel: true },
     })
 
-    const stdGrades = ["ELEMENTARY", "SEC1_2", "SEC3", "SEC4_5", "CEGEP", "UNI"]
+    const stdGrades = STUDENT_GRADES
     let lookupGrade: string
     if (project.projectType === "STUDY_HALL" && category) {
       lookupGrade = category

@@ -93,7 +93,7 @@ export const SUBJECT_OPTIONS = [
 export const USER_ROLES = ["ADMIN", "CITY_ADMIN", "TUTOR", "CLIENT"] as const
 export type UserRole = (typeof USER_ROLES)[number]
 
-export const CONTRACT_TYPES = ["PRIVATE_TUTORING", "PROGRAM_SUPERVISOR"] as const
+export const CONTRACT_TYPES = ["PRIVATE_TUTORING", "STUDY_HALL", "PROGRAM_SUPERVISOR"] as const
 export type ContractType = (typeof CONTRACT_TYPES)[number]
 
 export const PROJECT_TYPES = ["STUDENT", "STUDY_HALL"] as const

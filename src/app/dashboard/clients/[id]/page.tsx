@@ -58,9 +58,14 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
 
   if (!client) notFound()
 
-  const totalInvoiced = client.invoices.reduce((s, i) => s + i.totalAmount, 0)
-  const totalCollected = client.invoices.filter(i => i.status === "PAID").reduce((s, i) => s + i.totalAmount, 0)
-  const totalExpenses = client.expenses.reduce((s, e) => s + e.amount, 0)
+  const [invoiceAgg, paidInvoiceAgg, expenseAgg] = await Promise.all([
+    prisma.invoice.aggregate({ where: { clientId: id }, _sum: { totalAmount: true } }),
+    prisma.invoice.aggregate({ where: { clientId: id, status: "PAID" }, _sum: { totalAmount: true } }),
+    prisma.expense.aggregate({ where: { clientId: id }, _sum: { amount: true } }),
+  ])
+  const totalInvoiced = invoiceAgg._sum.totalAmount ?? 0
+  const totalCollected = paidInvoiceAgg._sum.totalAmount ?? 0
+  const totalExpenses = expenseAgg._sum.amount ?? 0
 
   return (
     <div>

@@ -31,14 +31,14 @@ export default async function PaymentsPage() {
     monthlyGrouped[key].pay += log.hours * log.tutorPayRate
   }
 
-  const stripes = !!process.env.STRIPE_SECRET_KEY
+  const hasStripe = !!process.env.STRIPE_SECRET_KEY
   const bankLinked = !!tutor?.stripeConnectId
 
   return (
     <div>
       <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-6">My Payments</h2>
 
-      {stripes && (
+      {hasStripe && (
         <div className={`rounded-xl border p-4 mb-6 ${bankLinked ? "bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700" : "bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700"}`}>
           <div className="flex items-center justify-between">
             <div>
