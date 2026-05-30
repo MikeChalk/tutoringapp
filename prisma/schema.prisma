@@ -59,20 +59,29 @@ model Session {
 }
 
 model Tutor {
-  id             String    @id @default(cuid())
-  userId         String    @unique
-  bio            String?
-  subjects       String    @default("")
-  gradeLevels    String    @default("")
-  tenure         String    @default("1ST_YEAR")
-  onboardingStep Int       @default(0)
-  isActive       Boolean   @default(true)
-  onboarded      Boolean   @default(false)
-  onboardedAt    DateTime?
-  cvToken        String?   @unique
-  stripeConnectId String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id                  String    @id @default(cuid())
+  userId              String    @unique
+  bio                 String?
+  subjects            String    @default("")
+  gradeLevels         String    @default("")
+  tenure              String    @default("1ST_YEAR")
+  onboardingStep      Int       @default(0)
+  isActive            Boolean   @default(true)
+  onboarded           Boolean   @default(false)
+  onboardedAt         DateTime?
+  cvToken             String?   @unique
+  stripeConnectId     String?
+  phone               String?
+  currentStudies      String?
+  highSchool          String?
+  preferredFormat     String?
+  borough             String?
+  workExperience      String?
+  activity            String    @default("Active")
+  cvUploaded          Boolean   @default(false)
+  transcriptUploaded  Boolean   @default(false)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   contract         Contract?

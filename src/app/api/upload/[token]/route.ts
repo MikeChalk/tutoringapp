@@ -40,12 +40,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
     uploaded.push(filename)
   }
 
-  const existingBio = tutor.bio || ""
-  const note = `\nDocuments uploaded: ${uploaded.join(", ")} on ${new Date().toISOString().split("T")[0]}`
-  await prisma.tutor.update({
-    where: { id: tutor.id },
-    data: { bio: existingBio + note, onboardingStep: 1 },
-  })
+  const updateData: Record<string, unknown> = { onboardingStep: tutor.onboardingStep < 1 ? 1 : undefined }
+  if (cv && cv.size > 0) updateData.cvUploaded = true
+  if (transcript && transcript.size > 0) updateData.transcriptUploaded = true
+  if (updateData.onboardingStep === undefined) delete updateData.onboardingStep
+
+  if (Object.keys(updateData).length > 0) {
+    await prisma.tutor.update({
+      where: { id: tutor.id },
+      data: updateData,
+    })
+  }
 
   return NextResponse.redirect(new URL(`/upload/${token}?done=1`, request.url), 303)
 }

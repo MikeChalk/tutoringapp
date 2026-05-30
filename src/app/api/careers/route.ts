@@ -35,17 +35,10 @@ export async function POST(request: Request) {
   const hashed = await bcrypt.hash(randomPassword, 12)
   const cvToken = crypto.randomBytes(16).toString("hex")
 
-  const preferredFormats = []
-  if (formatOnline) preferredFormats.push("Online")
-  if (formatInPerson) preferredFormats.push("In-Person")
-
-  const bioParts = []
-  if (phone) bioParts.push(`Phone: ${phone}`)
-  if (borough) bioParts.push(`Borough: ${borough}`)
-  if (currentStudies) bioParts.push(`Current Studies: ${currentStudies}`)
-  if (highSchool) bioParts.push(`High School: ${highSchool}`)
-  if (preferredFormats.length) bioParts.push(`Preferred Format: ${preferredFormats.join(", ")}`)
-  if (workExperience) bioParts.push(`Work Experience: ${workExperience}`)
+  let preferredFormat: string | null = null
+  if (formatOnline && formatInPerson) preferredFormat = "Both"
+  else if (formatOnline) preferredFormat = "Online"
+  else if (formatInPerson) preferredFormat = "In-Person"
 
   const user = await prisma.user.create({
     data: {
@@ -62,7 +55,13 @@ export async function POST(request: Request) {
       userId: user.id,
       subjects: subjects || "",
       gradeLevels: gradeLevels || "",
-      bio: bioParts.join("\n") || null,
+      bio: null,
+      phone: phone || null,
+      currentStudies: currentStudies || null,
+      highSchool: highSchool || null,
+      preferredFormat,
+      borough: borough || null,
+      workExperience: workExperience || null,
       isActive: true,
       onboarded: false,
       cvToken,

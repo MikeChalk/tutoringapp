@@ -1,9 +1,8 @@
 import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
 import { redirect } from "next/navigation"
-import Link from "next/link"
-import { TENURE_LABELS, GRADE_LABELS } from "@/lib/constants"
 import { CityFilter } from "@/components/city-filter"
+import WaitlistTable from "@/components/waitlist-table"
 
 export default async function WaitlistPage(props: { searchParams: Promise<{ city?: string }> }) {
   const session = await requireAuth()
@@ -15,7 +14,7 @@ export default async function WaitlistPage(props: { searchParams: Promise<{ city
   const cityAdminId = isCityAdmin(session.user.role) ? await getActiveCityId(session.user.role, session.user.id) : null
   const effectiveCityId = cityAdminId || (superAdmin && selectedCity !== "all" ? selectedCity : null)
 
-  const whereClause: Record<string, unknown> = { onboarded: false, isActive: true }
+  const whereClause: Record<string, unknown> = { onboarded: false }
   if (effectiveCityId) {
     whereClause.user = { cityId: effectiveCityId }
   }
@@ -25,6 +24,11 @@ export default async function WaitlistPage(props: { searchParams: Promise<{ city
     include: { user: { select: { name: true, email: true, city: { select: { name: true } } } } },
     orderBy: { createdAt: "asc" },
   })
+
+  const serialized = tutors.map((t) => ({
+    ...t,
+    createdAt: t.createdAt.toISOString(),
+  }))
 
   return (
     <div>
@@ -38,38 +42,7 @@ export default async function WaitlistPage(props: { searchParams: Promise<{ city
           <p className="text-zinc-500">No tutors on the waitlist.</p>
         </div>
       ) : (
-        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-zinc-200 dark:border-zinc-700">
-                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Name</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Email</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">City</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Year</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Grades</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Subjects</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Joined</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700/50">
-              {tutors.map((tutor) => (
-                <tr key={tutor.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-700/50">
-                  <td className="px-4 py-3">
-                    <Link href={`/dashboard/tutors/${tutor.id}`} className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline">
-                      {tutor.user.name}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{tutor.user.email}</td>
-                  <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{tutor.user.city?.name || "-"}</td>
-                  <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{TENURE_LABELS[tutor.tenure] || tutor.tenure}</td>
-                  <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{tutor.gradeLevels ? tutor.gradeLevels.split(",").map(g => GRADE_LABELS[g] || g).join(", ") : "-"}</td>
-                  <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{tutor.subjects || "-"}</td>
-                  <td className="px-4 py-3 text-sm text-zinc-500">{new Date(tutor.createdAt).toLocaleDateString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <WaitlistTable tutors={serialized} />
       )}
     </div>
   )
