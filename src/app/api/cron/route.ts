@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       await prisma.invoice.create({
         data: {
           number: `INV-${String(count + 1).padStart(4, "0")}`,
-          clientId: client.id, dueDate, totalAmount: total, status: "SENT", sentAt: new Date(),
+          clientId: client.id, dueDate, totalAmount: total, status: "DRAFT",
           items: { create: items },
         },
       })

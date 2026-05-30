@@ -5,7 +5,15 @@ import { CityFilter } from "@/components/city-filter"
 import { CreateInvoiceForm } from "@/components/create-invoice-form"
 import Link from "next/link"
 
-export default async function InvoicesPage(props: { searchParams: Promise<{ city?: string }> }) {
+const STATUS_TABS = [
+  { value: "", label: "All" },
+  { value: "DRAFT", label: "Drafts" },
+  { value: "SENT", label: "Sent" },
+  { value: "PAID", label: "Paid" },
+  { value: "OVERDUE", label: "Overdue" },
+]
+
+export default async function InvoicesPage(props: { searchParams: Promise<{ city?: string; status?: string }> }) {
   const session = await requireAuth()
   const admin = isAdmin(session.user.role)
   const tutor = isTutor(session.user.role)
@@ -13,8 +21,9 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
 
   if (tutor) redirect("/dashboard")
 
-  const { city: cityParam } = await props.searchParams
+  const { city: cityParam, status: statusParam } = await props.searchParams
   const selectedCity = cityParam || "all"
+  const selectedStatus = statusParam || ""
   const cityAdminId = isCityAdmin(session.user.role) ? await getActiveCityId(session.user.role, session.user.id) : null
   const effectiveCityId = cityAdminId || (isSuperAdmin(session.user.role) && selectedCity !== "all" ? selectedCity : null)
 
@@ -28,6 +37,10 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
     whereClause = { ...whereClause, client: { user: { cityId: effectiveCityId } } }
   }
 
+  if (selectedStatus) {
+    whereClause = { ...whereClause, status: selectedStatus }
+  }
+
   const invoices = await prisma.invoice.findMany({
     where: whereClause,
     include: {
@@ -35,6 +48,15 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
     },
     orderBy: { createdAt: "desc" },
   })
+
+  // Always fetch all for stats
+  const statsWhere = { ...whereClause }
+  delete statsWhere.status
+  const allForStats = selectedStatus
+    ? await prisma.invoice.findMany({ where: statsWhere, select: { status: true, totalAmount: true, paidAt: true } })
+    : invoices
+
+  const draftCount = allForStats.filter(i => i.status === "DRAFT").length
 
   const clients = admin ? await prisma.client.findMany({
     where: effectiveCityId ? { user: { cityId: effectiveCityId } } : {},
@@ -44,7 +66,7 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Invoices</h2>
         <div className="flex items-center gap-3">
           <form action="/api/cron?action=generate" method="POST">
@@ -60,17 +82,48 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
 
       {admin && <CreateInvoiceForm clients={clients} />}
 
+      {/* Status tabs */}
+      <div className="flex gap-2 mb-4">
+        {STATUS_TABS.map(tab => (
+          <Link
+            key={tab.value}
+            href={`/dashboard/invoices${tab.value ? `?status=${tab.value}` : ""}${selectedCity !== "all" ? `${tab.value ? "&" : "?"}city=${selectedCity}` : ""}`}
+            className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${
+              selectedStatus === tab.value
+                ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900"
+                : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700 border border-zinc-300 dark:border-zinc-600"
+            }`}
+          >
+            {tab.label}
+            {tab.value === "DRAFT" && draftCount > 0 && (
+              <span className="ml-1 text-[10px] opacity-70">({draftCount})</span>
+            )}
+          </Link>
+        ))}
+      </div>
+
+      {/* Bulk send drafts button */}
+      {(selectedStatus === "DRAFT" || !selectedStatus) && draftCount > 0 && admin && (
+        <div className="mb-4">
+          <form action="/api/invoices/send-all" method="POST" className="inline">
+            <button type="submit" className="text-xs px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors">
+              Send All Drafts ({draftCount})
+            </button>
+          </form>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <StatCard
-          label="Total Outstanding"
-          value={`$${invoices
+          label={selectedStatus ? `${selectedStatus} Total` : "Total Outstanding"}
+          value={`$${allForStats
             .filter((i) => i.status === "SENT" || i.status === "OVERDUE")
             .reduce((sum, i) => sum + i.totalAmount, 0)
             .toFixed(2)}`}
         />
         <StatCard
           label="Paid This Month"
-          value={`$${invoices
+          value={`$${allForStats
             .filter(
               (i) =>
                 i.status === "PAID" &&
@@ -81,7 +134,7 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
             .reduce((sum, i) => sum + i.totalAmount, 0)
             .toFixed(2)}`}
         />
-        <StatCard label="Total Invoices" value={invoices.length.toString()} />
+        <StatCard label={selectedStatus ? "Filtered" : "Draft"} value={selectedStatus ? invoices.length.toString() : draftCount.toString()} />
       </div>
 
       <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
@@ -95,6 +148,7 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
               <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Status</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Created</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Due</th>
+              {admin && <th className="text-center px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Actions</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700/50">
@@ -138,12 +192,25 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
                 <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
                   {new Date(invoice.dueDate).toLocaleDateString()}
                 </td>
+                {admin && (
+                  <td className="px-4 py-3 text-center">
+                    {invoice.status === "DRAFT" && (
+                      <form action={`/api/invoices/${invoice.id}`} method="POST" className="inline">
+                        <input type="hidden" name="_action" value="markSent" />
+                        <input type="hidden" name="redirectTo" value={`/dashboard/invoices${selectedStatus ? `?status=${selectedStatus}` : ""}`} />
+                        <button type="submit" className="text-xs px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors">
+                          Send
+                        </button>
+                      </form>
+                    )}
+                  </td>
+                )}
               </tr>
             ))}
             {invoices.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-sm text-zinc-500">
-                  No invoices yet.
+                <td colSpan={admin ? 8 : 7} className="px-4 py-8 text-center text-sm text-zinc-500">
+                  {selectedStatus ? `No ${selectedStatus.toLowerCase()} invoices.` : "No invoices yet."}
                 </td>
               </tr>
             )}
