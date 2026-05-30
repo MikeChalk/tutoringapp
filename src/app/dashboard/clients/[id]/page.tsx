@@ -80,20 +80,22 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
-          <p className="text-xs text-zinc-500 uppercase">Total Invoiced</p>
-          <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">${totalInvoiced.toFixed(2)}</p>
+      {admin && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
+            <p className="text-xs text-zinc-500 uppercase">Total Invoiced</p>
+            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">${totalInvoiced.toFixed(2)}</p>
+          </div>
+          <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
+            <p className="text-xs text-zinc-500 uppercase">Collected</p>
+            <p className="text-2xl font-bold text-green-600 dark:text-green-400">${totalCollected.toFixed(2)}</p>
+          </div>
+          <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
+            <p className="text-xs text-zinc-500 uppercase">Expenses</p>
+            <p className="text-2xl font-bold text-red-600 dark:text-red-400">${totalExpenses.toFixed(2)}</p>
+          </div>
         </div>
-        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
-          <p className="text-xs text-zinc-500 uppercase">Collected</p>
-          <p className="text-2xl font-bold text-green-600 dark:text-green-400">${totalCollected.toFixed(2)}</p>
-        </div>
-        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
-          <p className="text-xs text-zinc-500 uppercase">Expenses</p>
-          <p className="text-2xl font-bold text-red-600 dark:text-red-400">${totalExpenses.toFixed(2)}</p>
-        </div>
-      </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
@@ -183,18 +185,15 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
         </div>
       </div>
 
-      <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Invoices</h3>
-          {admin && (
-            <Link
-              href={`/dashboard/invoices/new?clientId=${client.id}`}
-              className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
-            >
+      {admin && (
+        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Invoices</h3>
+            <Link href={`/dashboard/invoices/new?clientId=${client.id}`}
+              className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline">
               Create Invoice
             </Link>
-          )}
-        </div>
+          </div>
         {client.invoices.length === 0 ? (
           <p className="text-sm text-zinc-500">No invoices yet.</p>
         ) : (
@@ -231,9 +230,11 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
           </table>
         )}
       </div>
+      )}
 
-      <div className="mb-6">
-        <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Expenses</h3>
+      {admin && (
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Expenses</h3>
         {client.expenses.length === 0 ? (
           <p className="text-sm text-zinc-500">No expenses yet.</p>
         ) : (
@@ -261,6 +262,7 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
           </div>
         )}
       </div>
+      )}
     </div>
   )
 }
