@@ -36,7 +36,7 @@ export async function POST(request: Request) {
       created++
     }
 
-    return NextResponse.json({ created, message: `Generated ${created} invoices` })
+    return NextResponse.redirect(new URL(`/dashboard/invoices?generated=${created}`, request.url), 303)
   }
 
   if (action === "remind") {
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
       await prisma.invoice.update({ where: { id: inv.id }, data: { status: "OVERDUE" } })
     }
 
-    return NextResponse.json({ reminded: invoices.length, message: `Sent ${invoices.length} reminders` })
+    return NextResponse.redirect(new URL(`/dashboard/invoices?reminded=${invoices.length}`, request.url), 303)
   }
 
   return NextResponse.json({ error: "Invalid action" }, { status: 400 })

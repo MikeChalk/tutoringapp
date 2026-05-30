@@ -47,8 +47,12 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Invoices</h2>
         <div className="flex items-center gap-3">
-          <a href="/api/cron?action=generate" className="text-xs text-green-600 dark:text-green-400 hover:underline">Generate Invoices</a>
-          <a href="/api/cron?action=remind" className="text-xs text-amber-600 dark:text-amber-400 hover:underline">Send Reminders</a>
+          <form action="/api/cron?action=generate" method="POST">
+            <button type="submit" className="text-xs text-green-600 dark:text-green-400 hover:underline">Generate Invoices</button>
+          </form>
+          <form action="/api/cron?action=remind" method="POST">
+            <button type="submit" className="text-xs text-amber-600 dark:text-amber-400 hover:underline">Send Reminders</button>
+          </form>
           <a href="/api/export?type=invoices" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Export CSV</a>
           {isSuperAdmin(session.user.role) && <CityFilter selected={selectedCity} />}
         </div>
@@ -89,6 +93,7 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
               <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">City</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Amount</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Status</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Created</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Due</th>
             </tr>
           </thead>
@@ -127,6 +132,9 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
                     {invoice.status}
                   </span>
                 </td>
+                <td className="px-4 py-3 text-sm text-zinc-500 whitespace-nowrap">
+                  {new Date(invoice.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                </td>
                 <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
                   {new Date(invoice.dueDate).toLocaleDateString()}
                 </td>
@@ -134,7 +142,7 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
             ))}
             {invoices.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-sm text-zinc-500">
+                <td colSpan={7} className="px-4 py-8 text-center text-sm text-zinc-500">
                   No invoices yet.
                 </td>
               </tr>
