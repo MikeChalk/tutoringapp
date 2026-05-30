@@ -12,7 +12,7 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
   const tutor = isTutor(session.user.role)
 
   const { status: statusFilter, type: typeFilter, city: cityParam, page: pageParam } = await props.searchParams
-  const projectType = typeFilter || "STUDENT"
+  const projectType = typeFilter || "ALL"
   const selectedCity = cityParam || "all"
   const page = parseInt(pageParam || "1") || 1
   const pageSize = 50
@@ -20,7 +20,8 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
   const cityAdminId = isCityAdmin(session.user.role) ? await getActiveCityId(session.user.role, session.user.id) : null
   const effectiveCityId = cityAdminId || (superAdmin && selectedCity !== "all" ? selectedCity : null)
 
-  let whereClause: Record<string, unknown> = { projectType }
+  let whereClause: Record<string, unknown> = {}
+  if (projectType !== "ALL") whereClause.projectType = projectType
   if (tutor) {
     const tutorId = await getTutorId(session.user.id, session.user.email)
     if (tutorId) {
@@ -61,8 +62,9 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
   const totalPages = Math.ceil(totalCount / pageSize)
 
   const tabs = [
+    { value: "ALL", label: "All Projects" },
     { value: "STUDENT", label: "Private Tutoring" },
-    { value: "STUDY_HALL", label: "Other Projects" },
+    { value: "STUDY_HALL", label: "Study Hall Projects" },
   ]
 
   const clients = admin ? await prisma.client.findMany({

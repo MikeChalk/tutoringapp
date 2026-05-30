@@ -521,6 +521,7 @@ async function main() {
       projectType: "STUDY_HALL",
       school: "Royal West Academy",
       gradeLevel: "STUDY_HALL",
+      clientId: client1.id,
       cityId: montreal.id,
     },
   })
