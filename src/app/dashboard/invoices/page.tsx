@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin, isTutor, isClient, getClientId, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
+import { INVOICE_STATUS_COLORS } from "@/lib/constants"
 import { redirect } from "next/navigation"
 import { CityFilter } from "@/components/city-filter"
 import { CreateInvoiceForm } from "@/components/create-invoice-form"
@@ -224,15 +225,7 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
                 </td>
                 <td className="px-4 py-3">
                   <span
-                    className={`inline-flex text-xs font-medium rounded-full px-2 py-0.5 ${
-                      invoice.status === "PAID"
-                        ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                        : invoice.status === "SENT"
-                        ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                        : invoice.status === "DRAFT"
-                        ? "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"
-                        : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                    }`}
+                    className={`inline-flex text-xs font-medium rounded-full px-2 py-0.5 ${INVOICE_STATUS_COLORS[invoice.status] || "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"}`}
                   >
                     {invoice.status}
                   </span>

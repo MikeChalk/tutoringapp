@@ -47,6 +47,7 @@ export default async function AnalyticsPage() {
   const profit = totalPaidAmount - totalExpensesAmount
 
   const totalTutorHours = totalTutorPay._sum.hours || 0
+  const totalInvoiceCount = invoiceCounts.sent + invoiceCounts.paid + invoiceCounts.draft + invoiceCounts.overdue
   const maxHours = Math.max(...monthlyData.map(([, h]) => h), 1)
 
   return (
@@ -77,10 +78,10 @@ export default async function AnalyticsPage() {
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Invoice Status</h3>
           <div className="space-y-3">
-            <StatusBar label="Paid" count={invoiceCounts.paid} total={totalProjects} color="bg-green-500" />
-            <StatusBar label="Sent" count={invoiceCounts.sent} total={totalProjects} color="bg-blue-500" />
-            <StatusBar label="Draft" count={invoiceCounts.draft} total={totalProjects} color="bg-zinc-400" />
-            <StatusBar label="Overdue" count={invoiceCounts.overdue} total={totalProjects} color="bg-red-500" />
+            <StatusBar label="Paid" count={invoiceCounts.paid} total={totalInvoiceCount} color="bg-green-500" />
+            <StatusBar label="Sent" count={invoiceCounts.sent} total={totalInvoiceCount} color="bg-blue-500" />
+            <StatusBar label="Draft" count={invoiceCounts.draft} total={totalInvoiceCount} color="bg-zinc-400" />
+            <StatusBar label="Overdue" count={invoiceCounts.overdue} total={totalInvoiceCount} color="bg-red-500" />
           </div>
         </div>
       </div>

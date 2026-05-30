@@ -164,6 +164,7 @@ export default async function OnboardingPage(props: { searchParams: Promise<{ cr
                             <div className="flex flex-wrap gap-1.5">
                               <select name="contractType" required className="rounded border border-green-200 dark:border-green-700 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-green-500">
                                 <option value="PRIVATE_TUTORING">Private Tutoring</option>
+                                <option value="STUDY_HALL">Study Hall</option>
                                 <option value="PROGRAM_SUPERVISOR">Program Supervisor</option>
                               </select>
                               <select name="yearLevel" required className="rounded border border-green-200 dark:border-green-700 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-green-500">

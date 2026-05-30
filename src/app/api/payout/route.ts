@@ -14,7 +14,7 @@ export async function POST(request: Request) {
   const tutorId = formData.get("tutorId") as string
   const amount = parseFloat((formData.get("amount") as string) || "0")
 
-  if (!tutorId || amount <= 0) {
+  if (!tutorId || isNaN(amount) || amount <= 0) {
     return NextResponse.json({ error: "Missing tutorId or amount" }, { status: 400 })
   }
 

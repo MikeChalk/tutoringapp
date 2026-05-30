@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin, isTutor, isClient, getClientId, getTutorId } from "@/lib/auth-helpers"
 import { notFound } from "next/navigation"
 import Link from "next/link"
-import { CLIENT_TYPE_LABELS } from "@/lib/constants"
+import { CLIENT_TYPE_LABELS, INVOICE_STATUS_COLORS } from "@/lib/constants"
 
 const STATUS_COLORS: Record<string, string> = {
   IN_PROGRESS: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
@@ -316,14 +316,8 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
 }
 
 function invoiceStatusBadge(status: string) {
-  const colors: Record<string, string> = {
-    DRAFT: "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400",
-    SENT: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-    PAID: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-    OVERDUE: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-  }
   return (
-    <span className={`inline-flex text-xs font-medium rounded-full px-2 py-0.5 ${colors[status] || ""}`}>
+    <span className={`inline-flex text-xs font-medium rounded-full px-2 py-0.5 ${INVOICE_STATUS_COLORS[status] || "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"}`}>
       {status}
     </span>
   )

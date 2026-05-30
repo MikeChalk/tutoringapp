@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { isAdmin } from "@/lib/auth-helpers"
+import { CONTRACT_TYPES, TENURE_VALUES } from "@/lib/constants"
 
 export async function POST(request: Request) {
   const session = await auth()
@@ -21,17 +22,25 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 })
   }
 
-  await prisma.contract.updateMany({
-    where: { tutorId, status: "ACTIVE" },
-    data: { status: "EXPIRED" },
-  })
+  if (!CONTRACT_TYPES.includes(type as typeof CONTRACT_TYPES[number])) {
+    return NextResponse.json({ error: "Invalid contract type" }, { status: 400 })
+  }
+  if (!TENURE_VALUES.includes(yearLevel as typeof TENURE_VALUES[number])) {
+    return NextResponse.json({ error: "Invalid year level" }, { status: 400 })
+  }
 
-  // Populate default rates from PayScale for the contract's year level
   const payScales = await prisma.payScale.findMany({ where: { tenure: yearLevel } })
   const ratesMap: Record<string, number> = {}
   for (const ps of payScales) {
     ratesMap[ps.gradeLevel] = ps.rate
   }
+
+  await prisma.$transaction([
+    prisma.contract.updateMany({
+      where: { tutorId, status: "ACTIVE" },
+      data: { status: "EXPIRED" },
+    }),
+  ])
 
   await prisma.contract.create({
     data: {

@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   }
 
   const name = `${firstName} ${lastName}`
-  const randomPassword = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)
+  const randomPassword = crypto.randomBytes(12).toString("base64url").slice(0, 16)
   const hashed = await bcrypt.hash(randomPassword, 12)
   const cvToken = crypto.randomBytes(16).toString("hex")
 

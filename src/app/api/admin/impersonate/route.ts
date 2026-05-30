@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
-import { isAdmin } from "@/lib/auth-helpers"
+import { isSuperAdmin } from "@/lib/auth-helpers"
 import { SignJWT } from "jose"
 import { logActivity } from "@/lib/activity"
 
@@ -12,7 +12,7 @@ function getSecret(): Uint8Array {
 
 export async function POST(request: Request) {
   const session = await auth()
-  if (!session?.user || !isAdmin(session.user.role)) {
+  if (!session?.user || !isSuperAdmin(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 

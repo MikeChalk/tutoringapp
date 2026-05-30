@@ -3,7 +3,9 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { isAdmin } from "@/lib/auth-helpers"
 import { sendOnboardingEmail, sendParentNotificationEmail } from "@/lib/email"
+import { CONTRACT_TYPES, TENURE_VALUES } from "@/lib/constants"
 import bcrypt from "bcryptjs"
+import crypto from "crypto"
 
 export async function POST(request: Request) {
   const session = await auth()
@@ -105,6 +107,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 })
     }
 
+    if (!CONTRACT_TYPES.includes(contractType as typeof CONTRACT_TYPES[number])) {
+      return NextResponse.json({ error: "Invalid contract type" }, { status: 400 })
+    }
+    if (!TENURE_VALUES.includes(yearLevel as typeof TENURE_VALUES[number])) {
+      return NextResponse.json({ error: "Invalid year level" }, { status: 400 })
+    }
+
     let templateTerms = ""
     let templateGradeLevels = ""
     if (templateId) {
@@ -112,22 +121,24 @@ export async function POST(request: Request) {
       if (template) { templateTerms = template.terms; templateGradeLevels = template.gradeLevels }
     }
 
-    await prisma.tutor.update({
-      where: { id: tutorId },
-      data: { tenure: yearLevel, ...(gradeLevels || templateGradeLevels ? { gradeLevels: gradeLevels || templateGradeLevels } : {}) },
-    })
+    await prisma.$transaction(async (tx) => {
+      await tx.tutor.update({
+        where: { id: tutorId },
+        data: { tenure: yearLevel, ...(gradeLevels || templateGradeLevels ? { gradeLevels: gradeLevels || templateGradeLevels } : {}) },
+      })
 
-    await prisma.contract.updateMany({
-      where: { tutorId, status: "ACTIVE" },
-      data: { status: "EXPIRED" },
-    })
+      await tx.contract.updateMany({
+        where: { tutorId, status: "ACTIVE" },
+        data: { status: "EXPIRED" },
+      })
 
-    await prisma.contract.create({
-      data: {
-        tutorId, type: contractType, yearLevel,
-        startDate: new Date(startDate), endDate: new Date(endDate),
-        terms: templateTerms || `${contractType.replace(/_/g, " ")} contract — Year ${yearLevel === "1ST_YEAR" ? "1" : yearLevel === "2ND_YEAR" ? "2" : "3"}`,
-      },
+      await tx.contract.create({
+        data: {
+          tutorId, type: contractType, yearLevel,
+          startDate: new Date(startDate), endDate: new Date(endDate),
+          terms: templateTerms || `${contractType.replace(/_/g, " ")} contract — Year ${yearLevel === "1ST_YEAR" ? "1" : yearLevel === "2ND_YEAR" ? "2" : "3"}`,
+        },
+      })
     })
 
     return NextResponse.redirect(new URL("/dashboard/onboarding", request.url), 303)
@@ -163,7 +174,7 @@ export async function POST(request: Request) {
     if (existing) {
       return NextResponse.json({ error: "Email already in use" }, { status: 409 })
     }
-    const tempPassword = Math.random().toString(36).slice(2, 10)
+    const tempPassword = crypto.randomBytes(8).toString("hex")
     const hashed = await bcrypt.hash(tempPassword, 12)
     const user = await prisma.user.create({
       data: { name, email, password: hashed, role: "TUTOR" },
@@ -197,29 +208,38 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing tutorId" }, { status: 400 })
   }
 
-  await prisma.tutor.update({
-    where: { id: finalTutorId },
-    data: {
-      onboardingStep: 1,
-      tenure: yearLevel,
-      ...(gradeLevels || templateGradeLevels ? { gradeLevels: gradeLevels || templateGradeLevels } : {}),
-    },
-  })
+  if (!CONTRACT_TYPES.includes(contractType as typeof CONTRACT_TYPES[number])) {
+    return NextResponse.json({ error: "Invalid contract type" }, { status: 400 })
+  }
+  if (!TENURE_VALUES.includes(yearLevel as typeof TENURE_VALUES[number])) {
+    return NextResponse.json({ error: "Invalid year level" }, { status: 400 })
+  }
 
-  await prisma.contract.updateMany({
-    where: { tutorId: finalTutorId, status: "ACTIVE" },
-    data: { status: "EXPIRED" },
-  })
+  await prisma.$transaction(async (tx) => {
+    await tx.tutor.update({
+      where: { id: finalTutorId },
+      data: {
+        onboardingStep: 1,
+        tenure: yearLevel,
+        ...(gradeLevels || templateGradeLevels ? { gradeLevels: gradeLevels || templateGradeLevels } : {}),
+      },
+    })
 
-  await prisma.contract.create({
-    data: {
-      tutorId: finalTutorId,
-      type: contractType,
-      yearLevel,
-      startDate: new Date(startDate),
-      endDate: new Date(endDate),
-      terms: templateTerms || `${contractType.replace(/_/g, " ")} contract — Year ${yearLevel === "1ST_YEAR" ? "1" : yearLevel === "2ND_YEAR" ? "2" : "3"}`,
-    },
+    await tx.contract.updateMany({
+      where: { tutorId: finalTutorId, status: "ACTIVE" },
+      data: { status: "EXPIRED" },
+    })
+
+    await tx.contract.create({
+      data: {
+        tutorId: finalTutorId,
+        type: contractType,
+        yearLevel,
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+        terms: templateTerms || `${contractType.replace(/_/g, " ")} contract — Year ${yearLevel === "1ST_YEAR" ? "1" : yearLevel === "2ND_YEAR" ? "2" : "3"}`,
+      },
+    })
   })
 
   return NextResponse.redirect(new URL("/dashboard/onboarding", request.url), 303)

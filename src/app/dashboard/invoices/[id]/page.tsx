@@ -214,28 +214,28 @@ export default async function InvoiceDetailPage(props: { params: Promise<{ id: s
               <p className="text-xs text-zinc-500 mb-2">Update Status</p>
               <div className="flex flex-wrap gap-2">
                 {invoice.status === "DRAFT" && (
-                  <form action={`/api/invoices/${invoice.id}`} method="POST">
+                  <form action={`/api/invoices/${invoice.id}`} method="POST" data-confirm="Mark this invoice as sent?">
                     <input type="hidden" name="_action" value="markSent" />
                     <button type="submit" className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 transition-colors">Mark Sent</button>
                   </form>
                 )}
                 {invoice.status === "SENT" && (
                   <>
-                    <form action={`/api/invoices/${invoice.id}`} method="POST" className="flex items-end gap-2">
+                    <form action={`/api/invoices/${invoice.id}`} method="POST" data-confirm="Mark this invoice as paid?">
                       <input type="hidden" name="_action" value="markPaid" />
                       <select name="paymentGateway" className="rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500">
                         <option value="stripe">Stripe</option><option value="e-transfer">E-Transfer</option><option value="cash">Cash</option><option value="cheque">Cheque</option><option value="other">Other</option>
                       </select>
                       <button type="submit" className="rounded bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 transition-colors">Mark Paid</button>
                     </form>
-                    <form action={`/api/invoices/${invoice.id}`} method="POST">
+                    <form action={`/api/invoices/${invoice.id}`} method="POST" data-confirm="Send a payment reminder to this client?">
                       <input type="hidden" name="_action" value="sendReminder" />
                       <button type="submit" className="rounded bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700 transition-colors">Send Reminder</button>
                     </form>
                   </>
                 )}
                 {(invoice.status === "SENT") && (
-                  <form action={`/api/invoices/${invoice.id}`} method="POST">
+                  <form action={`/api/invoices/${invoice.id}`} method="POST" data-confirm="Mark this invoice as overdue?">
                     <input type="hidden" name="_action" value="markOverdue" />
                     <button type="submit" className="rounded bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 transition-colors">Mark Overdue</button>
                   </form>

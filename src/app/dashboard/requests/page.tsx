@@ -148,10 +148,10 @@ function RequestsContent() {
             </div>
           )}
           {filteredRequests.map((req) => (
-            <button
+            <div
               key={req.id}
               onClick={() => isAdmin ? getRecommendations(req.id) : setSelected(req.id)}
-              className={`text-left bg-white dark:bg-zinc-800 rounded-xl border p-4 transition-colors hover:border-zinc-400 dark:hover:border-zinc-500 ${
+              className={`text-left bg-white dark:bg-zinc-800 rounded-xl border p-4 transition-colors hover:border-zinc-400 dark:hover:border-zinc-500 cursor-pointer ${
                 selected === req.id ? "border-blue-500 dark:border-blue-400 ring-1 ring-blue-500" : "border-zinc-200 dark:border-zinc-700"
               }`}
             >
@@ -187,7 +187,7 @@ function RequestsContent() {
                 </div>
               )}
               <p className="text-xs text-zinc-400 mt-2">{new Date(req.createdAt).toLocaleDateString()}</p>
-            </button>
+            </div>
           ))}
         </div>
 

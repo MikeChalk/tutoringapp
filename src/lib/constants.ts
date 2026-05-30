@@ -57,6 +57,18 @@ export const STATUS_COLORS: Record<string, string> = {
   CANCELLED: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
 }
 
+export const INVOICE_STATUS_COLORS: Record<string, string> = {
+  DRAFT: "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400",
+  SENT: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  PAID: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  OVERDUE: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+}
+
+export const MODE_COLORS: Record<string, string> = {
+  ONLINE: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+  IN_PERSON: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400",
+}
+
 export const CONTRACT_TYPE_LABELS: Record<string, string> = {
   PRIVATE_TUTORING: "Private Tutoring",
   STUDY_HALL: "Study Hall",

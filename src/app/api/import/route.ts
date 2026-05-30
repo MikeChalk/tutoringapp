@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth"
 import { prisma, nextInvoiceNumber } from "@/lib/db"
 import { isAdmin } from "@/lib/auth-helpers"
 import { GRADE_LABELS } from "@/lib/constants"
+import crypto from "crypto"
 import bcrypt from "bcryptjs"
 function normalizeProjectType(val: string | undefined): string {
   const cleaned = (val || "").toUpperCase().replace(/[\s-]/g, "_")
@@ -248,7 +249,7 @@ async function handleImport(formData: FormData, type: string, request: Request) 
 
         const tenure = ["1ST_YEAR", "2ND_YEAR", "3RD_YEAR"].includes(row.tenure?.toUpperCase() || "") ? row.tenure!.toUpperCase() : "1ST_YEAR"
         const role = ["TUTOR", "CITY_ADMIN"].includes(row.role?.toUpperCase() || "") ? row.role!.toUpperCase() : "TUTOR"
-        const tempPassword = Math.random().toString(36).slice(2, 10)
+        const tempPassword = crypto.randomBytes(8).toString("base64url").slice(0, 12)
         const hashed = await bcrypt.hash(tempPassword, 12)
         const createdDate = row.created_at || row.created_date
 
@@ -289,7 +290,7 @@ async function handleImport(formData: FormData, type: string, request: Request) 
         }
 
         const clientType = row.type?.toUpperCase() === "SCHOOL" ? "SCHOOL" : "PARENT"
-        const tempPassword = Math.random().toString(36).slice(2, 10)
+        const tempPassword = crypto.randomBytes(8).toString("base64url").slice(0, 12)
         const hashed = await bcrypt.hash(tempPassword, 12)
         const createdDate = row.created_at || row.created_date
 

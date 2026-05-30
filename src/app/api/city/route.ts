@@ -18,6 +18,10 @@ export async function POST(request: Request) {
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const { city } = await request.json()
+  if (city && city !== "all") {
+    const exists = await prisma.city.findUnique({ where: { id: city } })
+    if (!exists) return NextResponse.json({ error: "Invalid city" }, { status: 400 })
+  }
   const cookieStore = await cookies()
   cookieStore.set("selectedCity", city || "all", { path: "/" })
   return NextResponse.json({ success: true })
