@@ -536,6 +536,7 @@ async function main() {
       projectType: "STUDY_HALL",
       school: "Northern Secondary School",
       gradeLevel: "STUDY_HALL",
+      clientId: torontoClient.id,
       cityId: toronto.id,
     },
   })
@@ -547,6 +548,7 @@ async function main() {
       subjects: "All subjects",
       projectType: "STUDY_HALL",
       gradeLevel: "PROGRAM_SUPERVISOR",
+      clientId: client3.id,
       cityId: montreal.id,
     },
   })
