@@ -6,43 +6,35 @@ interface Column<T> {
   key: string
   label: string
   render?: (row: T) => React.ReactNode
-  sortable?: boolean
   className?: string
+  sortFn?: (a: T, b: T) => number
 }
 
 interface DataTableProps<T> {
   data: T[]
   columns: Column<T>[]
-  searchKeys?: string[]
   searchPlaceholder?: string
   filterKey?: string
   filterOptions?: { value: string; label: string }[]
   initialFilter?: string
-  initialSort?: string
-  initialSortDir?: "asc" | "desc"
-  emptyMessage?: string
 }
 
 export default function DataTable<T extends Record<string, unknown>>({
   data,
   columns,
-  searchKeys = [],
   searchPlaceholder = "Search...",
   filterKey,
   filterOptions,
   initialFilter = "",
-  initialSort = "",
-  initialSortDir = "asc",
-  emptyMessage = "No data found.",
 }: DataTableProps<T>) {
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState(initialFilter)
-  const [sortKey, setSortKey] = useState(initialSort)
-  const [sortDir, setSortDir] = useState<"asc" | "desc">(initialSortDir)
+  const [sortKey, setSortKey] = useState<string | null>(null)
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc")
 
   const handleSort = (key: string) => {
     if (sortKey === key) {
-      setSortDir(sortDir === "asc" ? "desc" : "asc")
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"))
     } else {
       setSortKey(key)
       setSortDir("asc")
@@ -51,12 +43,13 @@ export default function DataTable<T extends Record<string, unknown>>({
 
   const filtered = useMemo(() => {
     let result = data
-    if (search && searchKeys.length > 0) {
+    if (search) {
       const q = search.toLowerCase()
       result = result.filter((row) =>
-        searchKeys.some((k) => {
-          const val = row[k]
-          return val != null && String(val).toLowerCase().includes(q)
+        columns.some((col) => {
+          const val = row[col.key]
+          if (val == null) return false
+          return String(val).toLowerCase().includes(q)
         })
       )
     }
@@ -64,40 +57,38 @@ export default function DataTable<T extends Record<string, unknown>>({
       result = result.filter((row) => String(row[filterKey]) === filter)
     }
     if (sortKey) {
+      const col = columns.find((c) => c.key === sortKey)
       result = [...result].sort((a, b) => {
+        if (col?.sortFn) {
+          return sortDir === "asc" ? col.sortFn(a, b) : -col.sortFn(a, b)
+        }
         const aVal = a[sortKey]
         const bVal = b[sortKey]
         if (aVal == null && bVal == null) return 0
         if (aVal == null) return 1
         if (bVal == null) return -1
-        const aStr = String(aVal)
-        const bStr = String(bVal)
         const aNum = Number(aVal)
         const bNum = Number(bVal)
         if (!isNaN(aNum) && !isNaN(bNum)) {
           return sortDir === "asc" ? aNum - bNum : bNum - aNum
         }
-        return sortDir === "asc" ? aStr.localeCompare(bStr) : bStr.localeCompare(aStr)
+        return sortDir === "asc" ? String(aVal).localeCompare(String(bVal)) : String(bVal).localeCompare(String(aVal))
       })
     }
     return result
-  }, [data, search, searchKeys, filter, filterKey, sortKey, sortDir])
-
-  const hasSearchOrFilter = searchKeys.length > 0 || filterOptions
+  }, [data, search, filter, filterKey, sortKey, sortDir, columns])
 
   return (
     <div>
-      {hasSearchOrFilter && (
+      {(filterOptions || columns.some((c) => c.key)) && (
         <div className="flex flex-col sm:flex-row gap-2 mb-3">
-          {searchKeys.length > 0 && (
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={searchPlaceholder}
-              className="flex-1 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-1.5 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          )}
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={searchPlaceholder}
+            className="flex-1 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-1.5 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
           {filterKey && filterOptions && (
             <select
               value={filter}
@@ -119,8 +110,8 @@ export default function DataTable<T extends Record<string, unknown>>({
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  onClick={col.sortable !== false ? () => handleSort(col.key) : undefined}
-                  className={`text-left px-2 py-2 text-xs font-medium text-zinc-500 ${col.sortable !== false ? "cursor-pointer select-none hover:text-zinc-700 dark:hover:text-zinc-300" : ""} ${col.className || ""}`}
+                  onClick={() => handleSort(col.key)}
+                  className={`text-left px-2 py-2 text-xs font-medium text-zinc-500 cursor-pointer select-none hover:text-zinc-700 dark:hover:text-zinc-300 ${col.className || ""}`}
                 >
                   <span className="inline-flex items-center gap-1">
                     {col.label}
@@ -134,13 +125,13 @@ export default function DataTable<T extends Record<string, unknown>>({
           </thead>
           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700/50">
             {filtered.length === 0 ? (
-              <tr><td colSpan={columns.length} className="px-4 py-8 text-center text-sm text-zinc-500">{emptyMessage}</td></tr>
+              <tr><td colSpan={columns.length} className="px-4 py-8 text-center text-sm text-zinc-500">No results found.</td></tr>
             ) : (
               filtered.map((row, i) => (
-                <tr key={(row as Record<string, unknown>).id != null ? String((row as Record<string, unknown>).id) : i} className="text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700/30">
+                <tr key={String(row.id ?? i)} className="text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700/30">
                   {columns.map((col) => (
                     <td key={col.key} className={col.className || ""}>
-                      {col.render ? col.render(row) : (row as Record<string, unknown>)[col.key] != null ? String((row as Record<string, unknown>)[col.key]) : ""}
+                      {col.render ? col.render(row) : (row[col.key] != null ? String(row[col.key]) : "")}
                     </td>
                   ))}
                 </tr>
@@ -148,6 +139,9 @@ export default function DataTable<T extends Record<string, unknown>>({
             )}
           </tbody>
         </table>
+      </div>
+      <div className="text-xs text-zinc-400 mt-2">
+        Showing {filtered.length} of {data.length} entries
       </div>
     </div>
   )

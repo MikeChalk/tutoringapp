@@ -3,6 +3,7 @@ import { requireAuth, isAdmin, isTutor, isClient, getClientId, getTutorId, isSup
 import { CityFilter } from "@/components/city-filter"
 import { CLIENT_TYPE_LABELS } from "@/lib/constants"
 import { AddClientForm } from "@/components/add-client-form"
+import DataTable from "@/components/data-table"
 import Link from "next/link"
 
 const TYPE_FILTERS = [
@@ -68,6 +69,18 @@ export default async function ClientsPage(props: { searchParams: Promise<{ type?
   ])
   const totalPages = Math.ceil(totalCount / pageSize)
 
+  const tableData = clients.map((c) => ({
+    id: c.id,
+    name: c.user.name,
+    email: c.user.email,
+    city: c.user.city?.name || "-",
+    type: c.type,
+    typeLabel: CLIENT_TYPE_LABELS[c.type] || c.type,
+    company: c.company || "-",
+    projects: c._count.projects,
+    invoices: c._count.invoices,
+  }))
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
@@ -86,81 +99,48 @@ export default async function ClientsPage(props: { searchParams: Promise<{ type?
 
       {admin && <AddClientForm />}
 
-      <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
-        <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-zinc-200 dark:border-zinc-700">
-              <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Name</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Email</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">City</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Type</th>
-              {admin && <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Company</th>}
-              {admin && <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Projects</th>}
-              {admin && <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Invoices</th>}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700/50">
-            {clients.map((client) => (
-              <tr key={client.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-700/50">
-                <td className="px-4 py-3">
-                  <Link
-                    href={`/dashboard/clients/${client.id}`}
-                    className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
-                  >
-                    {client.user.name}
-                  </Link>
-                </td>
-                <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
-                  {client.user.email}
-                </td>
-                <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
-                  {client.user.city?.name || "-"}
-                </td>
-                <td className="px-4 py-3">
-                  <span className={`inline-flex text-xs font-medium rounded-full px-2 py-0.5 ${
-                    client.type === "SCHOOL" ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                  }`}>
-                    {CLIENT_TYPE_LABELS[client.type] || client.type}
-                  </span>
-                </td>
-                {admin && <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
-                  {client.company || "-"}
-                </td>}
-                {admin && <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
-                  {client._count.projects}
-                </td>}
-                {admin && <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
-                  {client._count.invoices}
-                </td>}
-              </tr>
-            ))}
-            {clients.length === 0 && (
-              <tr>
-                <td colSpan={admin ? 7 : 4} className="px-4 py-8 text-center text-sm text-zinc-500">
-                  No clients yet.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-        </div>
+      <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
+        <DataTable
+          data={tableData}
+          searchPlaceholder="Search clients..."
+          columns={[
+            { key: "name", label: "Name", render: (row) => (
+              <Link href={`/dashboard/clients/${row.id}`} className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline">
+                {row.name}
+              </Link>
+            )},
+            { key: "email", label: "Email" },
+            { key: "city", label: "City" },
+            { key: "type", label: "Type", render: (row) => (
+              <span className={`inline-flex text-xs font-medium rounded-full px-2 py-0.5 ${
+                row.type === "SCHOOL" ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+              }`}>
+                {row.typeLabel}
+              </span>
+            )},
+            ...(admin ? [
+              { key: "company" as const, label: "Company" },
+              { key: "projects" as const, label: "Projects" },
+              { key: "invoices" as const, label: "Invoices" },
+            ] : []),
+          ]}
+        />
       </div>
 
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 mt-4">
           {page > 1 && (
-            <a href={`/dashboard/clients?page=${page - 1}${typeFilter !== "ALL" ? `&type=${typeFilter}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
+            <Link href={`/dashboard/clients?page=${page - 1}${typeFilter !== "ALL" ? `&type=${typeFilter}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
               className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
               Previous
-            </a>
+            </Link>
           )}
           <span className="text-sm text-zinc-500 px-2">Page {page} of {totalPages} ({totalCount} total)</span>
           {page < totalPages && (
-            <a href={`/dashboard/clients?page=${page + 1}${typeFilter !== "ALL" ? `&type=${typeFilter}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
+            <Link href={`/dashboard/clients?page=${page + 1}${typeFilter !== "ALL" ? `&type=${typeFilter}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
               className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
               Next
-            </a>
+            </Link>
           )}
         </div>
       )}

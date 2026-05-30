@@ -185,17 +185,17 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 mt-4">
           {page > 1 && (
-            <a href={`/dashboard/expenses-only?page=${page - 1}${selectedCategory !== "ALL" ? `&category=${selectedCategory}` : ""}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
+            <Link href={`/dashboard/expenses-only?page=${page - 1}${selectedCategory !== "ALL" ? `&category=${selectedCategory}` : ""}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
               className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
               Previous
-            </a>
+            </Link>
           )}
           <span className="text-sm text-zinc-500 px-2">Page {page} of {totalPages} ({totalCount} total)</span>
           {page < totalPages && (
-            <a href={`/dashboard/expenses-only?page=${page + 1}${selectedCategory !== "ALL" ? `&category=${selectedCategory}` : ""}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
+            <Link href={`/dashboard/expenses-only?page=${page + 1}${selectedCategory !== "ALL" ? `&category=${selectedCategory}` : ""}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
               className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
               Next
-            </a>
+            </Link>
           )}
         </div>
       )}

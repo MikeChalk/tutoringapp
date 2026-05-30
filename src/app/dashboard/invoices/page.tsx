@@ -267,17 +267,17 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 mt-4">
           {page > 1 && (
-            <a href={`/dashboard/invoices?page=${page - 1}${selectedStatus ? `&status=${selectedStatus}` : ""}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
+            <Link href={`/dashboard/invoices?page=${page - 1}${selectedStatus ? `&status=${selectedStatus}` : ""}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
               className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-700">
               Previous
-            </a>
+            </Link>
           )}
           <span className="text-sm text-zinc-500">Page {page} of {totalPages} ({totalCount} total)</span>
           {page < totalPages && (
-            <a href={`/dashboard/invoices?page=${page + 1}${selectedStatus ? `&status=${selectedStatus}` : ""}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
+            <Link href={`/dashboard/invoices?page=${page + 1}${selectedStatus ? `&status=${selectedStatus}` : ""}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
               className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-700">
               Next
-            </a>
+            </Link>
           )}
         </div>
       )}

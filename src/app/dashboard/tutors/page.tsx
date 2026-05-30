@@ -143,7 +143,7 @@ export default async function TutorsPage(props: { searchParams: Promise<{ type?:
         <input type="text" name="search" defaultValue={searchQuery} placeholder="Search by name or email..."
           className="flex-1 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
         <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Search</button>
-        {searchQuery && <a href={`/dashboard/tutors${filter !== "ALL" ? `?type=${filter}` : ""}`} className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-500 hover:bg-zinc-100">Clear</a>}
+        {searchQuery && <Link href={`/dashboard/tutors${filter !== "ALL" ? `?type=${filter}` : ""}`} className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-500 hover:bg-zinc-100">Clear</Link>}
       </form>
 
       <AddTutorForm templates={templates} cities={cities} />
@@ -186,17 +186,17 @@ export default async function TutorsPage(props: { searchParams: Promise<{ type?:
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 mt-4">
           {page > 1 && (
-            <a href={`/dashboard/tutors?page=${page - 1}${filter !== "ALL" ? `&type=${filter}` : ""}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
+            <Link href={`/dashboard/tutors?page=${page - 1}${filter !== "ALL" ? `&type=${filter}` : ""}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
               className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
               Previous
-            </a>
+            </Link>
           )}
           <span className="text-sm text-zinc-500 px-2">Page {page} of {totalPages} ({totalCount} total)</span>
           {page < totalPages && (
-            <a href={`/dashboard/tutors?page=${page + 1}${filter !== "ALL" ? `&type=${filter}` : ""}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
+            <Link href={`/dashboard/tutors?page=${page + 1}${filter !== "ALL" ? `&type=${filter}` : ""}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
               className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
               Next
-            </a>
+            </Link>
           )}
         </div>
       )}
