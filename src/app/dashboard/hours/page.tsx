@@ -309,7 +309,7 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
               }
             }
             if (categoryGroup) {
-              categoryGroup.className = type === 'STUDY_HALL' ? '' : 'hidden';
+              categoryGroup.style.display = type === 'STUDY_HALL' ? '' : 'none';
             }
             var tutorId = tutorSelect && tutorSelect.value;
             var assignedProjects = tutorId ? (ASSIGN[tutorId] || []) : null;
