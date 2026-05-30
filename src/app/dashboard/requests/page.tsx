@@ -122,10 +122,12 @@ function RequestsContent() {
               {cities.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
             </select>
           )}
-          <button onClick={() => setShowArchived(!showArchived)}
-            className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-2 text-xs text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors">
-            {showArchived ? "Active" : "Archive"}
-          </button>
+          {isAdmin && (
+            <button onClick={() => setShowArchived(!showArchived)}
+              className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-2 text-xs text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors">
+              {showArchived ? "Active" : "Archive"}
+            </button>
+          )}
         </div>
       </div>
 
