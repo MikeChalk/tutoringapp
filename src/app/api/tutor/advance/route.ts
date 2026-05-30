@@ -28,5 +28,5 @@ export async function POST(request: Request) {
     }
   }
 
-  return NextResponse.redirect(new URL("/dashboard/contract", request.url), 303)
+  return NextResponse.redirect(new URL("/dashboard/onboarding", request.url), 303)
 }
