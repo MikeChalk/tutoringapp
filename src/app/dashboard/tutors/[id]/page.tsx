@@ -33,7 +33,7 @@ export default async function TutorDetailPage(props: { params: Promise<{ id: str
 
   const [hoursAgg, payResult] = await Promise.all([
     prisma.hourLog.aggregate({ where: { tutorId: id }, _sum: { hours: true } }),
-    prisma.$queryRaw<Array<{ total: number }>>`SELECT COALESCE(SUM(hours * tutor_pay_rate), 0) as total FROM hour_logs WHERE tutor_id = ${id}`,
+    prisma.$queryRaw<Array<{ total: number }>>`SELECT COALESCE(SUM(hours * tutorPayRate), 0) as total FROM hour_logs WHERE tutorId = ${id}`,
   ])
   const totalHours = hoursAgg._sum.hours ?? 0
   const totalPay = payResult[0].total
