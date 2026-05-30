@@ -27,6 +27,60 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.redirect(new URL(referer, request.url), 303)
   }
 
+  if (action === "edit") {
+    const hours = parseFloat((formData.get("hours") as string) || "0")
+    const date = formData.get("date") as string
+    const mode = (formData.get("mode") as string) || "IN_PERSON"
+    const description = formData.get("description") as string
+    const billingRate = parseFloat((formData.get("billingRate") as string) || "0")
+    const tutorPayRate = parseFloat((formData.get("tutorPayRate") as string) || "0")
+
+    if (!date || !hours) {
+      return NextResponse.json({ error: "Missing fields" }, { status: 400 })
+    }
+
+    await prisma.hourLog.update({
+      where: { id },
+      data: {
+        hours,
+        date: new Date(date),
+        mode,
+        description: description || null,
+        billingRate,
+        tutorPayRate,
+      },
+    })
+
+    // Sync the corresponding expense
+    const log = await prisma.hourLog.findUnique({
+      where: { id },
+      include: { tutor: { include: { user: { select: { name: true } } } }, project: { select: { name: true, clientId: true } } },
+    })
+    if (log) {
+      const expenseAmount = hours * tutorPayRate
+      await prisma.expense.upsert({
+        where: { hourLogId: id },
+        create: {
+          description: `Tutor: ${log.tutor.user.name} — ${log.project.name} (${hours}h)`,
+          amount: expenseAmount,
+          category: "TUTOR_PAY",
+          date: new Date(date),
+          clientId: log.project.clientId,
+          hourLogId: id,
+        },
+        update: {
+          description: `Tutor: ${log.tutor.user.name} — ${log.project.name} (${hours}h)`,
+          amount: expenseAmount,
+          date: new Date(date),
+        },
+      })
+    }
+
+    await logActivity(session.user.id, "edited", "HourLog", id, `${hours}h, $${tutorPayRate}/h`)
+    const referer = request.headers.get("referer") || "/dashboard/hours"
+    return NextResponse.redirect(new URL(referer, request.url), 303)
+  }
+
   // Delete hour log + corresponding expense
   await prisma.expense.deleteMany({ where: { hourLogId: id } })
   await prisma.hourLog.delete({ where: { id } })

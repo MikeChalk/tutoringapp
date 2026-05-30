@@ -38,7 +38,12 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
   const effectiveCityId = cityAdminId || (superAdmin && selectedCity !== "all" ? selectedCity : null)
 
   const where: Record<string, unknown> = {}
-  if (effectiveCityId) where.cityId = effectiveCityId
+  if (effectiveCityId) {
+    where.OR = [
+      { cityId: effectiveCityId },
+      { client: { user: { cityId: effectiveCityId } } },
+    ]
+  }
   if (selectedCategory !== "ALL") where.category = selectedCategory
 
   const [expenses, clients] = await Promise.all([

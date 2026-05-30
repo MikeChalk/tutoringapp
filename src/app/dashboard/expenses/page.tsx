@@ -21,7 +21,7 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
     ? { project: { cityId: effectiveCityId } }
     : {}
   const expenseCityFilter = effectiveCityId
-    ? { cityId: effectiveCityId }
+    ? { OR: [{ cityId: effectiveCityId }, { client: { user: { cityId: effectiveCityId } } }] }
     : {}
   const invoiceCityFilter = effectiveCityId
     ? { client: { user: { cityId: effectiveCityId } } }

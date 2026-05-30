@@ -3,6 +3,7 @@ import { requireAuth, isTutor, getTutorId, isSuperAdmin, isAdmin, isCityAdmin, g
 import { GRADE_LABELS, TENURE_LABELS, STATUS_COLORS } from "@/lib/constants"
 import { CityFilter } from "@/components/city-filter"
 import { DeleteHourButton } from "@/components/delete-hour-button"
+import EditHourLog from "@/components/edit-hour-log"
 import Script from "next/script"
 
 export default async function HoursPage(props: { searchParams: Promise<{ city?: string }> }) {
@@ -139,7 +140,18 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
                       <td className="px-2 py-2 text-right font-medium text-green-600 dark:text-green-400">${(log.hours * log.tutorPayRate).toFixed(2)}</td>
                       {admin && (
                         <td className="px-2 py-2 text-center">
-                          <DeleteHourButton id={log.id} />
+                          <div className="flex items-center justify-center gap-1">
+                            <EditHourLog
+                              id={log.id}
+                              hours={log.hours}
+                              date={new Date(log.date).toISOString().split("T")[0]}
+                              mode={log.mode}
+                              billingRate={log.billingRate}
+                              tutorPayRate={log.tutorPayRate}
+                              description={log.description}
+                            />
+                            <DeleteHourButton id={log.id} />
+                          </div>
                         </td>
                       )}
                     </tr>
