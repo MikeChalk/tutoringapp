@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { SignJWT } from "jose"
+import { logActivity } from "@/lib/activity"
 
 function getSecret(): Uint8Array {
   if (!process.env.AUTH_SECRET) throw new Error("AUTH_SECRET environment variable is not set")
@@ -29,6 +30,8 @@ export async function POST() {
     .sign(getSecret())
 
   const response = NextResponse.json({ success: true, redirect: "/dashboard" })
+
+  logActivity(admin.id, "stopped_impersonating", "User", session.user.id, `Resumed own session as ${admin.name}`)
 
   response.cookies.set("authjs.session-token", token, {
     httpOnly: true,

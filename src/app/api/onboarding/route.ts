@@ -73,13 +73,13 @@ export async function POST(request: Request) {
     // Step 3→4: Notify tutor they've been assigned to a project
     if (currentStep === 3 && nextStep === 4) {
       const msg = `<p>You've been assigned to a new tutoring project. Log in to view details and get started.</p>`
-      await sendOnboardingEmail(tutor.user.email, tutor.user.name, msg, "contract_signed")
+      await sendOnboardingEmail(tutor.user.email, tutor.user.name, msg, "tutor_assigned")
     }
 
     // Step 5→6: Notify tutor onboarding is complete
     if (nextStep >= 6) {
       const msg = `<p>Congratulations! Your onboarding is complete. You're now ready to receive clients and start tutoring.</p>`
-      await sendOnboardingEmail(tutor.user.email, tutor.user.name, msg, "contract_signed")
+      await sendOnboardingEmail(tutor.user.email, tutor.user.name, msg, "onboarding_complete")
     }
     await prisma.tutor.update({
       where: { id: tutorId },

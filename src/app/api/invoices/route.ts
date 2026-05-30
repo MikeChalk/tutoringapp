@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/db"
+import { prisma, nextInvoiceNumber } from "@/lib/db"
 import { isAdmin } from "@/lib/auth-helpers"
 import { applyDiscountCode, calculateDiscount } from "@/lib/discounts"
 import { logActivity } from "@/lib/activity"
@@ -33,8 +33,7 @@ export async function POST(request: Request) {
       if (validLines.length === 0) return NextResponse.json({ error: "At least one line item required" }, { status: 400 })
 
       const dueDate = dueDateStr ? new Date(dueDateStr) : new Date(Date.now() + 3 * 86400000)
-      const invoiceCount = await prisma.invoice.count()
-      const number = `INV-${String(invoiceCount + 1).padStart(4, "0")}`
+      const number = await nextInvoiceNumber()
 
       // Validate and recalculate discount server-side
       let finalDiscountCode: string | null = null
@@ -106,8 +105,7 @@ export async function POST(request: Request) {
 
   const total = items.reduce((sum, item) => sum + item.amount, 0)
   const dueDate = new Date(Date.now() + 3 * 86400000)
-  const invoiceCount = await prisma.invoice.count()
-  const number = `INV-${String(invoiceCount + 1).padStart(4, "0")}`
+  const number = await nextInvoiceNumber()
 
   const invoice = await prisma.invoice.create({
     data: {

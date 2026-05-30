@@ -1,20 +1,10 @@
 import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin, isSuperAdmin, isCityAdmin, isTutor, getTutorId, getActiveCityId } from "@/lib/auth-helpers"
 import { CityFilter } from "@/components/city-filter"
-import { GRADE_LABELS } from "@/lib/constants"
+import { GRADE_LABELS, ONBOARDING_STEPS } from "@/lib/constants"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { AddTutorForm } from "@/components/add-tutor-form"
-
-const ONBOARDING_STEPS = [
-  "Email sent to tutor",
-  "Contract signed",
-  "Email sent to parent",
-  "Project created",
-  "Tutor assigned to project",
-  "Tutor contacts client",
-  "Platform onboarding complete",
-]
 
 const ADMIN_ADVANCE_STEPS = new Set([2, 3, 4])
 

@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { isAdmin } from "@/lib/auth-helpers"
 import { SignJWT } from "jose"
+import { logActivity } from "@/lib/activity"
 
 function getSecret(): Uint8Array {
   if (!process.env.AUTH_SECRET) throw new Error("AUTH_SECRET environment variable is not set")
@@ -35,6 +36,8 @@ export async function POST(request: Request) {
     .sign(getSecret())
 
   const response = NextResponse.json({ success: true, redirect: "/dashboard" })
+
+  logActivity(session.user.id, "impersonated", "User", target.id, `Impersonated ${target.name} (${target.email})`)
 
   response.cookies.set("authjs.session-token", token, {
     httpOnly: true,

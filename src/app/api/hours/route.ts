@@ -102,32 +102,34 @@ export async function POST(request: Request) {
     }
   }
 
-  const hourLog = await prisma.hourLog.create({
-    data: {
-      tutorId,
-      projectId,
-      date: new Date(date),
-      hours,
-      mode,
-      billingRate,
-      tutorPayRate,
-      description: description || null,
-      category: category || null,
-    },
-  })
+  const hourLog = await prisma.$transaction(async (tx) => {
+    const log = await tx.hourLog.create({
+      data: {
+        tutorId,
+        projectId,
+        date: new Date(date),
+        hours,
+        mode,
+        billingRate,
+        tutorPayRate,
+        description: description || null,
+        category: category || null,
+      },
+    })
 
-  // Accrual: create expense immediately when hours are logged
-  const expenseAmount = hours * tutorPayRate
-  await prisma.expense.create({
-    data: {
-      description: `Tutor: ${tutor.user.name} — ${project.name} (${hours}h)`,
-      amount: expenseAmount,
-      category: "TUTOR_PAY",
-      date: new Date(date),
-      clientId: project.clientId,
-      cityId: project.cityId,
-      hourLogId: hourLog.id,
-    },
+    await tx.expense.create({
+      data: {
+        description: `Tutor: ${tutor.user.name} — ${project.name} (${hours}h)`,
+        amount: hours * tutorPayRate,
+        category: "TUTOR_PAY",
+        date: new Date(date),
+        clientId: project.clientId,
+        cityId: project.cityId,
+        hourLogId: log.id,
+      },
+    })
+
+    return log
   })
 
   await logActivity(session.user.id, "logged_hours", "HourLog", hourLog.id, `${hours}h on project ${projectId}`)

@@ -31,7 +31,7 @@ export const GRADE_ADVANCE: Record<string, string | null> = {
   SEC1_2: "SEC3",
   SEC3: "SEC4_5",
   SEC4_5: "CEGEP",
-  CEGEP: "UNI",
+  CEGEP: null,
   UNI: null,
 }
 export const TUTOR_STUDY_HALL_GRADES = ["STUDY_HALL_TUTOR"]
@@ -89,6 +89,57 @@ export const SUBJECT_OPTIONS = [
   "Geography",
   "Computer Science",
 ]
+
+export const USER_ROLES = ["ADMIN", "CITY_ADMIN", "TUTOR", "CLIENT"] as const
+export type UserRole = (typeof USER_ROLES)[number]
+
+export const CONTRACT_TYPES = ["PRIVATE_TUTORING", "PROGRAM_SUPERVISOR"] as const
+export type ContractType = (typeof CONTRACT_TYPES)[number]
+
+export const PROJECT_TYPES = ["STUDENT", "STUDY_HALL"] as const
+export type ProjectType = (typeof PROJECT_TYPES)[number]
+
+export const INVOICE_STATUSES = ["DRAFT", "SENT", "PAID", "OVERDUE"] as const
+export type InvoiceStatus = (typeof INVOICE_STATUSES)[number]
+
+export const TENURE_VALUES = ["1ST_YEAR", "2ND_YEAR", "3RD_YEAR"] as const
+export type TenureValue = (typeof TENURE_VALUES)[number]
+
+export const HOUR_LOG_MODES = ["IN_PERSON", "ONLINE"] as const
+export type HourLogMode = (typeof HOUR_LOG_MODES)[number]
+
+export const EXPENSE_CATEGORIES = ["TUTOR_PAY", "MATERIALS", "TRAVEL", "SOFTWARE", "RENT", "MARKETING", "OFFICE", "OTHER"] as const
+export type ExpenseCategory = (typeof EXPENSE_CATEGORIES)[number]
+
+export const LEAD_STATUSES = ["NEW", "CONTACTED", "CONVERTED"] as const
+export type LeadStatus = (typeof LEAD_STATUSES)[number]
+
+export const REQUEST_STATUSES = ["NEW", "MATCHED", "ACCEPTED", "REJECTED"] as const
+export type RequestStatus = (typeof REQUEST_STATUSES)[number]
+
+export const PROJECT_STATUSES = ["IN_PROGRESS", "ON_HOLD", "FINISHED", "CANCELLED"] as const
+export type ProjectStatus = (typeof PROJECT_STATUSES)[number]
+
+export const CLIENT_TYPES = ["PARENT", "SCHOOL"] as const
+export type ClientType = (typeof CLIENT_TYPES)[number]
+
+export const ONBOARDING_STEPS = [
+  "Email sent to tutor",
+  "Contract signed",
+  "Email sent to parent",
+  "Project created",
+  "Tutor assigned to project",
+  "Tutor contacts client",
+  "Platform onboarding complete",
+] as const
+
+export function getTenureLabel(tenure: string): string {
+  return TENURE_LABELS[tenure] || tenure
+}
+
+export function getGradeLabel(grade: string): string {
+  return GRADE_LABELS[grade] || grade
+}
 
 export interface EmailTrigger {
   value: string

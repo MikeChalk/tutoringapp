@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import { applyDiscountCode } from "@/lib/discounts"
+import { validateDiscountCode } from "@/lib/discounts"
 
 export async function POST(request: Request) {
   const formData = await request.formData()
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
   // Validate discount code
   let validDiscountCode: string | null = null
   if (discountCode) {
-    const result = await applyDiscountCode(discountCode)
+    const result = await validateDiscountCode(discountCode)
     if (result.valid) {
       validDiscountCode = discountCode.toUpperCase()
     }

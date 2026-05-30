@@ -2,21 +2,12 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { isAdmin } from "@/lib/auth-helpers"
-import { STUDENT_GRADES, GRADE_LABELS } from "@/lib/constants"
+import { STUDENT_GRADES, GRADE_LABELS, GRADE_ADVANCE } from "@/lib/constants"
 
 export async function POST(request: Request) {
   const session = await auth()
   if (!session?.user || !isAdmin(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
-
-  const GRADE_ADVANCE: Record<string, string | null> = {
-    ELEMENTARY: "SEC1_2",
-    SEC1_2: "SEC3",
-    SEC3: "SEC4_5",
-    SEC4_5: "CEGEP",
-    CEGEP: null,
-    UNI: null,
   }
 
   let advanced = 0

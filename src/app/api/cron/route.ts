@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/db"
+import { prisma, nextInvoiceNumber } from "@/lib/db"
 import { isAdmin } from "@/lib/auth-helpers"
 import { sendClientInviteEmail } from "@/lib/email"
 
@@ -40,12 +40,12 @@ export async function POST(request: Request) {
         hours: log.hours, rate: log.billingRate, amount: log.hours * log.billingRate, hourLogId: log.id,
       }))
       const total = items.reduce((s, i) => s + i.amount, 0)
-      const count = await prisma.invoice.count()
+      const number = await nextInvoiceNumber()
       const dueDate = new Date(Date.now() + 3 * 86400000)
 
       await prisma.invoice.create({
         data: {
-          number: `INV-${String(count + 1).padStart(4, "0")}`,
+          number,
           clientId, dueDate, totalAmount: total, status: "DRAFT",
           items: { create: items },
         },

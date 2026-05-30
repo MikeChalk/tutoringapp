@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/db"
+import { prisma, nextInvoiceNumber } from "@/lib/db"
 import { isAdmin } from "@/lib/auth-helpers"
 import { GRADE_LABELS } from "@/lib/constants"
 import bcrypt from "bcryptjs"
@@ -351,8 +351,7 @@ async function handleImport(formData: FormData, type: string, request: Request) 
         const client = user ? await prisma.client.findUnique({ where: { userId: user.id } }) : null
         if (!client) { results.errors.push(`Client ${clientEmail} not found`); results.skipped++; continue }
 
-        const invoiceCount = await prisma.invoice.count()
-        const number = `INV-${String(invoiceCount + 1).padStart(4, "0")}`
+        const number = await nextInvoiceNumber()
         const dueDate = row.due_date ? new Date(row.due_date) : new Date(Date.now() + 30 * 86400000)
         const createdDate = row.created_at || row.created_date
         const paidDate = row.status?.toUpperCase() === "PAID" && row.paid_date ? new Date(row.paid_date) : null

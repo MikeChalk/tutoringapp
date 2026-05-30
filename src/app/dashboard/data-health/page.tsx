@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin } from "@/lib/auth-helpers"
-import { GRADE_LABELS, STUDENT_GRADES } from "@/lib/constants"
+import { GRADE_LABELS, STUDENT_GRADES, GRADE_ADVANCE } from "@/lib/constants"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 
@@ -68,14 +68,6 @@ export default async function DataHealthPage(props: { searchParams: Promise<{ ad
   const hasErrors = checks.some(c => c.status === "error")
   const hasWarnings = checks.some(c => c.status === "warn")
 
-  const GRADE_ADVANCE: Record<string, string | null> = {
-    ELEMENTARY: "SEC1_2",
-    SEC1_2: "SEC3",
-    SEC3: "SEC4_5",
-    SEC4_5: "CEGEP",
-    CEGEP: null,
-    UNI: null,
-  }
   const advancePreviews: Array<{ currentGrade: string; nextGrade: string; projects: Array<{ id: string; currentName: string; newName: string }> }> = []
   for (const grade of STUDENT_GRADES) {
     const nextGrade = GRADE_ADVANCE[grade]

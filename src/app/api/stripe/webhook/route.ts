@@ -67,8 +67,10 @@ export async function POST(request: Request) {
         include: { client: { include: { user: { select: { name: true, email: true } } } } },
       })
       if (invoice?.client?.user.email) {
-        sendClientInviteEmail(invoice.client.user.email, invoice.client.user.name,
-          `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/dashboard/invoices/${invoiceId}`, "payment_received")
+        try {
+          await sendClientInviteEmail(invoice.client.user.email, invoice.client.user.name,
+            `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/dashboard/invoices/${invoiceId}`, "payment_received")
+        } catch { /* email failure shouldn't block webhook response */ }
       }
     }
   }

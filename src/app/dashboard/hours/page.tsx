@@ -5,6 +5,9 @@ import { CityFilter } from "@/components/city-filter"
 import { DeleteHourButton } from "@/components/delete-hour-button"
 import EditHourLog from "@/components/edit-hour-log"
 import Script from "next/script"
+import { Prisma } from "@prisma/client"
+
+type TutorWithUser = Prisma.TutorGetPayload<{ include: { user: { select: { name: true } } } }>
 
 export default async function HoursPage(props: { searchParams: Promise<{ city?: string }> }) {
   const session = await requireAuth()
@@ -54,7 +57,7 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
               where: { id: tutorId, isActive: true },
               include: { user: { select: { name: true } } },
             })
-          : Promise.resolve([])
+          : Promise.resolve([] as TutorWithUser[])
         )
       : prisma.tutor.findMany({
           where: { isActive: true, ...(effectiveCityId ? { user: { cityId: effectiveCityId } } : {}) },
@@ -64,22 +67,11 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
 
   let adminTutorId: string | null = null
   if (admin) {
-    let adminTutor = await prisma.tutor.findUnique({ where: { userId: session.user.id } })
-    if (!adminTutor) {
-      adminTutor = await prisma.tutor.create({
-        data: { userId: session.user.id, tenure: "1ST_YEAR", isActive: true, onboarded: false, onboardingStep: 0 },
-      })
-    } else if (!adminTutor.isActive) {
-      await prisma.tutor.update({ where: { id: adminTutor.id }, data: { isActive: true } })
-    }
-    adminTutorId = adminTutor.id
-    const idx = tutors.findIndex(t => t.id === adminTutorId)
-    if (idx > 0) {
-      const [me] = tutors.splice(idx, 1)
-      tutors.unshift(me)
-    } else if (idx === -1) {
-      const adminUser = await prisma.user.findUnique({ where: { id: session.user.id }, select: { name: true } })
-      tutors.unshift({ id: adminTutorId, user: { name: adminUser?.name || "Me (Admin)" }, tenure: "1ST_YEAR" } as typeof tutors[0])
+    const adminTutor = await prisma.tutor.findUnique({
+      where: { userId: session.user.id, isActive: true },
+    })
+    if (adminTutor) {
+      adminTutorId = adminTutor.id
     }
   }
 

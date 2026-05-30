@@ -3,6 +3,11 @@ import { prisma } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { cookies } from "next/headers"
 
+const ADMIN = "ADMIN" as const
+const CITY_ADMIN = "CITY_ADMIN" as const
+const TUTOR = "TUTOR" as const
+const CLIENT = "CLIENT" as const
+
 export async function requireAuth() {
   const session = await auth()
   if (!session?.user) redirect("/login")
@@ -28,23 +33,23 @@ export async function getClientId(userId: string, email: string) {
 }
 
 export function isAdmin(role: string) {
-  return role === "ADMIN" || role === "CITY_ADMIN"
+  return role === ADMIN || role === CITY_ADMIN
 }
 
 export function isSuperAdmin(role: string) {
-  return role === "ADMIN"
+  return role === ADMIN
 }
 
 export function isCityAdmin(role: string) {
-  return role === "CITY_ADMIN"
+  return role === CITY_ADMIN
 }
 
 export function isTutor(role: string) {
-  return role === "TUTOR"
+  return role === TUTOR
 }
 
 export function isClient(role: string) {
-  return role === "CLIENT"
+  return role === CLIENT
 }
 
 export async function getActiveCityId(userRole: string, userId: string): Promise<string | null> {

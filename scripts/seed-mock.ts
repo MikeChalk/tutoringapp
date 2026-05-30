@@ -4,8 +4,15 @@ import bcrypt from "bcryptjs"
 const p = new PrismaClient()
 
 async function main() {
-  const montrealId = "cmpqikyfc000011u2rqcv5bky"
-  const rwaProjectId = "cmpqikz9z004511u2o8x1ieqb"
+  const montreal = await p.city.findFirst({ where: { slug: "montreal" } })
+  if (!montreal) { console.log("Montreal city not found — run main seed first"); return }
+  const montrealId = montreal.id
+
+  const rwaProject = await p.project.findFirst({
+    where: { name: "Royal West Academy — Study Hall", cityId: montrealId },
+  })
+  if (!rwaProject) { console.log("RWA study hall project not found — run main seed first"); return }
+  const rwaProjectId = rwaProject.id
 
   console.log("=== Creating mock school client ===")
   const pw = await bcrypt.hash("school123", 12)
@@ -88,62 +95,74 @@ async function main() {
   })
   console.log(`  Created ${shInvoice.number}: $${shInvoice.totalAmount} (${shInvoice.status})`)
 
-  console.log("\n=== Creating hourly invoice for Robert Dupont ===")
-  const logs1 = await p.hourLog.findMany({
-    where: { project: { clientId: "cmpqikz3g002g11u2vtg37wxp" }, invoiceItems: { none: {} } },
-    orderBy: { date: "asc" },
+  const robertClient = await p.client.findFirst({
+    where: { user: { email: "robert@email.com" } },
+    select: { id: true },
   })
-  if (logs1.length > 0) {
-    const total = logs1.reduce((s, l) => s + l.hours * l.billingRate, 0)
-    const inv1 = await p.invoice.create({
-      data: {
-        number: "INV-1002",
-        clientId: "cmpqikz3g002g11u2vtg37wxp",
-        status: "SENT",
-        dueDate: due,
-        totalAmount: total,
-        notes: "Private tutoring for Lucas Dupont",
-        items: {
-          create: logs1.map(l => ({
-            description: l.description || `Tutoring on ${new Date(l.date).toLocaleDateString()} (${l.mode === "ONLINE" ? "Online" : "In Person"})`,
-            hours: l.hours,
-            rate: l.billingRate,
-            amount: l.hours * l.billingRate,
-            hourLogId: l.id,
-          })),
-        },
-      },
+  if (robertClient) {
+    console.log("\n=== Creating hourly invoice for Robert Dupont ===")
+    const logs1 = await p.hourLog.findMany({
+      where: { project: { clientId: robertClient.id }, invoiceItems: { none: {} } },
+      orderBy: { date: "asc" },
     })
-    console.log(`  Created ${inv1.number}: $${inv1.totalAmount.toFixed(2)} (${inv1.status}) — ${logs1.length} logs`)
+    if (logs1.length > 0) {
+      const total = logs1.reduce((s, l) => s + l.hours * l.billingRate, 0)
+      const inv1 = await p.invoice.create({
+        data: {
+          number: "INV-1002",
+          clientId: robertClient.id,
+          status: "SENT",
+          dueDate: due,
+          totalAmount: total,
+          notes: "Private tutoring for Lucas Dupont",
+          items: {
+            create: logs1.map(l => ({
+              description: l.description || `Tutoring on ${new Date(l.date).toLocaleDateString()} (${l.mode === "ONLINE" ? "Online" : "In Person"})`,
+              hours: l.hours,
+              rate: l.billingRate,
+              amount: l.hours * l.billingRate,
+              hourLogId: l.id,
+            })),
+          },
+        },
+      })
+      console.log(`  Created ${inv1.number}: $${inv1.totalAmount.toFixed(2)} (${inv1.status}) — ${logs1.length} logs`)
+    }
   }
 
-  console.log("\n=== Creating hourly invoice for Marie Lambert ===")
-  const logs2 = await p.hourLog.findMany({
-    where: { project: { clientId: "cmpqikz3q002k11u2a40qxhxd" }, invoiceItems: { none: {} } },
-    orderBy: { date: "asc" },
+  const marieClient = await p.client.findFirst({
+    where: { user: { email: "marie@email.com" } },
+    select: { id: true },
   })
-  if (logs2.length > 0) {
-    const total = logs2.reduce((s, l) => s + l.hours * l.billingRate, 0)
-    const inv2 = await p.invoice.create({
-      data: {
-        number: "INV-1003",
-        clientId: "cmpqikz3q002k11u2a40qxhxd",
-        status: "DRAFT",
-        dueDate: due,
-        totalAmount: total,
-        notes: "Private tutoring for Camille Lambert",
-        items: {
-          create: logs2.map(l => ({
-            description: l.description || `Tutoring on ${new Date(l.date).toLocaleDateString()} (${l.mode === "ONLINE" ? "Online" : "In Person"})`,
-            hours: l.hours,
-            rate: l.billingRate,
-            amount: l.hours * l.billingRate,
-            hourLogId: l.id,
-          })),
-        },
-      },
+  if (marieClient) {
+    console.log("\n=== Creating hourly invoice for Marie Lambert ===")
+    const logs2 = await p.hourLog.findMany({
+      where: { project: { clientId: marieClient.id }, invoiceItems: { none: {} } },
+      orderBy: { date: "asc" },
     })
-    console.log(`  Created ${inv2.number}: $${inv2.totalAmount.toFixed(2)} (${inv2.status}) — ${logs2.length} logs`)
+    if (logs2.length > 0) {
+      const total = logs2.reduce((s, l) => s + l.hours * l.billingRate, 0)
+      const inv2 = await p.invoice.create({
+        data: {
+          number: "INV-1003",
+          clientId: marieClient.id,
+          status: "DRAFT",
+          dueDate: due,
+          totalAmount: total,
+          notes: "Private tutoring for Camille Lambert",
+          items: {
+            create: logs2.map(l => ({
+              description: l.description || `Tutoring on ${new Date(l.date).toLocaleDateString()} (${l.mode === "ONLINE" ? "Online" : "In Person"})`,
+              hours: l.hours,
+              rate: l.billingRate,
+              amount: l.hours * l.billingRate,
+              hourLogId: l.id,
+            })),
+          },
+        },
+      })
+      console.log(`  Created ${inv2.number}: $${inv2.totalAmount.toFixed(2)} (${inv2.status}) — ${logs2.length} logs`)
+    }
   }
 
   console.log("\n=== Done ===")
