@@ -79,7 +79,8 @@ export default async function ContractPage() {
   const step = tutorRecord.onboardingStep
 
   const contract = await prisma.contract.findFirst({
-    where: { tutorId, status: "ACTIVE" },
+    where: { tutorId },
+    orderBy: { createdAt: "desc" },
     include: { tutor: { select: { tenure: true } } },
   })
 
@@ -181,7 +182,7 @@ export default async function ContractPage() {
 
       {!contract ? (
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-8 text-center">
-          <p className="text-zinc-500 dark:text-zinc-400 mb-2">No active contract found.</p>
+          <p className="text-zinc-500 dark:text-zinc-400 mb-2">No contract found.</p>
           <p className="text-sm text-zinc-400 dark:text-zinc-500">Contact your admin to set up a contract.</p>
         </div>
       ) : (
