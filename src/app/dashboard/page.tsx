@@ -77,7 +77,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ cit
         orderBy: { createdAt: "desc" },
         take: 5,
       })
-      stats = { tutorCount: 0, clientCount: 0, projectCount: pc, pendingInvoices: pi, totalHours: 0, newRequests: 0, totalEarned: 0, totalOwed: 0 }
+      stats = { tutorCount: 0, clientCount: 0, projectCount: pc, pendingInvoices: pi, totalHours: 0, newRequests: 0, totalEarned: 0, totalPaid: 0 }
     }
   }
 
