@@ -3,6 +3,7 @@ import { requireAuth, isAdmin, isSuperAdmin, isCityAdmin, getActiveCityId } from
 import { TENURE_LABELS, CONTRACT_TYPE_LABELS, GRADE_LABELS } from "@/lib/constants"
 import { CityFilter } from "@/components/city-filter"
 import { AddTutorForm } from "@/components/add-tutor-form"
+import ImpersonateButton from "@/components/impersonate-button"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 
@@ -133,6 +134,7 @@ export default async function TutorsPage(props: { searchParams: Promise<{ type?:
                 <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Type</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Grades</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Subjects</th>
+                <th className="text-center px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700/50">
@@ -147,6 +149,7 @@ export default async function TutorsPage(props: { searchParams: Promise<{ type?:
                   <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{CONTRACT_TYPE_LABELS[tutor.contract?.type || ""] || tutor.contract?.type || "—"}</td>
                   <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{tutor.gradeLevels ? tutor.gradeLevels.split(",").map(g => GRADE_LABELS[g] || g).join(", ") : "-"}</td>
                   <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{tutor.subjects || "-"}</td>
+                  <td className="px-4 py-3"><ImpersonateButton userId={tutor.userId} /></td>
               </tr>
             ))}
           </tbody>
