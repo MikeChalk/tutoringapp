@@ -36,7 +36,7 @@ export default async function TutorDetailPage(props: { params: Promise<{ id: str
     prisma.$queryRaw<Array<{ total: number }>>`SELECT COALESCE(SUM(hours * tutorPayRate), 0) as total FROM hour_logs WHERE tutorId = ${id}`,
   ])
   const totalHours = hoursAgg._sum.hours ?? 0
-  const totalPay = payResult[0].total
+  const totalPay = Number(payResult[0].total)
 
   const payScales = await prisma.payScale.findMany({
     where: { tenure: tutor.tenure },
