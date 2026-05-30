@@ -56,9 +56,15 @@ export async function POST(request: Request) {
     tutorPayRate = parseFloat(manualPay)
   } else {
     const stdGrades = ["ELEMENTARY", "SEC1_2", "SEC3", "SEC4_5", "CEGEP", "UNI"]
-    const lookupGrade = (project.projectType === "STUDY_HALL" && stdGrades.includes(project.gradeLevel))
-      ? "STUDY_HALL"
-      : project.gradeLevel
+    let lookupGrade: string
+    if (project.projectType === "STUDY_HALL" && category) {
+      // Use the selected category as the grade level for rate lookup
+      lookupGrade = category
+    } else if (project.projectType === "STUDY_HALL" && stdGrades.includes(project.gradeLevel)) {
+      lookupGrade = "STUDY_HALL"
+    } else {
+      lookupGrade = project.gradeLevel
+    }
 
     const br = await prisma.billingRate.findFirst({
       where: { gradeLevel: lookupGrade, mode, projectType: project.projectType },

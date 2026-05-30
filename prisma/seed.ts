@@ -46,6 +46,10 @@ async function main() {
 
   await prisma.billingRate.create({ data: { gradeLevel: "STUDY_HALL", mode: "IN_PERSON", projectType: "STUDY_HALL", rate: 0 } })
   await prisma.billingRate.create({ data: { gradeLevel: "PROGRAM_SUPERVISOR", mode: "IN_PERSON", projectType: "STUDY_HALL", rate: 0 } })
+  await prisma.billingRate.create({ data: { gradeLevel: "IN_PERSON_MGMT", mode: "IN_PERSON", projectType: "STUDY_HALL", rate: 0 } })
+  await prisma.billingRate.create({ data: { gradeLevel: "ONLINE_MGMT", mode: "IN_PERSON", projectType: "STUDY_HALL", rate: 0 } })
+  await prisma.billingRate.create({ data: { gradeLevel: "SUPERVISION", mode: "IN_PERSON", projectType: "STUDY_HALL", rate: 0 } })
+  await prisma.billingRate.create({ data: { gradeLevel: "MARKETING", mode: "IN_PERSON", projectType: "STUDY_HALL", rate: 0 } })
 
   // Tutor pay scale: actual rates from the company
   const payScales = [
@@ -99,6 +103,19 @@ async function main() {
     { tenure: "1ST_YEAR", gradeLevel: "PROGRAM_SUPERVISOR", mode: "IN_PERSON", projectType: "STUDY_HALL", rate: 40 },
     { tenure: "2ND_YEAR", gradeLevel: "PROGRAM_SUPERVISOR", mode: "IN_PERSON", projectType: "STUDY_HALL", rate: 45 },
     { tenure: "3RD_YEAR", gradeLevel: "PROGRAM_SUPERVISOR", mode: "IN_PERSON", projectType: "STUDY_HALL", rate: 50 },
+    // Supervisor category rates
+    { tenure: "1ST_YEAR", gradeLevel: "IN_PERSON_MGMT", mode: "IN_PERSON", projectType: "STUDY_HALL", rate: 35 },
+    { tenure: "2ND_YEAR", gradeLevel: "IN_PERSON_MGMT", mode: "IN_PERSON", projectType: "STUDY_HALL", rate: 38 },
+    { tenure: "3RD_YEAR", gradeLevel: "IN_PERSON_MGMT", mode: "IN_PERSON", projectType: "STUDY_HALL", rate: 42 },
+    { tenure: "1ST_YEAR", gradeLevel: "ONLINE_MGMT", mode: "IN_PERSON", projectType: "STUDY_HALL", rate: 30 },
+    { tenure: "2ND_YEAR", gradeLevel: "ONLINE_MGMT", mode: "IN_PERSON", projectType: "STUDY_HALL", rate: 33 },
+    { tenure: "3RD_YEAR", gradeLevel: "ONLINE_MGMT", mode: "IN_PERSON", projectType: "STUDY_HALL", rate: 36 },
+    { tenure: "1ST_YEAR", gradeLevel: "SUPERVISION", mode: "IN_PERSON", projectType: "STUDY_HALL", rate: 40 },
+    { tenure: "2ND_YEAR", gradeLevel: "SUPERVISION", mode: "IN_PERSON", projectType: "STUDY_HALL", rate: 45 },
+    { tenure: "3RD_YEAR", gradeLevel: "SUPERVISION", mode: "IN_PERSON", projectType: "STUDY_HALL", rate: 50 },
+    { tenure: "1ST_YEAR", gradeLevel: "MARKETING", mode: "IN_PERSON", projectType: "STUDY_HALL", rate: 25 },
+    { tenure: "2ND_YEAR", gradeLevel: "MARKETING", mode: "IN_PERSON", projectType: "STUDY_HALL", rate: 28 },
+    { tenure: "3RD_YEAR", gradeLevel: "MARKETING", mode: "IN_PERSON", projectType: "STUDY_HALL", rate: 32 },
   ]
 
   for (const scale of payScales) {
