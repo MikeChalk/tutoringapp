@@ -34,11 +34,14 @@ const ONBOARDING_STEPS = [
   "Platform onboarding complete",
 ]
 
-export default async function ContractPage() {
+export default async function ContractPage(props: { searchParams: Promise<{ filter?: string }> }) {
   const session = await requireAuth()
   const isTutorRole = isTutor(session.user.role)
   const isClientRole = isClient(session.user.role)
   if (!isTutorRole && !isClientRole) redirect("/dashboard")
+
+  const { filter: filterParam } = await props.searchParams
+  const activeFilter = filterParam || "pending"
 
   // Client view: Terms of Service
   if (isClientRole) {
@@ -192,8 +195,29 @@ export default async function ContractPage() {
         </div>
       ) : (
         <div className="space-y-6">
+          {/* Filter toggles */}
+          <div className="flex gap-2">
+            {[
+              { value: "pending", label: "Pending", count: pending.length, color: "text-amber-600 dark:text-amber-400" },
+              { value: "active", label: "Active", count: active.length, color: "text-green-600 dark:text-green-400" },
+              { value: "past", label: "Past", count: past.length, color: "text-zinc-400" },
+            ].map(tab => (
+              <a
+                key={tab.value}
+                href={`/dashboard/contract?filter=${tab.value}`}
+                className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${
+                  activeFilter === tab.value
+                    ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900"
+                    : `text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 ${tab.color}`
+                }`}
+              >
+                {tab.label} ({tab.count})
+              </a>
+            ))}
+          </div>
+
           {/* Pending (unsigned) */}
-          {pending.length > 0 && (
+          {(activeFilter === "pending" || !activeFilter) && pending.length > 0 && (
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-amber-600 dark:text-amber-400">Pending ({pending.length})</h3>
               {pending.map(c => (
@@ -203,7 +227,7 @@ export default async function ContractPage() {
           )}
 
           {/* Active */}
-          {active.length > 0 && (
+          {(activeFilter === "active" || !activeFilter) && active.length > 0 && (
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-green-600 dark:text-green-400">Active ({active.length})</h3>
               {active.map(c => (
@@ -213,7 +237,7 @@ export default async function ContractPage() {
           )}
 
           {/* Past / Expired */}
-          {past.length > 0 && (
+          {(activeFilter === "past" || !activeFilter) && past.length > 0 && (
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-zinc-400">Past ({past.length})</h3>
               {past.map(c => (

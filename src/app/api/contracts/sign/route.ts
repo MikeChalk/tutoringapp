@@ -18,7 +18,8 @@ export async function POST(request: Request) {
   }
 
   const contract = await prisma.contract.findFirst({
-    where: { tutorId: tutor.id, status: "ACTIVE" },
+    where: { tutorId: tutor.id, signed: false },
+    orderBy: { createdAt: "desc" },
   })
 
   if (!contract) {
