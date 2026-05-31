@@ -89,7 +89,7 @@ export default async function TutorsPage(props: { searchParams: Promise<{ type?:
   }
 
   const contractFilter = filter !== "ALL" ? { type: filter, status: "ACTIVE" } : undefined
-  const baseWhere: Record<string, unknown> = contractFilter ? { contract: contractFilter, onboarded: true } : { onboarded: true }
+  const baseWhere: Record<string, unknown> = contractFilter ? { contracts: { some: contractFilter }, onboarded: true } : { onboarded: true }
   if (effectiveCityId) {
     baseWhere.user = { cityId: effectiveCityId }
   }
