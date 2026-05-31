@@ -30,30 +30,30 @@ export function AddClientForm() {
       <form action="/api/clients" method="POST" className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">Name *</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Name *</label>
             <input type="text" name="name" required className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">Email *</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Email *</label>
             <input type="email" name="email" required className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">Type</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Type</label>
             <select name="clientType" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="PARENT">Parent</option>
               <option value="SCHOOL">School</option>
             </select>
           </div>
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">Company</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Company</label>
             <input type="text" name="company" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">Phone</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Phone</label>
             <input type="text" name="phone" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">City</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">City</label>
             <select name="cityId" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="">None</option>
               {cities.map(c => (<option key={c.id} value={c.id}>{c.name}</option>))}
@@ -61,7 +61,7 @@ export function AddClientForm() {
           </div>
         </div>
         <div>
-          <label className="block text-xs text-zinc-500 mb-1">Address</label>
+          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Address</label>
           <AddressAutocomplete name="address" />
         </div>
         <button type="submit" className="rounded-lg bg-zinc-900 dark:bg-white px-4 py-2 text-sm font-medium text-white dark:text-zinc-900 hover:opacity-90 transition-opacity">

@@ -82,7 +82,7 @@ export function CreateInvoiceForm({ clients }: { clients: Client[] }) {
       <form action="/api/invoices" method="POST" className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">Client</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Client</label>
             <SearchableSelect
               name="clientId"
               options={clients.map(c => ({ value: c.id, label: c.user.name }))}
@@ -91,18 +91,18 @@ export function CreateInvoiceForm({ clients }: { clients: Client[] }) {
             />
           </div>
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">Date</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Date</label>
             <input type="date" name="date" defaultValue={new Date().toISOString().split("T")[0]} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">Due Date</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Due Date</label>
             <input type="date" name="dueDate" defaultValue={defaultDueDate} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
         </div>
 
         {/* Line Items */}
         <div>
-          <label className="block text-xs text-zinc-500 mb-2">Line Items</label>
+          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Line Items</label>
           <div className="space-y-2">
             {lines.map((line, idx) => (
               <div key={idx} className="flex items-center gap-2">
@@ -163,7 +163,7 @@ export function CreateInvoiceForm({ clients }: { clients: Client[] }) {
 
         {codes.length > 0 && (
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">Discount Code</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Discount Code</label>
             <select value={discountCode} onChange={e => applyCode(e.target.value)} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="">None</option>
               {codes.map(c => (<option key={c.code} value={c.code}>{c.code} ({c.discountPct > 0 ? `${c.discountPct}%` : `$${c.discountAmt}`})</option>))}
@@ -173,13 +173,13 @@ export function CreateInvoiceForm({ clients }: { clients: Client[] }) {
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">Custom Discount %</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Custom Discount %</label>
             <input type="number" value={discountPct || ""} onChange={e => { setDiscountPct(parseFloat(e.target.value) || 0); setDiscountCode(""); setDiscountAmt(0) }}
               placeholder="0" step="0.1" min="0" max="100"
               className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">or Custom $ Off</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">or Custom $ Off</label>
             <input type="number" value={discountAmt || ""} onChange={e => { setDiscountAmt(parseFloat(e.target.value) || 0); setDiscountCode(""); setDiscountPct(0) }}
               placeholder="0" step="0.01" min="0"
               className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
@@ -187,7 +187,7 @@ export function CreateInvoiceForm({ clients }: { clients: Client[] }) {
         </div>
 
         <div>
-          <label className="block text-xs text-zinc-500 mb-1">Notes</label>
+          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Notes</label>
           <textarea name="notes" value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Payment instructions or additional notes..."
             className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
         </div>

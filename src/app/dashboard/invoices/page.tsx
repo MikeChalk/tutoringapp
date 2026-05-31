@@ -4,6 +4,8 @@ import { INVOICE_STATUS_COLORS } from "@/lib/constants"
 import { redirect } from "next/navigation"
 import { CityFilter } from "@/components/city-filter"
 import { CreateInvoiceForm } from "@/components/create-invoice-form"
+import { EmptyState } from "@/components/empty-state"
+import { Receipt } from "lucide-react"
 import { StatCard } from "@/components/ui"
 import Link from "next/link"
 
@@ -122,7 +124,7 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
           <input type="text" name="search" defaultValue={searchQuery} placeholder="Search by client name or invoice number..."
             className="flex-1 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Search</button>
-          {searchQuery && <a href={`/dashboard/invoices${selectedStatus ? `?status=${selectedStatus}` : ""}${selectedCity !== "all" ? `${selectedStatus ? "&" : "?"}city=${selectedCity}` : ""}`} className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-500 hover:bg-zinc-100">Clear</a>}
+          {searchQuery && <Link href={`/dashboard/invoices${selectedStatus ? `?status=${selectedStatus}` : ""}${selectedCity !== "all" ? `${selectedStatus ? "&" : "?"}city=${selectedCity}` : ""}`} className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-500 hover:bg-zinc-100">Clear</Link>}
         </form>
       )}
 
@@ -255,8 +257,13 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
             ))}
             {invoices.length === 0 && (
               <tr>
-                <td colSpan={admin ? 8 : 7} className="px-4 py-8 text-center text-sm text-zinc-500">
-                  {selectedStatus ? `No ${selectedStatus.toLowerCase()} invoices.` : "No invoices yet."}
+                <td colSpan={admin ? 8 : 7} className="px-4 py-8">
+                  <EmptyState
+                    icon={Receipt}
+                    title={selectedStatus ? `No ${selectedStatus.toLowerCase()} invoices` : "No invoices yet"}
+                    description="Create an invoice or generate one from unbilled hours."
+                    action={admin ? { label: "Create Invoice", href: "#create-invoice" } : undefined}
+                  />
                 </td>
               </tr>
             )}

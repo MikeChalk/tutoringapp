@@ -7,13 +7,12 @@ import { usePathname } from "next/navigation"
 import { ADMIN_NAV_SECTIONS, TUTOR_NAV_LINKS, CLIENT_NAV_LINKS } from "@/lib/constants"
 import ImpersonationBanner from "@/components/impersonation-banner"
 import FeedbackBubble from "@/components/feedback-bubble"
+import { ThemeToggle } from "@/components/theme-toggle"
+import { Button } from "@/components/ui/button"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Menu } from "lucide-react"
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { data: session } = useSession()
-  const pathname = usePathname()
-  const role = session?.user?.role
-  const isAdminRole = role === "ADMIN" || role === "CITY_ADMIN"
-
   useEffect(() => {
     function handleConfirm(e: Event) {
       const target = e.target as HTMLElement
@@ -31,56 +30,99 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-screen">
-      <aside className="w-64 bg-white dark:bg-zinc-800 border-r border-zinc-200 dark:border-zinc-700 flex flex-col">
-        <div className="p-6 border-b border-zinc-200 dark:border-zinc-700">
-          <h1 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">Tutoring Manager</h1>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-            {session?.user?.role} &middot; {session?.user?.email}
-          </p>
-        </div>
-        <nav className="flex-1 p-4 flex flex-col gap-1 overflow-auto">
-          {isAdminRole ? (
-            <AdminNav pathname={pathname} />
-          ) : (
-            (role === "TUTOR" ? TUTOR_NAV_LINKS : CLIENT_NAV_LINKS).map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                  pathname === link.href || (link.href !== "/dashboard" && pathname.startsWith(link.href + "/"))
-                    ? "bg-zinc-100 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100"
-                    : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700/50"
-                }`}
-              >
-                {link.label}
-              </Link>
-            ))
-          )}
-        </nav>
-        <div className="p-4 border-t border-zinc-200 dark:border-zinc-700">
-          <button
-            onClick={() => signOut({ callbackUrl: "/" })}
-            className="w-full rounded-lg px-3 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors text-left"
-          >
-            Sign Out
-          </button>
-        </div>
+      {/* Desktop sidebar */}
+      <aside className="hidden lg:flex w-64 bg-white dark:bg-zinc-800 border-r border-zinc-200 dark:border-zinc-700 flex-col">
+        <SidebarContent />
       </aside>
+
+      {/* Mobile sidebar via Sheet */}
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button variant="ghost" size="icon" className="lg:hidden fixed top-3 left-3 z-50">
+            <Menu className="h-5 w-5" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="w-64 p-0">
+          <div className="flex flex-col h-full bg-white dark:bg-zinc-800">
+            <SidebarContent />
+          </div>
+        </SheetContent>
+      </Sheet>
+
       <main className="flex-1 bg-zinc-50 dark:bg-zinc-900 overflow-auto">
         <ImpersonationBanner />
-        <div className="p-8">{children}</div>
+        <div className="p-4 lg:p-8 pt-14 lg:pt-8">{children}</div>
         <FeedbackBubble />
       </main>
     </div>
   )
 }
 
+function SidebarContent() {
+  const { data: session } = useSession()
+  const pathname = usePathname()
+  const role = session?.user?.role
+  const isAdminRole = role === "ADMIN" || role === "CITY_ADMIN"
+
+  return (
+    <>
+      <div className="p-6 border-b border-zinc-200 dark:border-zinc-700">
+        <h1 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">Tutoring Manager</h1>
+        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+          {session?.user?.role} &middot; {session?.user?.email}
+        </p>
+      </div>
+      <nav className="flex-1 p-4 flex flex-col gap-1 overflow-auto">
+        {isAdminRole ? (
+          <AdminNav pathname={pathname} />
+        ) : (
+          (role === "TUTOR" ? TUTOR_NAV_LINKS : CLIENT_NAV_LINKS).map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                pathname === link.href || (link.href !== "/dashboard" && pathname.startsWith(link.href + "/"))
+                  ? "bg-zinc-100 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100"
+                  : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700/50"
+              }`}
+            >
+              {link.label}
+            </Link>
+          ))
+        )}
+      </nav>
+      <div className="p-4 border-t border-zinc-200 dark:border-zinc-700 flex items-center justify-between">
+        <button
+          onClick={() => signOut({ callbackUrl: "/" })}
+          className="rounded-lg px-3 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors text-left flex-1"
+        >
+          Sign Out
+        </button>
+        <ThemeToggle />
+      </div>
+    </>
+  )
+}
+
 function AdminNav({ pathname }: { pathname: string }) {
   const [open, setOpen] = useState<Record<string, boolean>>(() => {
+    if (typeof window === "undefined") {
+      const initial: Record<string, boolean> = {}
+      for (const s of ADMIN_NAV_SECTIONS) initial[s.label] = true
+      return initial
+    }
+    try {
+      const stored = localStorage.getItem("sidebar-sections")
+      if (stored) return JSON.parse(stored)
+    } catch { /* ignore */ }
     const initial: Record<string, boolean> = {}
     for (const s of ADMIN_NAV_SECTIONS) initial[s.label] = true
     return initial
   })
+
+  useEffect(() => {
+    try { localStorage.setItem("sidebar-sections", JSON.stringify(open)) } catch { /* ignore */ }
+  }, [open])
 
   function isActive(href: string) {
     if (pathname === href) return true

@@ -3,6 +3,7 @@ import { requireAuth, isAdmin, isTutor, getTutorId } from "@/lib/auth-helpers"
 import { GRADE_LABELS } from "@/lib/constants"
 import { notFound } from "next/navigation"
 import { EditProjectForm } from "@/components/edit-project-form"
+import { PageBreadcrumb } from "@/components/page-breadcrumb"
 import { ModeBadge, StatusBadge } from "@/components/ui"
 
 export default async function ProjectDetailPage(props: { params: Promise<{ id: string }> }) {
@@ -67,6 +68,7 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
 
   return (
     <div>
+      <PageBreadcrumb items={[{ label: "Projects", href: "/dashboard/projects" }, { label: project.name }]} />
       <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-1">{project.name}</h2>
       <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-2">
         Client: {project.client?.user.name || "N/A"} &middot; {GRADE_LABELS[project.gradeLevel]} &middot; {project.city?.name || project.client?.user.city?.name || ""} &middot; Started {new Date(project.createdAt).toLocaleDateString()}
@@ -134,29 +136,29 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-zinc-200 dark:border-zinc-700">
-                    <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Date</th>
-                    <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Tutor</th>
-                    <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Mode</th>
-                    <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Hours</th>
-                    <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Billing</th>
-                    <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Tutor Pay</th>
-                    <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Description</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">Date</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">Tutor</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">Mode</th>
+                    <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500">Hours</th>
+                    <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500">Billing</th>
+                    <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500">Tutor Pay</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">Description</th>
                   </tr>
                 </thead>
                 <tbody>
                   {project.hourLogs.map((log) => (
                     <tr key={log.id} className="text-sm border-b border-zinc-100 dark:border-zinc-700/50">
-                      <td className="px-2 py-2 text-zinc-600 dark:text-zinc-400">
+                      <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
                         {new Date(log.date).toLocaleDateString()}
                       </td>
-                      <td className="px-2 py-2 text-zinc-900 dark:text-zinc-100">{log.tutor.user.name}</td>
-                      <td className="px-2 py-2">
+                      <td className="px-4 py-3 text-zinc-900 dark:text-zinc-100">{log.tutor.user.name}</td>
+                      <td className="px-4 py-3">
                         <ModeBadge mode={log.mode} />
                       </td>
-                      <td className="px-2 py-2 text-right text-zinc-900 dark:text-zinc-100">{log.hours}</td>
-                      <td className="px-2 py-2 text-right text-zinc-600 dark:text-zinc-400">${(log.hours * log.billingRate).toFixed(2)}</td>
-                      <td className="px-2 py-2 text-right text-green-600 dark:text-green-400">${(log.hours * log.tutorPayRate).toFixed(2)}</td>
-                      <td className="px-2 py-2 text-zinc-600 dark:text-zinc-400">{log.description || "-"}</td>
+                      <td className="px-4 py-3 text-right text-zinc-900 dark:text-zinc-100">{log.hours}</td>
+                      <td className="px-4 py-3 text-right text-zinc-600 dark:text-zinc-400">${(log.hours * log.billingRate).toFixed(2)}</td>
+                      <td className="px-4 py-3 text-right text-green-600 dark:text-green-400">${(log.hours * log.tutorPayRate).toFixed(2)}</td>
+                      <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{log.description || "-"}</td>
                     </tr>
                   ))}
                 </tbody>

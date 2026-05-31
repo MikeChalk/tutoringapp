@@ -103,7 +103,7 @@ export default function Manage2FA({ initiallyEnabled }: { initiallyEnabled: bool
           <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">Enter your password to disable two-factor authentication.</p>
           <div className="flex gap-2 items-end">
             <div>
-              <label className="block text-xs text-zinc-500 mb-1">Password</label>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Password</label>
               <input
                 type="password"
                 value={password}
@@ -156,7 +156,7 @@ export default function Manage2FA({ initiallyEnabled }: { initiallyEnabled: bool
           </div>
           <div className="flex gap-2 items-end">
             <div>
-              <label className="block text-xs text-zinc-500 mb-1">Verification Code</label>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Verification Code</label>
               <input
                 type="text"
                 inputMode="numeric"

@@ -4,15 +4,17 @@ import { useState, useEffect, Suspense } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { StatusBadge } from "@/components/ui"
+import { EmptyState } from "@/components/empty-state"
+import { MessageSquare } from "lucide-react"
 
-  const ADMIN_STATUS_FILTERS = [
-    { value: "NEW", label: "New" },
-    { value: "MATCHED", label: "Matched" },
-    { value: "ACCEPTED", label: "Accepted" },
-    { value: "REJECTED", label: "Rejected" },
-    { value: "COMPLETED", label: "Completed" },
-    { value: "CANCELLED", label: "Cancelled" },
-  ]
+const ADMIN_STATUS_FILTERS = [
+  { value: "NEW", label: "New" },
+  { value: "MATCHED", label: "Matched" },
+  { value: "ACCEPTED", label: "Accepted" },
+  { value: "REJECTED", label: "Rejected" },
+  { value: "COMPLETED", label: "Completed" },
+  { value: "CANCELLED", label: "Cancelled" },
+]
 
 const TUTOR_STATUS_FILTERS = [
   { value: "NEW", label: "Offers" },
@@ -103,8 +105,6 @@ function RequestsContent() {
     setRecommendations([])
   }
 
-  const filteredRequests = requests
-
   const selectedRequest = requests.find((r) => r.id === selected)
 
   return (
@@ -142,12 +142,16 @@ function RequestsContent() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="flex flex-col gap-3">
-          {filteredRequests.length === 0 && (
-            <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-8 text-center">
-              <p className="text-sm text-zinc-500">No requests found.</p>
+          {requests.length === 0 && (
+            <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-8">
+              <EmptyState
+                icon={MessageSquare}
+                title="No requests found"
+                description="Tutoring requests from the public form will appear here."
+              />
             </div>
           )}
-          {filteredRequests.map((req) => (
+          {requests.map((req) => (
             <div
               key={req.id}
               onClick={() => isAdmin ? getRecommendations(req.id) : setSelected(req.id)}

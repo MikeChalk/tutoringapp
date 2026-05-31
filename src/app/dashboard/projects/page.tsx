@@ -4,6 +4,8 @@ import { GRADE_LABELS } from "@/lib/constants"
 import { StatusBadge } from "@/components/ui"
 import { CityFilter } from "@/components/city-filter"
 import { CreateProjectForm } from "@/components/create-project-form"
+import { EmptyState } from "@/components/empty-state"
+import { FolderOpen } from "lucide-react"
 import Link from "next/link"
 import Script from "next/script"
 
@@ -211,7 +213,14 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
                 )
               })}
               {projects.length === 0 && (
-                <tr><td colSpan={admin ? 8 : 7} className="px-4 py-8 text-center text-sm text-zinc-500">No projects.</td></tr>
+                <tr><td colSpan={admin ? 8 : 7} className="px-4 py-8">
+                  <EmptyState
+                    icon={FolderOpen}
+                    title="No projects"
+                    description="Create your first tutoring project to get started."
+                    action={admin ? { label: "Create Project", href: "#create-project" } : undefined}
+                  />
+                </td></tr>
               )}
 </tbody>
            </table>
@@ -249,7 +258,16 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
             </Link>
           )
         })}
-        {projects.length === 0 && <p className="text-sm text-zinc-500 col-span-full">No projects.</p>}
+        {projects.length === 0 && (
+          <div className="col-span-full">
+            <EmptyState
+              icon={FolderOpen}
+              title="No projects"
+              description="Create your first tutoring project to get started."
+              action={admin ? { label: "Create Project", href: "#create-project" } : undefined}
+            />
+          </div>
+        )}
       </div>
       )}
 

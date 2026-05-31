@@ -232,12 +232,12 @@ export default function HourLogForm({
           <>
             <div className="grid grid-cols-2 gap-3 mb-2">
               <div>
-                <label className="block text-xs text-zinc-500 mb-1">Billing Rate ($/hr)</label>
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Billing Rate ($/hr)</label>
                 <input type="number" name="billingRate" min="0" step="0.01" value={billingRate} onChange={(e) => setBillingRate(e.target.value)}
                   className="w-full rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
-                <label className="block text-xs text-zinc-500 mb-1">Tutor Pay Rate ($/hr)</label>
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Tutor Pay Rate ($/hr)</label>
                 <input type="number" name="tutorPayRate" min="0" step="0.01" value={tutorPayRate} onChange={(e) => setTutorPayRate(e.target.value)}
                   className="w-full rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>

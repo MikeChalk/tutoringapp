@@ -1,11 +1,12 @@
 import { prisma } from "@/lib/db"
 import { requireAdmin, isSuperAdmin } from "@/lib/auth-helpers"
-import { GRADE_LABELS } from "@/lib/constants"
+import { GRADE_LABELS, STUDENT_GRADES, SUPERVISOR_GRADES } from "@/lib/constants"
 import { notFound } from "next/navigation"
 import ImpersonateButton from "@/components/impersonate-button"
 import { ModeBadge, StatusBadge } from "@/components/ui"
 import SendInviteButton from "@/components/send-invite-button"
 import TutorDetailEdit from "@/components/tutor-detail-edit"
+import { PageBreadcrumb } from "@/components/page-breadcrumb"
 
 export default async function TutorDetailPage(props: { params: Promise<{ id: string }> }) {
   const session = await requireAdmin()
@@ -58,6 +59,7 @@ export default async function TutorDetailPage(props: { params: Promise<{ id: str
 
   return (
     <div>
+      <PageBreadcrumb items={[{ label: "Team", href: "/dashboard/tutors" }, { label: tutor.user.name }]} />
       <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">{tutor.user.name}</h2>
       <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-1">{tutor.user.email}</p>
       <div className="flex items-center gap-3 mb-4">
@@ -95,7 +97,7 @@ export default async function TutorDetailPage(props: { params: Promise<{ id: str
                 <p className="text-sm text-zinc-500">No private tutoring rates configured.</p>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
-                  {["ELEMENTARY", "SEC1_2", "SEC3", "SEC4_5", "CEGEP", "UNI"].map((grade) => {
+                  {STUDENT_GRADES.map((grade) => {
                     const onlineRate = studentPayScales.find((p) => p.gradeLevel === grade && p.mode === "ONLINE")
                     const inPersonRate = studentPayScales.find((p) => p.gradeLevel === grade && p.mode === "IN_PERSON")
                     return (
@@ -116,7 +118,7 @@ export default async function TutorDetailPage(props: { params: Promise<{ id: str
                 <p className="text-sm text-zinc-500">No study hall rates configured.</p>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
-                  {["STUDY_HALL_TUTOR", "IN_PERSON_MGMT", "ONLINE_MGMT", "SUPERVISION", "MARKETING"].map((cat) => {
+                  {SUPERVISOR_GRADES.map((cat) => {
                     const catLabel: Record<string, string> = { STUDY_HALL_TUTOR: "Tutor", IN_PERSON_MGMT: "In-Person Mgmt", ONLINE_MGMT: "Online Mgmt", SUPERVISION: "Supervision", MARKETING: "Marketing" }
                     const onlineRate = studyHallPayScales.find((p) => p.gradeLevel === cat && p.mode === "ONLINE")
                     const inPersonRate = studyHallPayScales.find((p) => p.gradeLevel === cat && p.mode === "IN_PERSON")
@@ -162,27 +164,27 @@ export default async function TutorDetailPage(props: { params: Promise<{ id: str
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-zinc-200 dark:border-zinc-700">
-                    <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Date</th>
-                    <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Project</th>
-                    <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Mode</th>
-                    <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Hours</th>
-                    <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Pay Rate</th>
-                    <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Pay</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">Date</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">Project</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">Mode</th>
+                    <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500">Hours</th>
+                    <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500">Pay Rate</th>
+                    <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500">Pay</th>
                   </tr>
                 </thead>
                 <tbody>
                   {tutor.hourLogs.map((log) => (
                     <tr key={log.id} className="text-sm border-b border-zinc-100 dark:border-zinc-700/50">
-                      <td className="px-2 py-2 text-zinc-600 dark:text-zinc-400">
+                      <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
                         {new Date(log.date).toLocaleDateString()}
                       </td>
-                      <td className="px-2 py-2 text-zinc-900 dark:text-zinc-100">{log.project.name}</td>
-                      <td className="px-2 py-2">
+                      <td className="px-4 py-3 text-zinc-900 dark:text-zinc-100">{log.project.name}</td>
+                      <td className="px-4 py-3">
                         <ModeBadge mode={log.mode} />
                       </td>
-                      <td className="px-2 py-2 text-right text-zinc-900 dark:text-zinc-100">{log.hours}</td>
-                      <td className="px-2 py-2 text-right text-green-600 dark:text-green-400">${log.tutorPayRate.toFixed(2)}/hr</td>
-                      <td className="px-2 py-2 text-right font-medium text-green-600 dark:text-green-400">${(log.hours * log.tutorPayRate).toFixed(2)}</td>
+                      <td className="px-4 py-3 text-right text-zinc-900 dark:text-zinc-100">{log.hours}</td>
+                      <td className="px-4 py-3 text-right text-green-600 dark:text-green-400">${log.tutorPayRate.toFixed(2)}/hr</td>
+                      <td className="px-4 py-3 text-right font-medium text-green-600 dark:text-green-400">${(log.hours * log.tutorPayRate).toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -5,22 +5,41 @@ import { DeleteHourButton } from "@/components/delete-hour-button"
 import { ModeBadge, StatusBadge } from "@/components/ui"
 import EditHourLog from "@/components/edit-hour-log"
 import HourLogForm from "@/components/hour-log-form"
+import { EmptyState } from "@/components/empty-state"
+import { SortHeader } from "@/components/sort-header"
+import { Clock } from "lucide-react"
 import { Prisma } from "@prisma/client"
 import Link from "next/link"
 
+function getSortOrderBy(sort: string, order: string): Prisma.HourLogOrderByWithRelationInput {
+  const dir: Prisma.SortOrder = order === "asc" ? "asc" : "desc"
+  switch (sort) {
+    case "tutor": return { tutor: { user: { name: dir } } }
+    case "project": return { project: { name: dir } }
+    case "client": return { project: { client: { user: { name: dir } } } }
+    case "hours": return { hours: dir }
+    case "billingRate": return { billingRate: dir }
+    case "tutorPayRate": return { tutorPayRate: dir }
+    case "mode": return { mode: dir }
+    default: return { date: dir }
+  }
+}
+
 type TutorWithUser = Prisma.TutorGetPayload<{ include: { user: { select: { name: true } } } }>
 
-export default async function HoursPage(props: { searchParams: Promise<{ city?: string; search?: string; page?: string }> }) {
+export default async function HoursPage(props: { searchParams: Promise<{ city?: string; search?: string; page?: string; sort?: string; order?: string }> }) {
   const session = await requireAuth()
   const tutor = isTutor(session.user.role)
   const superAdmin = isSuperAdmin(session.user.role)
   const admin = isAdmin(session.user.role)
 
-  const { city: cityParam, search: searchParam, page: pageParam } = await props.searchParams
+  const { city: cityParam, search: searchParam, page: pageParam, sort: sortParam, order: orderParam } = await props.searchParams
   const selectedCity = cityParam || "all"
   const searchQuery = searchParam || ""
   const page = parseInt(pageParam || "1") || 1
   const pageSize = 50
+  const sort = sortParam || "date"
+  const order = orderParam || "desc"
   const cityAdminId = isCityAdmin(session.user.role) ? await getActiveCityId(session.user.role, session.user.id) : null
   const effectiveCityId = cityAdminId || (superAdmin && selectedCity !== "all" ? selectedCity : null)
 
@@ -53,7 +72,7 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
         tutor: { include: { user: { select: { name: true } } } },
         project: { select: { name: true, gradeLevel: true, status: true, client: { select: { user: { select: { name: true } } } }, city: { select: { name: true } } } },
       },
-      orderBy: { date: "desc" },
+      orderBy: getSortOrderBy(sort, order),
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
@@ -131,6 +150,10 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
     }
   }
 
+  const baseParams: Record<string, string | undefined> = {}
+  if (selectedCity !== "all") baseParams.city = selectedCity
+  if (searchQuery) baseParams.search = searchQuery
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -141,7 +164,7 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
             <input type="text" name="search" defaultValue={searchQuery} placeholder="Search tutor, project, or client..."
               className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-1.5 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500 w-56" />
             <button type="submit" className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700">Search</button>
-            {searchQuery && <a href={`/dashboard/hours${selectedCity !== "all" ? `?city=${selectedCity}` : ""}`} className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700">Clear</a>}
+            {searchQuery && <Link href={`/dashboard/hours${selectedCity !== "all" ? `?city=${selectedCity}` : ""}`} className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700">Clear</Link>}
           </form>
           <a href="/api/export?type=hours" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Export CSV</a>
           {superAdmin && <CityFilter selected={selectedCity} />}
@@ -152,47 +175,51 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
         <div className="lg:col-span-2 bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Recent Entries</h3>
           {hourLogs.length === 0 ? (
-            <p className="text-sm text-zinc-500">No hours logged yet.</p>
+            <EmptyState
+              icon={Clock}
+              title="No hours logged yet"
+              description="Log your first tutoring session using the form on the right."
+            />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-zinc-200 dark:border-zinc-700">
-                    <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Date</th>
-                    {!tutor && <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Tutor</th>}
-                    <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Student</th>
-                    <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Client</th>
-                    <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">City</th>
-                    <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Mode</th>
-                    <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Hrs</th>
-                    {!tutor && <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Bill $/hr</th>}
-                    <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Pay $/hr</th>
-                    <th className="text-right px-2 py-2 text-xs font-medium text-zinc-500">Total Pay</th>
-                    {(admin || tutor) && <th className="text-center px-2 py-2 text-xs font-medium text-zinc-500">Actions</th>}
+                    <th className="text-left px-4 py-3 text-xs font-medium"><SortHeader label="Date" field="date" currentSort={sort} currentOrder={order} searchParams={baseParams} /></th>
+                    {!tutor && <th className="text-left px-4 py-3 text-xs font-medium"><SortHeader label="Tutor" field="tutor" currentSort={sort} currentOrder={order} searchParams={baseParams} /></th>}
+                    <th className="text-left px-4 py-3 text-xs font-medium"><SortHeader label="Student" field="project" currentSort={sort} currentOrder={order} searchParams={baseParams} /></th>
+                    <th className="text-left px-4 py-3 text-xs font-medium"><SortHeader label="Client" field="client" currentSort={sort} currentOrder={order} searchParams={baseParams} /></th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">City</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium"><SortHeader label="Mode" field="mode" currentSort={sort} currentOrder={order} searchParams={baseParams} /></th>
+                    <th className="text-right px-4 py-3 text-xs font-medium"><SortHeader label="Hrs" field="hours" currentSort={sort} currentOrder={order} searchParams={baseParams} /></th>
+                    {!tutor && <th className="text-right px-4 py-3 text-xs font-medium"><SortHeader label="Bill $/hr" field="billingRate" currentSort={sort} currentOrder={order} searchParams={baseParams} /></th>}
+                    <th className="text-right px-4 py-3 text-xs font-medium"><SortHeader label="Pay $/hr" field="tutorPayRate" currentSort={sort} currentOrder={order} searchParams={baseParams} /></th>
+                    <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500">Total Pay</th>
+                    {(admin || tutor) && <th className="text-center px-4 py-3 text-xs font-medium text-zinc-500">Actions</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700/50">
                   {hourLogs.map((log) => (
                     <tr key={log.id} className="text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700/30">
-                      <td className="px-2 py-2 text-zinc-600 dark:text-zinc-400">
+                      <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
                         {new Date(log.date).toLocaleDateString()}
                       </td>
-                      {!tutor && <td className="px-2 py-2 text-zinc-900 dark:text-zinc-100">{log.tutor.user.name}</td>}
-                      <td className="px-2 py-2">
+                      {!tutor && <td className="px-4 py-3 text-zinc-900 dark:text-zinc-100">{log.tutor.user.name}</td>}
+                      <td className="px-4 py-3">
                         <span className="text-zinc-900 dark:text-zinc-100">{log.project.name}</span>
                         <span className="ml-2"><StatusBadge status={log.project.status} /></span>
                       </td>
-                      <td className="px-2 py-2 text-zinc-600 dark:text-zinc-400">{log.project.client?.user.name || "Other"}</td>
-                      <td className="px-2 py-2 text-zinc-600 dark:text-zinc-400">{log.project.city?.name || "-"}</td>
-                      <td className="px-2 py-2">
+                      <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{log.project.client?.user.name || "Other"}</td>
+                      <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{log.project.city?.name || "-"}</td>
+                      <td className="px-4 py-3">
                         <ModeBadge mode={log.mode} />
                       </td>
-                      <td className="px-2 py-2 text-right text-zinc-900 dark:text-zinc-100">{log.hours}</td>
-                      {!tutor && <td className="px-2 py-2 text-right text-zinc-600 dark:text-zinc-400">${log.billingRate.toFixed(2)}</td>}
-                      <td className="px-2 py-2 text-right font-medium text-green-600 dark:text-green-400">${log.tutorPayRate.toFixed(2)}</td>
-                      <td className="px-2 py-2 text-right font-medium text-green-600 dark:text-green-400">${(log.hours * log.tutorPayRate).toFixed(2)}</td>
+                      <td className="px-4 py-3 text-right text-zinc-900 dark:text-zinc-100">{log.hours}</td>
+                      {!tutor && <td className="px-4 py-3 text-right text-zinc-600 dark:text-zinc-400">${log.billingRate.toFixed(2)}</td>}
+                      <td className="px-4 py-3 text-right font-medium text-green-600 dark:text-green-400">${log.tutorPayRate.toFixed(2)}</td>
+                      <td className="px-4 py-3 text-right font-medium text-green-600 dark:text-green-400">${(log.hours * log.tutorPayRate).toFixed(2)}</td>
                       {admin && (
-                        <td className="px-2 py-2 text-center">
+                        <td className="px-4 py-3 text-center">
                           <div className="flex items-center justify-center gap-1">
                             <EditHourLog
                               id={log.id}
@@ -209,7 +236,7 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
                         </td>
                       )}
                       {tutor && (
-                        <td className="px-2 py-2 text-center">
+                        <td className="px-4 py-3 text-center">
                           <div className="flex items-center justify-center gap-1">
                             <EditHourLog
                               id={log.id}

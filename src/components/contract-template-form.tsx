@@ -106,13 +106,13 @@ export function ContractTemplateForm({ editing, onCancel }: {
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">Template Name</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Template Name</label>
             <input type="text" name="name" required placeholder="e.g. Private Tutoring Standard"
               defaultValue={editing?.name || ""}
               className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">Contract Type</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Contract Type</label>
             <select name="type" required
               value={contractType}
               onChange={e => setContractType(e.target.value)}
@@ -122,7 +122,7 @@ export function ContractTemplateForm({ editing, onCancel }: {
             </select>
           </div>
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">Year Level</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Year Level</label>
             <select name="yearLevel" required
               defaultValue={editing?.yearLevel || "1ST_YEAR"}
               className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -135,13 +135,13 @@ export function ContractTemplateForm({ editing, onCancel }: {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">Start Date</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Start Date</label>
             <input type="date" name="startDate"
               defaultValue={fmtDate(editing?.startDate)}
               className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">Expiry Date</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Expiry Date</label>
             <input type="date" name="endDate"
               defaultValue={fmtDate(editing?.endDate)}
               className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
@@ -149,7 +149,7 @@ export function ContractTemplateForm({ editing, onCancel }: {
         </div>
 
         <div>
-          <label className="block text-xs text-zinc-500 mb-2">Rates by Category ($/hr)</label>
+          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Rates by Category ($/hr)</label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {rateKeys.map((key) => (
               <div key={key} className="bg-zinc-50 dark:bg-zinc-900 rounded-lg p-2 border border-zinc-200 dark:border-zinc-700">
@@ -174,7 +174,7 @@ export function ContractTemplateForm({ editing, onCancel }: {
         </div>
 
         <div>
-          <label className="block text-xs text-zinc-500 mb-2">Custom Categories</label>
+          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Custom Categories</label>
           {customCategories.map((cat, idx) => (
             <div key={idx} className="flex items-center gap-2 mb-2">
               <input type="text" placeholder="Category name"
@@ -200,7 +200,7 @@ export function ContractTemplateForm({ editing, onCancel }: {
         </div>
 
         <div>
-          <label className="block text-xs text-zinc-500 mb-1">Contract Terms</label>
+          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Contract Terms</label>
           <textarea name="terms" rows={4} placeholder="Contract terms and conditions..."
             defaultValue={editing?.terms || ""}
             className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />

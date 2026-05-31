@@ -2,6 +2,7 @@
 
 import { useState, Suspense, useRef, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import Link from "next/link"
 import Script from "next/script"
 
 const RECAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || ""
@@ -99,7 +100,7 @@ function LoginContent() {
       )}
       <div className="w-full max-w-sm">
         <div className="bg-white dark:bg-zinc-800 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-700 p-8">
-          <h1 className="text-2xl font-bold text-zinc-900 dark:bg-zinc-100 mb-6 text-center">Sign In</h1>
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-6 text-center">Sign In</h1>
 
           {justSetup && (
             <div className="bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 text-sm rounded-lg px-4 py-2 mb-4">
@@ -171,7 +172,7 @@ function LoginContent() {
           </form>
 
           <p className="mt-4 text-center text-sm text-zinc-500 dark:text-zinc-400">
-            <a href="/forgot-password" className="text-blue-600 dark:text-blue-400 hover:underline">Forgot password?</a>
+            <Link href="/forgot-password" className="text-blue-600 dark:text-blue-400 hover:underline">Forgot password?</Link>
           </p>
         </div>
       </div>

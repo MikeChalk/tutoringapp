@@ -35,50 +35,50 @@ export default function ClientDetailEdit({ client }: ClientDetailEditProps) {
         <form action="/api/clients" method="POST" className="space-y-3">
           <input type="hidden" name="id" value={client.id} />
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">Name</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Name</label>
             <input type="text" name="name" defaultValue={client.user.name} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">Email</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Email</label>
             <input type="email" name="email" defaultValue={client.user.email} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-zinc-500 mb-1">Type</label>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Type</label>
               <select name="clientType" defaultValue={client.type} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="PARENT">Parent</option>
                 <option value="SCHOOL">School</option>
               </select>
             </div>
             <div>
-              <label className="block text-xs text-zinc-500 mb-1">Company</label>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Company</label>
               <input type="text" name="company" defaultValue={client.company || ""} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
           </div>
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">Phone</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Phone</label>
             <input type="text" name="phone" defaultValue={client.phone || ""} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">Address</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Address</label>
             <input type="text" name="address" defaultValue={client.address || ""} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs text-zinc-500 mb-1">Province</label>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Province</label>
               <input type="text" name="province" defaultValue={client.province || ""} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
             <div>
-              <label className="block text-xs text-zinc-500 mb-1">Country</label>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Country</label>
               <input type="text" name="country" defaultValue={client.country || ""} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
             <div>
-              <label className="block text-xs text-zinc-500 mb-1">Postal Code</label>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Postal Code</label>
               <input type="text" name="postalCode" defaultValue={client.postalCode || ""} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
           </div>
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">Notes</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Notes</label>
             <textarea name="notes" rows={3} defaultValue={client.notes || ""} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">Save Changes</button>

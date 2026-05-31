@@ -37,25 +37,25 @@ export default function TutorDetailEdit({ tutor }: TutorDetailEditProps) {
         <form action="/api/tutors/edit" method="POST" className="space-y-3">
           <input type="hidden" name="tutorId" value={tutor.id} />
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">Tenure</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Tenure</label>
             <select name="tenure" defaultValue={tutor.tenure} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
               {tenureOptions}
             </select>
           </div>
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">Grade Levels (comma-separated)</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Grade Levels (comma-separated)</label>
             <input type="text" name="gradeLevels" defaultValue={tutor.gradeLevels || ""} placeholder="e.g. ELEMENTARY,SEC1_2,SEC3" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">Subjects</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Subjects</label>
             <input type="text" name="subjects" defaultValue={tutor.subjects || ""} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">Phone</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Phone</label>
             <input type="text" name="phone" defaultValue={tutor.phone || ""} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">Bio</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Bio</label>
             <textarea name="bio" rows={3} defaultValue={tutor.bio || ""} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">Save Changes</button>

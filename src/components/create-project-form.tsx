@@ -53,7 +53,7 @@ export function CreateProjectForm({ clients, cities, defaultType, defaultCity }:
       <form action="/api/projects" method="POST" className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">Project Type</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Project Type</label>
             <select name="projectType" value={projectType}
               onChange={e => { setProjectType(e.target.value); setSelectedSubjects([]); setOtherSubject("") }}
               className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -62,7 +62,7 @@ export function CreateProjectForm({ clients, cities, defaultType, defaultCity }:
             </select>
           </div>
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
               {isStudent ? "Student Name *" : "Project Name *"}
             </label>
             {isStudent ? (
@@ -79,7 +79,7 @@ export function CreateProjectForm({ clients, cities, defaultType, defaultCity }:
             )}
           </div>
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">Client</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Client</label>
             <SearchableSelect
               name="clientId"
               options={clients.map(c => ({ value: c.id, label: c.user.name }))}
@@ -90,7 +90,7 @@ export function CreateProjectForm({ clients, cities, defaultType, defaultCity }:
           </div>
           {isStudent ? (
             <div>
-              <label className="block text-xs text-zinc-500 mb-1">Grade Level</label>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Grade Level</label>
               <select name="gradeLevel" value={gradeLevel} onChange={e => setGradeLevel(e.target.value)}
                 className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 {STUDENT_GRADES.map((k) => (
@@ -101,7 +101,7 @@ export function CreateProjectForm({ clients, cities, defaultType, defaultCity }:
           ) : (
             <>
               <div>
-                <label className="block text-xs text-zinc-500 mb-1">Subtype</label>
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Subtype</label>
               <select name="gradeLevel" value={gradeLevel} onChange={e => setGradeLevel(e.target.value)}
                 className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
                   <option value="STUDY_HALL">{GRADE_LABELS.STUDY_HALL}</option>
@@ -109,14 +109,14 @@ export function CreateProjectForm({ clients, cities, defaultType, defaultCity }:
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-zinc-500 mb-1">School</label>
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">School</label>
                 <input type="text" name="school" placeholder="School name"
                   className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
             </>
           )}
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">City</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">City</label>
             <SearchableSelect
               name="cityId"
               options={cities.map(c => ({ value: c.id, label: c.name }))}
@@ -128,7 +128,7 @@ export function CreateProjectForm({ clients, cities, defaultType, defaultCity }:
 
         {isStudent ? (
           <div>
-            <label className="block text-xs text-zinc-500 mb-2">Subjects</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Subjects</label>
             <input type="hidden" name="subjects" value={subjectsValue} />
             <div className="flex flex-wrap gap-2 mb-2">
               {SUBJECT_OPTIONS.map(subject => {
@@ -147,14 +147,14 @@ export function CreateProjectForm({ clients, cities, defaultType, defaultCity }:
           </div>
         ) : (
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">Subjects</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Subjects</label>
             <input type="hidden" name="subjects" value="All Subjects" />
             <p className="text-sm text-zinc-500 dark:text-zinc-400">All Subjects (default for study hall)</p>
           </div>
         )}
 
         <div>
-          <label className="block text-xs text-zinc-500 mb-1">Description</label>
+          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Description</label>
           <textarea name="description" rows={2} placeholder="Any additional notes..."
             className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
         </div>

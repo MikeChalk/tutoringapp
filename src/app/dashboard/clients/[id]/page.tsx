@@ -6,6 +6,7 @@ import { CLIENT_TYPE_LABELS } from "@/lib/constants"
 import ClientDetailEdit from "@/components/client-detail-edit"
 import { StatusBadge } from "@/components/ui"
 import SendInviteButton from "@/components/send-invite-button"
+import { PageBreadcrumb } from "@/components/page-breadcrumb"
 import ImpersonateButton from "@/components/impersonate-button"
 
 export default async function ClientDetailPage(props: { params: Promise<{ id: string }> }) {
@@ -84,6 +85,7 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
 
   return (
     <div>
+      <PageBreadcrumb items={[{ label: "Clients", href: "/dashboard/clients" }, { label: client.user.name }]} />
       <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">{client.user.name}</h2>
       <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-1">{client.user.email}</p>
       <div className="flex items-center gap-3 mb-6">
@@ -204,16 +206,16 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
           <table className="w-full">
             <thead>
               <tr className="border-b border-zinc-200 dark:border-zinc-700">
-                <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Number</th>
-                <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Amount</th>
-                <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Status</th>
-                <th className="text-left px-2 py-2 text-xs font-medium text-zinc-500">Due</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">Number</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">Amount</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">Status</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">Due</th>
               </tr>
             </thead>
             <tbody>
               {client.invoices.map((invoice) => (
                 <tr key={invoice.id} className="text-sm">
-                  <td className="px-2 py-2">
+                  <td className="px-4 py-3">
                     <Link
                       href={`/dashboard/invoices/${invoice.id}`}
                       className="text-blue-600 dark:text-blue-400 hover:underline"
@@ -221,18 +223,18 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
                       {invoice.number}
                     </Link>
                   </td>
-                  <td className="px-2 py-2 text-zinc-900 dark:text-zinc-100">
+                  <td className="px-4 py-3 text-zinc-900 dark:text-zinc-100">
                     ${invoice.totalAmount.toFixed(2)}
                   </td>
-                  <td className="px-2 py-2"><StatusBadge status={invoice.status} /></td>
-                  <td className="px-2 py-2 text-zinc-600 dark:text-zinc-400">
+                  <td className="px-4 py-3"><StatusBadge status={invoice.status} /></td>
+                  <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
                     {new Date(invoice.dueDate).toLocaleDateString()}
                   </td>
                 </tr>
               ))}
-</tbody>
-</table>
-             </div>
+            </tbody>
+          </table>
+        </div>
           )}
         </div>
         )}
@@ -262,15 +264,15 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
                     <td className="px-3 py-2 text-zinc-600 dark:text-zinc-400">{e.category}</td>
                     <td className="px-3 py-2 text-right text-red-600 dark:text-red-400">${e.amount.toFixed(2)}</td>
                   </tr>
-                ))}
-              </tbody>
-</table>
-             </div>
-           </div>
-         )}
-       </div>
-       )}
-     </div>
-   )
+              ))}
+            </tbody>
+          </table>
+        </div>
+          </div>
+        )}
+      </div>
+      )}
+    </div>
+  )
 }
 

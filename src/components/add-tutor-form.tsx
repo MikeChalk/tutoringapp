@@ -37,34 +37,34 @@ export function AddTutorForm({ templates, cities, onboardFlow }: { templates: Te
       </div>
       <form action={formAction} method="POST" className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div><label className="block text-xs text-zinc-500 mb-1">Full Name *</label><input type="text" name="name" required className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
-          <div><label className="block text-xs text-zinc-500 mb-1">Email *</label><input type="email" name="email" required className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
-          <div><label className="block text-xs text-zinc-500 mb-1">Phone</label><input type="tel" name="phone" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
+          <div><label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Full Name *</label><input type="text" name="name" required className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
+          <div><label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Email *</label><input type="email" name="email" required className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
+          <div><label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Phone</label><input type="tel" name="phone" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">City</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">City</label>
             <select name="cityId" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="">None</option>
               {cities.map(c => (<option key={c.id} value={c.id}>{c.name}</option>))}
             </select>
           </div>
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">Role</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Role</label>
             <select name="role" defaultValue="TUTOR" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="TUTOR">Tutor</option><option value="CITY_ADMIN">City Admin</option>
             </select>
           </div>
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">Tenure</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Tenure</label>
             <select name="tenure" defaultValue="1ST_YEAR" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="1ST_YEAR">Year 1</option><option value="2ND_YEAR">Year 2</option><option value="3RD_YEAR">Year 3</option>
             </select>
           </div>
           {onboardFlow && (
             <div>
-              <label className="block text-xs text-zinc-500 mb-1">Contract Type</label>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Contract Type</label>
               <select name="contractType" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="PRIVATE_TUTORING">Private Tutoring</option><option value="PROGRAM_SUPERVISOR">Program Supervisor</option>
               </select>
@@ -72,7 +72,7 @@ export function AddTutorForm({ templates, cities, onboardFlow }: { templates: Te
           )}
           {onboardFlow && templates.length > 0 && (
             <div>
-              <label className="block text-xs text-zinc-500 mb-1">Template</label>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Template</label>
               <select name="templateId" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="">None</option>
                 {templates.map((t) => (<option key={t.id} value={t.id}>{t.name}</option>))}
@@ -83,13 +83,13 @@ export function AddTutorForm({ templates, cities, onboardFlow }: { templates: Te
 
         {onboardFlow && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div><label className="block text-xs text-zinc-500 mb-1">Start Date</label><input type="date" name="startDate" defaultValue={new Date().toISOString().split("T")[0]} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
-            <div><label className="block text-xs text-zinc-500 mb-1">End Date</label><input type="date" name="endDate" defaultValue={new Date(new Date().getFullYear() + (new Date().getMonth() >= 6 ? 2 : 1), 6, 1).toISOString().split("T")[0]} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
+            <div><label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Start Date</label><input type="date" name="startDate" defaultValue={new Date().toISOString().split("T")[0]} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
+            <div><label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">End Date</label><input type="date" name="endDate" defaultValue={new Date(new Date().getFullYear() + (new Date().getMonth() >= 6 ? 2 : 1), 6, 1).toISOString().split("T")[0]} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
           </div>
         )}
 
         <div>
-          <label className="block text-xs text-zinc-500 mb-2">Subjects</label>
+          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Subjects</label>
           <input type="hidden" name="subjects" value={subjectsValue} />
           <div className="flex flex-wrap gap-2 mb-2">
             {SUBJECT_OPTIONS.map(s => {
@@ -105,7 +105,7 @@ export function AddTutorForm({ templates, cities, onboardFlow }: { templates: Te
         </div>
 
         <div>
-          <label className="block text-xs text-zinc-500 mb-2">Grade Levels</label>
+          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Grade Levels</label>
           <input type="hidden" name="gradeLevels" value={gradesValue} />
           <div className="flex flex-wrap gap-2">
             {Object.entries(STUDENT_GRADE_OPTIONS).map(([key, label]) => {
