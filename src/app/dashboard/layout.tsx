@@ -9,7 +9,7 @@ import ImpersonationBanner from "@/components/impersonation-banner"
 import FeedbackBubble from "@/components/feedback-bubble"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Menu } from "lucide-react"
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -43,6 +43,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className="w-64 p-0">
+          <SheetTitle className="sr-only">Navigation</SheetTitle>
           <div className="flex flex-col h-full bg-white dark:bg-zinc-800">
             <SidebarContent />
           </div>
