@@ -59,7 +59,10 @@ export default async function TutorDetailPage(props: { params: Promise<{ id: str
 
   return (
     <div>
-      <PageBreadcrumb items={[{ label: "Team", href: "/dashboard/tutors" }, { label: tutor.user.name }]} />
+      <PageBreadcrumb items={[
+        { label: tutor.onboarded ? "Team" : "Tutor Waitlist", href: tutor.onboarded ? "/dashboard/tutors" : "/dashboard/waitlist" },
+        { label: tutor.user.name },
+      ]} />
       <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">{tutor.user.name}</h2>
       <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-1">{tutor.user.email}</p>
       <div className="flex items-center gap-3 mb-4">
