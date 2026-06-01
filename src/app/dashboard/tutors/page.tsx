@@ -141,7 +141,7 @@ export default async function TutorsPage(props: { searchParams: Promise<{ type?:
         <input type="text" name="search" defaultValue={searchQuery} placeholder="Search by name or email..."
           className="flex-1 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
         <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Search</button>
-        {searchQuery && <Link href={`/dashboard/tutors${filter !== "ALL" ? `?type=${filter}` : ""}`} className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-500 hover:bg-zinc-100">Clear</Link>}
+        {searchQuery && (() => { const p = new URLSearchParams(); if (filter !== "ALL") p.set("type", filter); if (selectedCity !== "all") p.set("city", selectedCity); const qs = p.toString(); return <Link href={`/dashboard/tutors${qs ? `?${qs}` : ""}`} className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-500 hover:bg-zinc-100">Clear</Link> })()}
       </form>
 
       <AddTutorForm templates={templates} cities={cities} />

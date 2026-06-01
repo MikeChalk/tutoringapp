@@ -96,7 +96,7 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
         <input type="text" name="search" defaultValue={searchQuery} placeholder="Search expenses by description or client..."
           className="flex-1 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
         <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Search</button>
-        {searchQuery && <a href={`/dashboard/expenses-only${selectedCategory !== "ALL" ? `?category=${selectedCategory}` : ""}${selectedCity !== "all" ? `${selectedCategory !== "ALL" ? "&" : "?"}city=${selectedCity}` : ""}`} className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-500 hover:bg-zinc-100">Clear</a>}
+        {searchQuery && (() => { const p = new URLSearchParams(); if (selectedCategory !== "ALL") p.set("category", selectedCategory); if (selectedCity !== "all") p.set("city", selectedCity); const qs = p.toString(); return <Link href={`/dashboard/expenses-only${qs ? `?${qs}` : ""}`} className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-500 hover:bg-zinc-100">Clear</Link> })()}
       </form>
 
       <AddExpenseSection clients={clients} />

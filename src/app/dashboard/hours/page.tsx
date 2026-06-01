@@ -164,7 +164,7 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
             <input type="text" name="search" defaultValue={searchQuery} placeholder="Search tutor, project, or client..."
               className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-1.5 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500 w-56" />
             <button type="submit" className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700">Search</button>
-            {searchQuery && <Link href={`/dashboard/hours${selectedCity !== "all" ? `?city=${selectedCity}` : ""}`} className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700">Clear</Link>}
+            {searchQuery && (() => { const p = new URLSearchParams(); if (selectedCity !== "all") p.set("city", selectedCity); if (sort !== "date") p.set("sort", sort); if (order !== "desc") p.set("order", order); const qs = p.toString(); return <Link href={`/dashboard/hours${qs ? `?${qs}` : ""}`} className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700">Clear</Link> })()}
           </form>
           <a href="/api/export?type=hours" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Export CSV</a>
           {superAdmin && <CityFilter selected={selectedCity} />}
