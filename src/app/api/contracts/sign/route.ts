@@ -54,7 +54,20 @@ export async function POST(request: Request) {
     })
   }
 
-  // Generate signed PDF
+  // Fire-and-forget: generate PDF and send email in background
+  generateAndSendPdf(contract, tutor, signatureName, signedAt).catch(err => {
+    console.error("[contract-sign] Background task failed:", err)
+  })
+
+  return NextResponse.redirect(new URL("/dashboard/contract", request.url), 303)
+}
+
+async function generateAndSendPdf(
+  contract: { id: string; type: string; yearLevel: string; startDate: Date; endDate: Date; terms: string; rates: string },
+  tutor: { user: { name: string; email: string } },
+  signatureName: string,
+  signedAt: Date
+) {
   const settings = await prisma.companySettings.findUnique({ where: { id: "main" } })
   let rates: Record<string, { online?: number; inPerson?: number }> = {}
   try { rates = JSON.parse(contract.rates || "{}") } catch { /* ignore */ }
@@ -77,10 +90,9 @@ export async function POST(request: Request) {
     companyPhone: settings?.phone || undefined,
   })
 
-  // Send email with PDF attachment
   try {
-    const settings = await prisma.companySettings.findUnique({ where: { id: "main" }, select: { emailEnabled: true } })
-    if (settings?.emailEnabled !== false && process.env.RESEND_API_KEY) {
+    const companySettings = await prisma.companySettings.findUnique({ where: { id: "main" }, select: { emailEnabled: true } })
+    if (companySettings?.emailEnabled !== false && process.env.RESEND_API_KEY) {
       const { Resend } = await import("resend")
       const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -105,23 +117,14 @@ export async function POST(request: Request) {
         }],
       })
 
-      // Log the email
       await prisma.emailLog.create({
-        data: {
-          to: tutor.user.email,
-          subject,
-          trigger: "contract_signed",
-        },
+        data: { to: tutor.user.email, subject, trigger: "contract_signed" },
       }).catch(() => {})
     } else {
-      // Log without sending
       const message = `<p>Your signed contract has been recorded. We'll be in touch with the next steps.</p>`
       await sendOnboardingEmail(tutor.user.email, tutor.user.name, message, "contract_signed").catch(() => {})
     }
   } catch (err) {
     console.error("[contract-sign] Email send failed:", err)
-    // Still succeed — the contract is signed in the DB
   }
-
-  return NextResponse.redirect(new URL("/dashboard/contract", request.url), 303)
 }

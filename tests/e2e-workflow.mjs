@@ -396,9 +396,16 @@ async function main() {
   }
 
   if (tutorCookie) {
-    const signRes = await fetchStatus("/api/contracts/sign", {
+    const fd = new URLSearchParams()
+    fd.append("signatureName", "E2E Tutor")
+    const signRes = await fetch(`${BASE}/api/contracts/sign`, {
       method: "POST",
-      headers: { Cookie: tutorCookie },
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Cookie: tutorCookie,
+      },
+      body: fd.toString(),
+      redirect: "manual",
     })
     assertStatus(signRes, 303, "Contract signing")
     

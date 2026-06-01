@@ -43,7 +43,7 @@ export async function GET(
     rates,
     signed: contract.signed,
     signedAt: contract.signedAt,
-    signedByName: contract.signed ? contract.tutor.user.name : null,
+      signedByName: contract.signedByName || (contract.signed ? contract.tutor.user.name : null),
     companyName: settings?.name || undefined,
     companyAddress: settings?.address || undefined,
     companyEmail: settings?.email || undefined,
@@ -53,7 +53,7 @@ export async function GET(
   return new NextResponse(new Uint8Array(pdf), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="Contract-${contract.tutor.user.name.replace(/\s/g, "-")}.pdf"`,
+      "Content-Disposition": `attachment; filename="Contract-${contract.tutor.user.name.replace(/\s/g, "-")}.pdf"`,
     },
   })
 }
