@@ -106,19 +106,20 @@ function SidebarContent() {
 
 function AdminNav({ pathname }: { pathname: string }) {
   const [open, setOpen] = useState<Record<string, boolean>>(() => {
-    if (typeof window === "undefined") {
-      const initial: Record<string, boolean> = {}
-      for (const s of ADMIN_NAV_SECTIONS) initial[s.label] = true
-      return initial
-    }
-    try {
-      const stored = localStorage.getItem("sidebar-sections")
-      if (stored) return JSON.parse(stored)
-    } catch { /* ignore */ }
     const initial: Record<string, boolean> = {}
     for (const s of ADMIN_NAV_SECTIONS) initial[s.label] = true
     return initial
   })
+
+  useEffect(() => {
+    const stored = localStorage.getItem("sidebar-sections")
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored)
+        if (parsed && typeof parsed === "object") setOpen(parsed)
+      } catch { /* ignore corrupted data */ }
+    }
+  }, [])
 
   useEffect(() => {
     try { localStorage.setItem("sidebar-sections", JSON.stringify(open)) } catch { /* ignore */ }
