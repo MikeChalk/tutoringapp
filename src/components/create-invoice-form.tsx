@@ -38,7 +38,8 @@ export function CreateInvoiceForm({ clients }: { clients: Client[] }) {
 
   const subtotal = lines.reduce((s, l) => s + l.amount, 0)
   const taxAmount = subtotal * (taxRate / 100)
-  const discAmt = discountPct > 0 ? subtotal * (discountPct / 100) : discountAmt
+  const pctDisc = subtotal * (discountPct / 100)
+  const discAmt = pctDisc + discountAmt
   const total = Math.max(0, subtotal + taxAmount - discAmt)
 
   function updateLine(idx: number, field: keyof LineItem, value: string) {
@@ -65,7 +66,7 @@ export function CreateInvoiceForm({ clients }: { clients: Client[] }) {
 
   if (!showForm) {
     return (
-      <button onClick={() => setShowForm(true)}
+      <button id="create-invoice" onClick={() => setShowForm(true)}
         className="mb-6 w-full rounded-xl border-2 border-dashed border-zinc-300 dark:border-zinc-600 p-4 text-sm font-medium text-zinc-500 hover:border-zinc-400 dark:hover:border-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors">
         + Create Invoice
       </button>
@@ -139,9 +140,9 @@ export function CreateInvoiceForm({ clients }: { clients: Client[] }) {
             <span>Subtotal</span>
             <span>${subtotal.toFixed(2)}</span>
           </div>
-          {(discountPct > 0 || discountAmt > 0) && (
+          {(pctDisc > 0 || discountAmt > 0) && (
             <div className="flex justify-between text-red-600 dark:text-red-400">
-              <span>Discount {discountCode && `(${discountCode})`}</span>
+              <span>Discount {discountCode ? `(${discountCode})` : ""}{pctDisc > 0 ? ` ${discountPct}%` : ""}{discountAmt > 0 ? ` $${discountAmt.toFixed(2)}` : ""}</span>
               <span>-${discAmt.toFixed(2)}</span>
             </div>
           )}
@@ -174,13 +175,13 @@ export function CreateInvoiceForm({ clients }: { clients: Client[] }) {
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Custom Discount %</label>
-            <input type="number" value={discountPct || ""} onChange={e => { setDiscountPct(parseFloat(e.target.value) || 0); setDiscountCode(""); setDiscountAmt(0) }}
+            <input type="number" value={discountPct || ""} onChange={e => { setDiscountPct(parseFloat(e.target.value) || 0); setDiscountCode("") }}
               placeholder="0" step="0.1" min="0" max="100"
               className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div>
             <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">or Custom $ Off</label>
-            <input type="number" value={discountAmt || ""} onChange={e => { setDiscountAmt(parseFloat(e.target.value) || 0); setDiscountCode(""); setDiscountPct(0) }}
+            <input type="number" value={discountAmt || ""} onChange={e => { setDiscountAmt(parseFloat(e.target.value) || 0); setDiscountCode("") }}
               placeholder="0" step="0.01" min="0"
               className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>

@@ -3,6 +3,7 @@ import { requireAuth, isAdmin, isTutor, isClient, getClientId } from "@/lib/auth
 import { redirect, notFound } from "next/navigation"
 import { PayNowButton } from "@/components/pay-now-button"
 import { PageBreadcrumb } from "@/components/page-breadcrumb"
+import { EditInvoiceForm } from "@/components/edit-invoice-form"
 
 export default async function InvoiceDetailPage(props: { params: Promise<{ id: string }>; searchParams: Promise<{ paid?: string }> }) {
   const session = await requireAuth()
@@ -33,6 +34,7 @@ export default async function InvoiceDetailPage(props: { params: Promise<{ id: s
   }
 
   const settings = await prisma.companySettings.findUnique({ where: { id: "main" } })
+  const clients = await prisma.client.findMany({ include: { user: { select: { name: true } } }, orderBy: { user: { name: "asc" } } })
 
   return (
     <div>
@@ -84,6 +86,25 @@ export default async function InvoiceDetailPage(props: { params: Promise<{ id: s
                 {settings.taxNumber && <p>Tax: {settings.taxNumber}</p>}
               </div>
             </div>
+          )}
+
+          {admin && invoice.status !== "PAID" && (
+            <EditInvoiceForm
+              invoice={{
+                id: invoice.id,
+                number: invoice.number,
+                clientId: invoice.clientId,
+                dueDate: invoice.dueDate.toISOString(),
+                notes: invoice.notes,
+                subtotal: invoice.subtotal,
+                taxRate: invoice.taxRate,
+                taxAmount: invoice.taxAmount,
+                discountCode: invoice.discountCode,
+                discountAmount: invoice.discountAmount,
+                items: invoice.items.map(i => ({ description: i.description, hours: i.hours, rate: i.rate, amount: i.amount })),
+              }}
+              clients={clients}
+            />
           )}
 
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Line Items</h3>

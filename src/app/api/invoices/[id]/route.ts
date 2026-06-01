@@ -21,6 +21,48 @@ export async function POST(request: Request, props: { params: Promise<{ id: stri
   if (action === "markSent") {
     await prisma.invoice.update({ where: { id }, data: { status: "SENT", sentAt: new Date() } })
     await logActivity(session.user.id, "sent", "Invoice", id)
+  } else if (action === "edit") {
+    const linesJson = formData.get("lines") as string
+    const notes = formData.get("notes") as string
+    const subtotal = parseFloat((formData.get("subtotal") as string) || "0")
+    const taxRate = parseFloat((formData.get("taxRate") as string) || "0")
+    const taxAmount = parseFloat((formData.get("taxAmount") as string) || "0")
+    const discountCode = formData.get("discountCode") as string || null
+    const discountAmount = parseFloat((formData.get("discountAmount") as string) || "0")
+    const dueDateStr = formData.get("dueDate") as string
+    const dueDate = dueDateStr ? new Date(dueDateStr) : undefined
+
+    if (linesJson) {
+      const lines = JSON.parse(linesJson) as Array<{ description: string; hours: number; rate: number; amount: number }>
+      const validLines = lines.filter(l => l.description && l.amount > 0)
+      const totalAmount = Math.max(0, subtotal + taxAmount - discountAmount)
+
+      await prisma.$transaction(async (tx) => {
+        await tx.invoiceItem.deleteMany({ where: { invoiceId: id } })
+        await tx.invoice.update({
+          where: { id },
+          data: {
+            notes: notes || null,
+            subtotal,
+            taxRate,
+            taxAmount,
+            discountCode: discountCode || null,
+            discountAmount,
+            totalAmount,
+            ...(dueDate ? { dueDate } : {}),
+            items: {
+              create: validLines.map(l => ({
+                description: l.description,
+                hours: l.hours,
+                rate: l.rate,
+                amount: l.amount,
+              })),
+            },
+          },
+        })
+      })
+      await logActivity(session.user.id, "edited", "Invoice", id)
+    }
   } else if (action === "markPaid") {
     const gateway = (formData.get("paymentGateway") as string) || "other"
     await prisma.invoice.update({ where: { id }, data: { status: "PAID", paidAt: new Date(), paymentGateway: gateway } })
