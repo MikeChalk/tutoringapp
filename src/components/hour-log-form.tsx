@@ -174,16 +174,20 @@ export default function HourLogForm({
 
   return (
     <form action="/api/hours" method="POST" className="flex flex-col gap-4" id="hourLogForm">
-      <div>
-        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Team Member</label>
-        <select name="tutorId" required value={tutorId} onChange={(e) => handleTutorChange(e.target.value)}
-          className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
-          <option value="" disabled={!!defaultTutorId}>Select tutor</option>
-          {tutors.map((t) => (
-            <option key={t.id} value={t.id}>{t.user.name} ({TENURE_LABELS[t.tenure] || t.tenure})</option>
-          ))}
-        </select>
-      </div>
+      {isTutor ? (
+        <input type="hidden" name="tutorId" value={tutorId} />
+      ) : (
+        <div>
+          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Team Member</label>
+          <select name="tutorId" required value={tutorId} onChange={(e) => handleTutorChange(e.target.value)}
+            className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="" disabled={!!defaultTutorId}>Select tutor</option>
+            {tutors.map((t) => (
+              <option key={t.id} value={t.id}>{t.user.name} ({TENURE_LABELS[t.tenure] || t.tenure})</option>
+            ))}
+          </select>
+        </div>
+      )}
       <div>
         <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Project Type</label>
         <select value={projectType} onChange={(e) => handleTypeChange(e.target.value)}
