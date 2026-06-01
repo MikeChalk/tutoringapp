@@ -189,6 +189,7 @@ model Invoice {
   status      String    @default("DRAFT")
   totalAmount Float     @default(0)
   dueDate     DateTime
+  invoiceDate DateTime?
   notes       String?
   sentAt      DateTime?
   paidAt      DateTime?
@@ -196,8 +197,9 @@ model Invoice {
   subtotal    Float     @default(0)
   taxRate     Float     @default(0)
   taxAmount   Float     @default(0)
-  discountCode String?
-  discountAmount Float   @default(0)
+  discountCode     String?
+  discountPct      Float     @default(0)
+  discountAmount   Float     @default(0)
   receiptUrl     String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt

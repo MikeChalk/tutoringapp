@@ -81,7 +81,7 @@ export function CreateInvoiceForm({ clients }: { clients: Client[] }) {
       </div>
 
       <form action="/api/invoices" method="POST" className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
           <div>
             <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Client</label>
             <SearchableSelect
@@ -94,6 +94,10 @@ export function CreateInvoiceForm({ clients }: { clients: Client[] }) {
           <div>
             <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Date</label>
             <input type="date" name="date" defaultValue={new Date().toISOString().split("T")[0]} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Invoice Date</label>
+            <input type="date" name="invoiceDate" defaultValue={new Date().toISOString().split("T")[0]} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div>
             <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Due Date</label>
@@ -129,8 +133,8 @@ export function CreateInvoiceForm({ clients }: { clients: Client[] }) {
           <input type="hidden" name="subtotal" value={subtotal.toFixed(2)} />
           <input type="hidden" name="taxRate" value={taxRate.toFixed(1)} />
           <input type="hidden" name="taxAmount" value={taxAmount.toFixed(2)} />
-          <input type="hidden" name="totalAmount" value={total.toFixed(2)} />
           <input type="hidden" name="discountCode" value={discountCode} />
+          <input type="hidden" name="discountPct" value={discountPct} />
           <input type="hidden" name="discountAmount" value={discAmt.toFixed(2)} />
         </div>
 

@@ -24,6 +24,7 @@ interface InvoiceData {
 
 export function EditInvoiceForm({ invoice, clients }: { invoice: InvoiceData; clients: Client[] }) {
   const router = useRouter()
+  const [showForm, setShowForm] = useState(false)
   const [lines, setLines] = useState<LineItem[]>(invoice.items.length > 0
     ? invoice.items.map(i => ({ description: i.description, hours: i.hours, rate: i.rate, amount: i.amount }))
     : [{ description: "", hours: 1, rate: 0, amount: 0 }])
@@ -82,6 +83,7 @@ export function EditInvoiceForm({ invoice, clients }: { invoice: InvoiceData; cl
     formData.append("taxRate", taxRate.toFixed(1))
     formData.append("taxAmount", taxAmount.toFixed(2))
     formData.append("discountCode", discountCode)
+    formData.append("discountPct", discountPct.toString())
     formData.append("discountAmount", totalDisc.toFixed(2))
     formData.append("notes", notes)
     formData.append("dueDate", document.querySelector<HTMLInputElement>('input[name="dueDate"]')?.value || "")
@@ -96,6 +98,15 @@ export function EditInvoiceForm({ invoice, clients }: { invoice: InvoiceData; cl
     }
   }
 
+  if (!showForm) {
+    return (
+      <button onClick={() => setShowForm(true)}
+        className="mb-6 w-full rounded-xl border-2 border-dashed border-zinc-300 dark:border-zinc-600 p-4 text-sm font-medium text-zinc-500 hover:border-zinc-400 dark:hover:border-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors">
+        Edit Invoice
+      </button>
+    )
+  }
+
   const formatDate = (d: string) => {
     try { return new Date(d).toISOString().split("T")[0] } catch { return "" }
   }
@@ -104,6 +115,7 @@ export function EditInvoiceForm({ invoice, clients }: { invoice: InvoiceData; cl
     <form onSubmit={handleSubmit} className="space-y-4 bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 mb-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Edit Invoice</h3>
+        <button type="button" onClick={() => setShowForm(false)} className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300">Cancel</button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

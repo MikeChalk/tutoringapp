@@ -245,9 +245,27 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
                     {invoice.status === "DRAFT" && (
                       <form action={`/api/invoices/${invoice.id}`} method="POST" className="inline">
                         <input type="hidden" name="_action" value="markSent" />
-                        <input type="hidden" name="redirectTo" value={`/dashboard/invoices${selectedStatus ? `?status=${selectedStatus}` : ""}`} />
+                        <input type="hidden" name="redirectTo" value={`/dashboard/invoices${selectedStatus ? `?status=${selectedStatus}` : ""}${selectedCity !== "all" ? `${selectedStatus ? "&" : "?"}city=${selectedCity}` : ""}`} />
                         <button type="submit" className="text-xs px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors">
                           Send
+                        </button>
+                      </form>
+                    )}
+                    {invoice.status === "OVERDUE" && (
+                      <form action={`/api/invoices/${invoice.id}`} method="POST" className="inline" data-confirm="Send a payment reminder for this invoice?">
+                        <input type="hidden" name="_action" value="sendReminder" />
+                        <input type="hidden" name="redirectTo" value={`/dashboard/invoices${selectedStatus ? `?status=${selectedStatus}` : ""}${selectedCity !== "all" ? `${selectedStatus ? "&" : "?"}city=${selectedCity}` : ""}`} />
+                        <button type="submit" className="text-xs px-2 py-1 rounded bg-amber-600 text-white hover:bg-amber-700 transition-colors">
+                          Remind
+                        </button>
+                      </form>
+                    )}
+                    {invoice.status === "SENT" && (
+                      <form action={`/api/invoices/${invoice.id}`} method="POST" className="inline" data-confirm="Send a payment reminder for this invoice?">
+                        <input type="hidden" name="_action" value="sendReminder" />
+                        <input type="hidden" name="redirectTo" value={`/dashboard/invoices${selectedStatus ? `?status=${selectedStatus}` : ""}${selectedCity !== "all" ? `${selectedStatus ? "&" : "?"}city=${selectedCity}` : ""}`} />
+                        <button type="submit" className="text-xs px-2 py-1 rounded bg-amber-600 text-white hover:bg-amber-700 transition-colors">
+                          Remind
                         </button>
                       </form>
                     )}

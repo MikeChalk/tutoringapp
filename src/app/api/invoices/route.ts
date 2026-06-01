@@ -15,11 +15,13 @@ export async function POST(request: Request) {
   const clientId = formData.get("clientId") as string
   const linesJson = formData.get("lines") as string
   const dueDateStr = formData.get("dueDate") as string
+  const invoiceDateStr = formData.get("invoiceDate") as string
   const notes = formData.get("notes") as string
   const subtotal = parseFloat((formData.get("subtotal") as string) || "0")
   const taxRate = parseFloat((formData.get("taxRate") as string) || "0")
   const taxAmount = parseFloat((formData.get("taxAmount") as string) || "0")
   const discountCode = formData.get("discountCode") as string
+  const discountPct = parseFloat((formData.get("discountPct") as string) || "0")
 
   if (!clientId) {
     return NextResponse.json({ error: "Missing clientId" }, { status: 400 })
@@ -33,6 +35,7 @@ export async function POST(request: Request) {
       if (validLines.length === 0) return NextResponse.json({ error: "At least one line item required" }, { status: 400 })
 
       const dueDate = dueDateStr ? new Date(dueDateStr) : new Date(Date.now() + 3 * 86400000)
+      const invoiceDate = invoiceDateStr ? new Date(invoiceDateStr) : new Date()
       const number = await nextInvoiceNumber()
 
       // Validate and recalculate discount server-side
@@ -53,11 +56,13 @@ export async function POST(request: Request) {
           number,
           clientId,
           dueDate,
+          invoiceDate,
           totalAmount: finalTotal,
           subtotal,
           taxRate,
           taxAmount,
           discountCode: finalDiscountCode,
+          discountPct,
           discountAmount: finalDiscountAmount,
           status: "DRAFT",
           notes: notes || null,
@@ -105,6 +110,7 @@ export async function POST(request: Request) {
 
   const total = items.reduce((sum, item) => sum + item.amount, 0)
   const dueDate = new Date(Date.now() + 3 * 86400000)
+  const invoiceDate = invoiceDateStr ? new Date(invoiceDateStr) : new Date()
   const number = await nextInvoiceNumber()
 
   const invoice = await prisma.invoice.create({
@@ -112,6 +118,7 @@ export async function POST(request: Request) {
       number,
       clientId,
       dueDate,
+      invoiceDate,
       totalAmount: total,
       status: "DRAFT",
       items: { create: items },

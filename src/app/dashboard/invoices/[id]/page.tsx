@@ -156,13 +156,23 @@ export default async function InvoiceDetailPage(props: { params: Promise<{ id: s
                         <td className="px-2 py-1 text-right text-zinc-700 dark:text-zinc-300">${invoice.taxAmount.toFixed(2)}</td>
                       </tr>
                     )}
-                    {invoice.discountAmount > 0 && (
-                      <tr className="text-sm text-red-600 dark:text-red-400">
-                        <td colSpan={6} className="px-2 py-1 text-right">
-                          Discount {invoice.discountCode && <span className="font-mono">({invoice.discountCode})</span>}
-                        </td>
-                        <td className="px-2 py-1 text-right">-${invoice.discountAmount.toFixed(2)}</td>
-                      </tr>
+                    {((invoice.discountPct ?? 0) > 0 || invoice.discountAmount > 0) && (
+                      <>
+                        {(invoice.discountPct ?? 0) > 0 && (
+                          <tr className="text-sm text-red-600 dark:text-red-400">
+                            <td colSpan={6} className="px-2 py-1 text-right">
+                              Discount {invoice.discountCode && <span className="font-mono">({invoice.discountCode})</span>}{invoice.discountPct ? ` ${invoice.discountPct}%` : ""}
+                            </td>
+                            <td className="px-2 py-1 text-right">-${((invoice.subtotal * (invoice.discountPct ?? 0)) / 100).toFixed(2)}</td>
+                          </tr>
+                        )}
+                        {invoice.discountAmount > 0 && (
+                          <tr className="text-sm text-red-600 dark:text-red-400">
+                            <td colSpan={6} className="px-2 py-1 text-right">Fixed Discount</td>
+                            <td className="px-2 py-1 text-right">-${invoice.discountAmount.toFixed(2)}</td>
+                          </tr>
+                        )}
+                      </>
                     )}
                     <tr className="text-sm font-bold border-t border-zinc-200 dark:border-zinc-700">
                       <td colSpan={6} className="px-2 py-3 text-right text-zinc-900 dark:text-zinc-100">Total</td>
@@ -192,6 +202,14 @@ export default async function InvoiceDetailPage(props: { params: Promise<{ id: s
               <dt className="text-zinc-500">Invoice #</dt>
               <dd className="text-zinc-900 dark:text-zinc-100">{invoice.number}</dd>
             </div>
+            {invoice.invoiceDate && (
+              <div className="flex justify-between">
+                <dt className="text-zinc-500">Date</dt>
+                <dd className="text-zinc-900 dark:text-zinc-100">
+                  {new Date(invoice.invoiceDate).toLocaleDateString()}
+                </dd>
+              </div>
+            )}
             <div className="flex justify-between">
               <dt className="text-zinc-500">Client</dt>
               <dd className="text-zinc-900 dark:text-zinc-100">{invoice.client.user.name}</dd>

@@ -28,6 +28,7 @@ export async function POST(request: Request, props: { params: Promise<{ id: stri
     const taxRate = parseFloat((formData.get("taxRate") as string) || "0")
     const taxAmount = parseFloat((formData.get("taxAmount") as string) || "0")
     const discountCode = formData.get("discountCode") as string || null
+    const discountPct = parseFloat((formData.get("discountPct") as string) || "0")
     const discountAmount = parseFloat((formData.get("discountAmount") as string) || "0")
     const dueDateStr = formData.get("dueDate") as string
     const dueDate = dueDateStr ? new Date(dueDateStr) : undefined
@@ -47,6 +48,7 @@ export async function POST(request: Request, props: { params: Promise<{ id: stri
             taxRate,
             taxAmount,
             discountCode: discountCode || null,
+            discountPct,
             discountAmount,
             totalAmount,
             ...(dueDate ? { dueDate } : {}),
