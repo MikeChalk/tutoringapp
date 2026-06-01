@@ -138,5 +138,19 @@ export async function POST(request: Request) {
 
   await logActivity(session.user.id, "logged_hours", "HourLog", hourLog.id, `${hours}h on project ${projectId}`)
 
+  const returnTo = formData.get("returnTo") as string | null
+
+  if (returnTo) {
+    const logs = await prisma.hourLog.findMany({
+      where: { tutorId },
+      select: { hours: true, tutorPayRate: true, paidAt: true },
+    })
+    const totalPaid = logs.filter(h => h.paidAt).reduce((s, h) => s + h.hours * h.tutorPayRate, 0)
+    const totalEarned = logs.reduce((s, h) => s + h.hours * h.tutorPayRate, 0)
+    const totalUnpaid = totalEarned - totalPaid
+
+    return NextResponse.json({ totalPaid, totalUnpaid })
+  }
+
   return NextResponse.redirect(new URL("/dashboard/hours", request.url), 303)
 }

@@ -3,6 +3,7 @@ import { requireAuth, isAdmin, isTutor, isClient, getClientId, getTutorId, isSup
 import { CONTRACT_TYPE_LABELS, TENURE_LABELS } from "@/lib/constants"
 import { CityFilter } from "@/components/city-filter"
 import { StatCard } from "@/components/ui"
+import TutorDashboard from "@/app/dashboard/tutor-dashboard"
 import Link from "next/link"
 
 export default async function DashboardPage(props: { searchParams: Promise<{ city?: string }> }) {
@@ -12,6 +13,10 @@ export default async function DashboardPage(props: { searchParams: Promise<{ cit
   const tutor = isTutor(role)
   const client = isClient(role)
   const superAdmin = isSuperAdmin(role)
+
+  if (tutor) {
+    return <TutorDashboard />
+  }
 
   const { city: cityParam } = await props.searchParams
   const selectedCity = cityParam || "all"

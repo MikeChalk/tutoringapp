@@ -20,7 +20,8 @@ model User {
   resetToken        String?  @unique
   resetTokenExpiry  DateTime?
   totpSecret        String?
-  totpEnabled       Boolean  @default(false)
+totpEnabled       Boolean @default(false)
+  firstLoginAt      DateTime?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

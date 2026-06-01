@@ -19,6 +19,17 @@ declare global {
   }
 }
 
+function LogoMark() {
+  return (
+    <svg viewBox="0 0 40 40" fill="none" className="w-10 h-10" aria-hidden="true">
+      <rect width="40" height="40" rx="10" fill="#1E3A5F" />
+      <path d="M20 12L28 16.5L20 21L12 16.5L20 12Z" fill="white" />
+      <path d="M14 17.5V23L20 27L26 23V17.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <path d="M28 16.5V24" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -26,7 +37,7 @@ function LoginContent() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
-  const [role, setRole] = useState<"team" | "client">("team")
+  const [role, setRole] = useState<"tutor" | "client">("tutor")
   const recaptchaWidgetId = useRef<number | null>(null)
   const recaptchaRef = useRef<HTMLDivElement>(null)
   const [recaptchaReady, setRecaptchaReady] = useState(false)
@@ -86,8 +97,14 @@ function LoginContent() {
     }
   }
 
+  const buttonLabel = loading
+    ? "Signing in..."
+    : role === "tutor"
+      ? "Sign in as tutor"
+      : "Sign in as client"
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-900 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-[#F4F6F8] px-4 font-[family-name:var(--font-inter)]">
       {recaptchaEnabled && (
         <Script
           src={`https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoad&render=explicit`}
@@ -99,39 +116,43 @@ function LoginContent() {
         />
       )}
       <div className="w-full max-w-sm">
-        <div className="bg-white dark:bg-zinc-800 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-700 p-8">
-          <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-6 text-center">Sign In</h1>
+        <div className="bg-white rounded-xl border border-[#e3e7eb] p-8">
+          <div className="flex flex-col items-center mb-6">
+            <LogoMark />
+            <h1 className="text-xl font-bold text-[#1E3A5F] mt-3">Tutoring Manager</h1>
+            <p className="text-sm text-[#5B7B9A] mt-1">Sign in to continue</p>
+          </div>
 
           {justSetup && (
-            <div className="bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 text-sm rounded-lg px-4 py-2 mb-4">
+            <div className="bg-[#ecfdf5] text-[#047857] text-sm rounded-lg px-4 py-2 mb-4">
               Account setup complete! Sign in below.
             </div>
           )}
           {error && (
-            <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-sm rounded-lg px-4 py-2 mb-4">
+            <div className="bg-red-50 text-red-600 text-sm rounded-lg px-4 py-2 mb-4">
               {error}
             </div>
           )}
 
-          <div className="flex gap-2 mb-4">
+          <div className="flex bg-[#F4F6F8] rounded-lg p-1 mb-5">
             <button
               type="button"
-              onClick={() => setRole("team")}
-              className={`flex-1 text-sm px-3 py-1.5 rounded-lg transition-colors ${
-                role === "team"
-                  ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900"
-                  : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700 border border-zinc-300 dark:border-zinc-600"
+              onClick={() => setRole("tutor")}
+              className={`flex-1 text-sm font-medium px-3 py-2 rounded-md transition-colors ${
+                role === "tutor"
+                  ? "bg-white text-[#1E3A5F] shadow-sm"
+                  : "text-[#5B7B9A] hover:text-[#1E3A5F]"
               }`}
             >
-              Team Member
+              Tutor
             </button>
             <button
               type="button"
               onClick={() => setRole("client")}
-              className={`flex-1 text-sm px-3 py-1.5 rounded-lg transition-colors ${
+              className={`flex-1 text-sm font-medium px-3 py-2 rounded-md transition-colors ${
                 role === "client"
-                  ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900"
-                  : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700 border border-zinc-300 dark:border-zinc-600"
+                  ? "bg-white text-[#1E3A5F] shadow-sm"
+                  : "text-[#5B7B9A] hover:text-[#1E3A5F]"
               }`}
             >
               Client
@@ -140,23 +161,23 @@ function LoginContent() {
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Email</label>
+              <label className="block text-xs font-medium text-[#5B7B9A] mb-1">Email</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-lg border border-[#e3e7eb] bg-white px-3 py-2.5 text-sm text-[#1E3A5F] focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/30"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Password</label>
+              <label className="block text-xs font-medium text-[#5B7B9A] mb-1">Password</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-lg border border-[#e3e7eb] bg-white px-3 py-2.5 text-sm text-[#1E3A5F] focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/30"
               />
             </div>
             {recaptchaEnabled && (
@@ -165,14 +186,14 @@ function LoginContent() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-lg bg-zinc-900 dark:bg-white px-4 py-2.5 text-sm font-medium text-white dark:text-zinc-900 hover:opacity-90 transition-opacity disabled:opacity-50"
+              className="w-full rounded-lg bg-[#1E3A5F] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#16304f] transition-colors disabled:opacity-50"
             >
-              {loading ? "Signing in..." : "Sign In"}
+              {buttonLabel}
             </button>
           </form>
 
-          <p className="mt-4 text-center text-sm text-zinc-500 dark:text-zinc-400">
-            <Link href="/forgot-password" className="text-blue-600 dark:text-blue-400 hover:underline">Forgot password?</Link>
+          <p className="mt-4 text-center text-sm text-[#5B7B9A]">
+            <Link href="/forgot-password" className="hover:text-[#1E3A5F] hover:underline">Forgot password?</Link>
           </p>
         </div>
       </div>
@@ -182,7 +203,7 @@ function LoginContent() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><p className="text-zinc-400">Loading...</p></div>}>
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#F4F6F8]"><p className="text-[#5B7B9A]">Loading...</p></div>}>
       <LoginContent />
     </Suspense>
   )
