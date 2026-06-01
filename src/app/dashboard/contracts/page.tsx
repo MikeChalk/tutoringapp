@@ -247,6 +247,9 @@ function ContractsTab({ contracts, tutors, totalCount, page, pageSize, searchQue
 }`}>
                       {c.status}
                     </span>
+                    {c.signed && (
+                      <a href={`/api/contracts/${c.id}/pdf`} target="_blank" rel="noopener noreferrer" className="block text-[10px] text-blue-600 dark:text-blue-400 hover:underline mt-0.5">PDF</a>
+                    )}
                    </td>
                  </tr>
                ))}

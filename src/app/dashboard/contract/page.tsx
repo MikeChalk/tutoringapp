@@ -223,9 +223,24 @@ function ContractCard({ contract, showSign }: {
         )}
 
         {showSign && !contract.signed && (
-          <form action="/api/contracts/sign" method="POST">
+          <form action="/api/contracts/sign" method="POST" className="space-y-4">
+            <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+              <p className="text-sm text-amber-800 dark:text-amber-200 font-medium mb-1">Acknowledgment</p>
+              <p className="text-sm text-amber-700 dark:text-amber-300">
+                I acknowledge that I have read, understood, and agree to all the terms and conditions outlined in this contract. I understand that by signing below, I am entering into a legally binding agreement with J.A.S.S. Tutoring Services.
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Type your full name to sign</label>
+              <input type="text" name="signatureName" required placeholder="Your full legal name" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-green-500" />
+            </div>
             <button type="submit" className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 transition-colors">Sign Contract</button>
           </form>
+        )}
+        {contract.signed && (
+          <a href={`/api/contracts/${contract.id}/pdf`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline">
+            Download Signed PDF
+          </a>
         )}
       </div>
     </details>

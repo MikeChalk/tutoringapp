@@ -285,9 +285,10 @@ model Contract {
   rates     String    @default("{}")
   startDate DateTime
   endDate   DateTime
-  signed    Boolean   @default(false)
-  signedAt  DateTime?
-  status    String    @default("ACTIVE")
+  signed      Boolean   @default(false)
+  signedAt    DateTime?
+  signedByName String?
+  status      String    @default("ACTIVE")
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
