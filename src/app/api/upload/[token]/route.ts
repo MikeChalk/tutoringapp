@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { writeFile, mkdir } from "fs/promises"
+import { scanFile } from "@/lib/clamav"
 import path from "path"
 
 const ALLOWED_EXTENSIONS = ["pdf", "doc", "docx", "jpg", "jpeg", "png"]
@@ -52,6 +53,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
 
   if (cv && cv.size > 0) {
     const buffer = Buffer.from(await cv.arrayBuffer())
+    const scan = await scanFile(buffer, cv.name)
+    if (!scan.clean) {
+      return NextResponse.json({ error: `Security scan detected: ${scan.virus}` }, { status: 400 })
+    }
     const ext = cv.name.split(".").pop() || "pdf"
     const diskName = `cv.${ext}`
     const displayName = `${tutorName} - ${dateStr} - CV.${ext}`
@@ -62,6 +67,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
 
   if (transcript && transcript.size > 0) {
     const buffer = Buffer.from(await transcript.arrayBuffer())
+    const scan = await scanFile(buffer, transcript.name)
+    if (!scan.clean) {
+      return NextResponse.json({ error: `Security scan detected: ${scan.virus}` }, { status: 400 })
+    }
     const ext = transcript.name.split(".").pop() || "pdf"
     const diskName = `transcript.${ext}`
     const displayName = `${tutorName} - ${dateStr} - Transcript.${ext}`
