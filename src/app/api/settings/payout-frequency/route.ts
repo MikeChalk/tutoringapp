@@ -18,8 +18,11 @@ export async function POST(request: Request) {
 
   await prisma.companySettings.upsert({
     where: { id: "main" },
-    update: { payoutFrequency: frequency },
-    create: { id: "main", payoutFrequency: frequency },
+    update: {
+      payoutFrequency: frequency,
+      ...(frequency !== "manual" ? { lastPayoutAt: new Date() } : {}),
+    },
+    create: { id: "main", payoutFrequency: frequency, ...(frequency !== "manual" ? { lastPayoutAt: new Date() } : {}) },
   })
 
   return NextResponse.redirect(new URL("/dashboard/payments-admin", request.url), 303)

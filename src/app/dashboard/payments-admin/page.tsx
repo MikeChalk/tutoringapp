@@ -2,13 +2,7 @@ import { prisma } from "@/lib/db"
 import { requireAdmin } from "@/lib/auth-helpers"
 import Link from "next/link"
 import { addDays } from "date-fns"
-
-const FREQUENCIES = [
-  { value: "manual", label: "Manual" },
-  { value: "weekly", label: "Weekly" },
-  { value: "biweekly", label: "Bi-weekly" },
-  { value: "monthly", label: "Monthly" },
-]
+import { PayoutFrequencySelect } from "@/components/payout-frequency-select"
 
 function getNextPayout(frequency: string, lastPayout: Date | null): string | null {
   if (frequency === "manual" || !lastPayout) return null
@@ -68,13 +62,7 @@ export default async function PayrollPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <form action="/api/settings/payout-frequency" method="POST" className="flex items-center gap-2">
-            <label className="text-xs text-zinc-500">Frequency:</label>
-            <select name="frequency" defaultValue={frequency} className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
-              {FREQUENCIES.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
-            </select>
-            <button type="submit" className="rounded bg-blue-600 px-2 py-1.5 text-xs font-medium text-white hover:bg-blue-700 transition-colors">Save</button>
-          </form>
+          <PayoutFrequencySelect defaultValue={frequency} />
           {nextPayout && (
             <span className="text-xs text-zinc-500 bg-zinc-100 dark:bg-zinc-800 rounded-lg px-2 py-1.5">
               Next: {new Date(nextPayout + "T00:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
