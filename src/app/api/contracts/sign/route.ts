@@ -69,7 +69,7 @@ async function generateAndSendPdf(
   signedAt: Date
 ) {
   const settings = await prisma.companySettings.findUnique({ where: { id: "main" } })
-  let rates: Record<string, { online?: number; inPerson?: number }> = {}
+  let rates: Record<string, number> = {}
   try { rates = JSON.parse(contract.rates || "{}") } catch { /* ignore */ }
 
   const pdfBuffer = await generateContractPDF({
