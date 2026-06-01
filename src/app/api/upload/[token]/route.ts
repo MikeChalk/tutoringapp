@@ -6,10 +6,17 @@ import path from "path"
 const ALLOWED_EXTENSIONS = ["pdf", "doc", "docx", "jpg", "jpeg", "png"]
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 
+function sanitizeName(name: string): string {
+  return name.replace(/[<>:"/\\|?*]/g, "-").trim()
+}
+
 export async function POST(request: Request, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
 
-  const tutor = await prisma.tutor.findUnique({ where: { cvToken: token } })
+  const tutor = await prisma.tutor.findUnique({
+    where: { cvToken: token },
+    include: { user: { select: { name: true } } },
+  })
   if (!tutor) {
     return NextResponse.json({ error: "Invalid or expired upload link." }, { status: 404 })
   }
@@ -22,7 +29,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
     return NextResponse.json({ error: "Please upload at least one file." }, { status: 400 })
   }
 
-  // Validate file types and sizes
   for (const file of [cv, transcript]) {
     if (file && file.size > 0) {
       if (file.size > MAX_FILE_SIZE) {
@@ -38,34 +44,34 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
   const uploadDir = path.join(process.cwd(), "uploads", token)
   await mkdir(uploadDir, { recursive: true })
 
-  const uploaded: string[] = []
+  const tutorName = sanitizeName(tutor.user.name)
+  const dateStr = new Date().toISOString().split("T")[0]
+
+  const updateData: Record<string, unknown> = {}
+  if (tutor.onboardingStep < 1) updateData.onboardingStep = 1
 
   if (cv && cv.size > 0) {
     const buffer = Buffer.from(await cv.arrayBuffer())
     const ext = cv.name.split(".").pop() || "pdf"
-    const filename = `cv.${ext}`
-    await writeFile(path.join(uploadDir, filename), buffer)
-    uploaded.push(filename)
+    const diskName = `cv.${ext}`
+    const displayName = `${tutorName} - ${dateStr} - CV.${ext}`
+    await writeFile(path.join(uploadDir, diskName), buffer)
+    updateData.cvUploaded = true
+    updateData.cvFilename = displayName
   }
 
   if (transcript && transcript.size > 0) {
     const buffer = Buffer.from(await transcript.arrayBuffer())
     const ext = transcript.name.split(".").pop() || "pdf"
-    const filename = `transcript.${ext}`
-    await writeFile(path.join(uploadDir, filename), buffer)
-    uploaded.push(filename)
+    const diskName = `transcript.${ext}`
+    const displayName = `${tutorName} - ${dateStr} - Transcript.${ext}`
+    await writeFile(path.join(uploadDir, diskName), buffer)
+    updateData.transcriptUploaded = true
+    updateData.transcriptFilename = displayName
   }
 
-  const updateData: Record<string, unknown> = { onboardingStep: tutor.onboardingStep < 1 ? 1 : undefined }
-  if (cv && cv.size > 0) updateData.cvUploaded = true
-  if (transcript && transcript.size > 0) updateData.transcriptUploaded = true
-  if (updateData.onboardingStep === undefined) delete updateData.onboardingStep
-
   if (Object.keys(updateData).length > 0) {
-    await prisma.tutor.update({
-      where: { id: tutor.id },
-      data: updateData,
-    })
+    await prisma.tutor.update({ where: { id: tutor.id }, data: updateData })
   }
 
   return NextResponse.redirect(new URL(`/upload/${token}?done=1`, request.url), 303)

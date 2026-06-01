@@ -71,6 +71,21 @@ export default async function TutorDetailPage(props: { params: Promise<{ id: str
             {tutor.isActive ? "Deactivate" : "Activate"}
           </button>
         </form>
+        {tutor.cvToken && (
+          <span className="flex items-center gap-2">
+            {tutor.cvUploaded ? (
+              <a href={`/api/files/${tutor.cvToken}/cv`} target="_blank" rel="noopener noreferrer" className="text-xs text-green-600 dark:text-green-400 hover:underline">{tutor.cvFilename || "View CV"}</a>
+            ) : (
+              <span className="text-xs text-amber-600 dark:text-amber-400">CV pending</span>
+            )}
+            <span className="text-zinc-300 dark:text-zinc-600">|</span>
+            {tutor.transcriptUploaded ? (
+              <a href={`/api/files/${tutor.cvToken}/transcript`} target="_blank" rel="noopener noreferrer" className="text-xs text-green-600 dark:text-green-400 hover:underline">{tutor.transcriptFilename || "View Transcript"}</a>
+            ) : (
+              <span className="text-xs text-amber-600 dark:text-amber-400">Transcript pending</span>
+            )}
+          </span>
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">

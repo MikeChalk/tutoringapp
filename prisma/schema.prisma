@@ -76,6 +76,8 @@ model Tutor {
   onboarded           Boolean   @default(false)
   onboardedAt         DateTime?
   cvToken             String?   @unique
+  cvFilename          String?
+  transcriptFilename  String?
   stripeConnectId     String?
   phone               String?
   currentStudies      String?

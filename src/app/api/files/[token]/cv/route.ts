@@ -11,7 +11,7 @@ export async function GET(
 ) {
   const { token } = await params
 
-  const tutor = await prisma.tutor.findUnique({ where: { cvToken: token } })
+  const tutor = await prisma.tutor.findUnique({ where: { cvToken: token }, select: { cvFilename: true } })
   if (!tutor) {
     return NextResponse.json({ error: "Not found" }, { status: 404 })
   }
@@ -45,11 +45,12 @@ export async function GET(
     ".jpeg": "image/jpeg",
   }
   const contentType = mimeTypes[ext] || "application/octet-stream"
+  const filename = tutor.cvFilename || `cv${ext}`
 
   return new NextResponse(buffer, {
     headers: {
       "Content-Type": contentType,
-      "Content-Disposition": `inline; filename="cv${ext}"`,
+      "Content-Disposition": `inline; filename="${encodeURIComponent(filename)}"`,
     },
   })
 }
