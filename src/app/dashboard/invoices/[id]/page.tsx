@@ -115,10 +115,10 @@ export default async function InvoiceDetailPage(props: { params: Promise<{ id: s
             <table className="w-full">
               <thead>
                 <tr className="border-b border-zinc-200 dark:border-zinc-700">
-                  <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">Description</th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">Tutor</th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">Date</th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">Project</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">Description</th>
                   <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500">Hours</th>
                   <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500">Rate</th>
                   <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500">Amount</th>
@@ -127,7 +127,6 @@ export default async function InvoiceDetailPage(props: { params: Promise<{ id: s
               <tbody>
                 {invoice.items.map((item) => (
                   <tr key={item.id} className="text-sm border-b border-zinc-100 dark:border-zinc-700/50">
-                    <td className="px-4 py-3 text-zinc-900 dark:text-zinc-100">{item.description}</td>
                     <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
                       {item.hourLog?.tutor?.user?.name ?? "-"}
                     </td>
@@ -137,6 +136,7 @@ export default async function InvoiceDetailPage(props: { params: Promise<{ id: s
                     <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
                       {item.hourLog?.project?.name ?? item.description}
                     </td>
+                    <td className="px-4 py-3 text-zinc-900 dark:text-zinc-100">{item.description}</td>
                     <td className="px-4 py-3 text-right text-zinc-600 dark:text-zinc-400">{item.hours > 0 ? item.hours : "-"}</td>
                     <td className="px-4 py-3 text-right text-zinc-600 dark:text-zinc-400">{item.rate > 0 ? `$${item.rate.toFixed(2)}` : "-"}</td>
                     <td className="px-4 py-3 text-right text-zinc-900 dark:text-zinc-100 font-medium">${item.amount.toFixed(2)}</td>
