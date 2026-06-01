@@ -32,28 +32,33 @@ export async function GET(
     rates = JSON.parse(contract.rates || "{}")
   } catch { /* ignore */ }
 
-  const pdf = await generateContractPDF({
-    tutorName: contract.tutor.user.name,
-    tutorEmail: contract.tutor.user.email,
-    contractType: contract.type,
-    yearLevel: contract.yearLevel,
-    startDate: contract.startDate,
-    endDate: contract.endDate,
-    terms: contract.terms,
-    rates,
-    signed: contract.signed,
-    signedAt: contract.signedAt,
+  try {
+    const pdf = await generateContractPDF({
+      tutorName: contract.tutor.user.name,
+      tutorEmail: contract.tutor.user.email,
+      contractType: contract.type,
+      yearLevel: contract.yearLevel,
+      startDate: contract.startDate,
+      endDate: contract.endDate,
+      terms: contract.terms,
+      rates,
+      signed: contract.signed,
+      signedAt: contract.signedAt,
       signedByName: contract.signedByName || (contract.signed ? contract.tutor.user.name : null),
-    companyName: settings?.name || undefined,
-    companyAddress: settings?.address || undefined,
-    companyEmail: settings?.email || undefined,
-    companyPhone: settings?.phone || undefined,
-  })
+      companyName: settings?.name || undefined,
+      companyAddress: settings?.address || undefined,
+      companyEmail: settings?.email || undefined,
+      companyPhone: settings?.phone || undefined,
+    })
 
-  return new NextResponse(new Uint8Array(pdf), {
-    headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="Contract-${contract.tutor.user.name.replace(/\s/g, "-")}.pdf"`,
-    },
-  })
+    return new NextResponse(new Uint8Array(pdf), {
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="Contract-${contract.tutor.user.name.replace(/\s/g, "-")}.pdf"`,
+      },
+    })
+  } catch (err) {
+    console.error("[contract-pdf] Generation failed:", err)
+    return NextResponse.json({ error: "Failed to generate PDF" }, { status: 500 })
+  }
 }
