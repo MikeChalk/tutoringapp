@@ -216,17 +216,21 @@ export default function HourLogForm({
           </select>
         </div>
       )}
+      {projectType === "STUDY_HALL" ? (
+        <div>
+          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Category</label>
+          <select name="category" value={category} onChange={(e) => handleCategoryChange(e.target.value)}
+            className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">--</option>
+            {getCategories().map((cat) => (
+              <option key={cat} value={cat}>{GRADE_LABELS[cat] || cat}</option>
+            ))}
+          </select>
+        </div>
+      ) : (
+        <input type="hidden" name="category" value={category} />
+      )}
       {projectType === "STUDY_HALL" && <input type="hidden" name="mode" value="IN_PERSON" />}
-      <div>
-        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Category</label>
-        <select name="category" value={category} onChange={(e) => handleCategoryChange(e.target.value)}
-          className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
-          <option value="">--</option>
-          {getCategories().map((cat) => (
-            <option key={cat} value={cat}>{GRADE_LABELS[cat] || cat}</option>
-          ))}
-        </select>
-      </div>
       <div className="bg-zinc-50 dark:bg-zinc-900 rounded-lg p-3 border border-zinc-200 dark:border-zinc-700">
         {!isTutor ? (
           <>
