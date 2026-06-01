@@ -389,7 +389,6 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
 
 export const TUTOR_NAV_LINKS: NavLink[] = [
   { href: "/dashboard", label: "Overview" },
-  { href: "/dashboard/profile", label: "My Profile" },
   { href: "/dashboard/clients", label: "My Clients" },
   { href: "/dashboard/projects", label: "My Projects" },
   { href: "/dashboard/hours", label: "Log Hours" },
@@ -397,6 +396,7 @@ export const TUTOR_NAV_LINKS: NavLink[] = [
   { href: "/dashboard/payments", label: "My Payments" },
   { href: "/dashboard/contract", label: "My Contract" },
   { href: "/dashboard/onboarding", label: "My Onboarding" },
+  { href: "/dashboard/profile", label: "Settings" },
 ]
 
 export const CLIENT_NAV_LINKS: NavLink[] = [
