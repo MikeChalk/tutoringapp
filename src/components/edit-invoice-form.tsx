@@ -91,6 +91,7 @@ export function EditInvoiceForm({ invoice, clients }: { invoice: InvoiceData; cl
     const res = await fetch(`/api/invoices/${invoice.id}`, { method: "POST", body: formData })
     if (res.ok || res.status === 303) {
       toast.success("Invoice updated")
+      setShowForm(false)
       router.refresh()
     } else {
       const data = await res.json().catch(() => ({ error: "Failed" }))
