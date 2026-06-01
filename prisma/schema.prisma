@@ -363,6 +363,8 @@ model CompanySettings {
   smsEnabled      Boolean @default(false)
   openaiEnabled   Boolean @default(false)
   emailEnabled    Boolean @default(true)
+  payoutFrequency String  @default("manual")
+  lastPayoutAt    DateTime?
   twilioSid       String  @default("")
   twilioToken     String  @default("")
   twilioFrom      String  @default("")

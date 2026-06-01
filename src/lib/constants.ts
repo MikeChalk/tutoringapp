@@ -343,7 +343,7 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
     label: "Finance",
     links: [
       { href: "/dashboard/invoices", label: "Invoices" },
-      { href: "/dashboard/payments-admin", label: "Payouts" },
+      { href: "/dashboard/payments-admin", label: "Payroll" },
       { href: "/dashboard/expenses", label: "Finance" },
       { href: "/dashboard/expenses-only", label: "Expenses" },
       { href: "/dashboard/rates", label: "Rates & Cities" },
