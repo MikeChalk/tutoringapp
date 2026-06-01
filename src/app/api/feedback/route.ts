@@ -13,8 +13,6 @@ export async function POST(request: Request) {
   const senderName = name || session?.user?.name || "Anonymous"
   const senderEmail = email || session?.user?.email || "unknown@email.com"
 
-  console.log(`[FEEDBACK] From: ${senderName} <${senderEmail}>\nMessage: ${message}`)
-
   // Send to admin
   if (process.env.RESEND_API_KEY) {
     try {

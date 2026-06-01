@@ -91,7 +91,7 @@ export default function TutorDashboardContent({
         </ScrollReveal>
 
         <ScrollReveal delay={0.1}>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="bg-white rounded-xl border border-[#e3e7eb] p-5">
               <p className="text-xs font-medium text-[#5B7B9A] uppercase tracking-wide mb-1">Paid</p>
               <p className="text-2xl font-bold text-[#1E3A5F]">

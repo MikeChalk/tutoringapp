@@ -191,7 +191,7 @@ export default function TutorSessionForm({
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-medium text-[#5B7B9A] mb-1">Project Type</label>
           <select
