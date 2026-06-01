@@ -20,8 +20,9 @@ export async function POST(request: Request) {
   const subtotal = parseFloat((formData.get("subtotal") as string) || "0")
   const taxRate = parseFloat((formData.get("taxRate") as string) || "0")
   const taxAmount = parseFloat((formData.get("taxAmount") as string) || "0")
-  const discountCode = formData.get("discountCode") as string
-  const discountPct = parseFloat((formData.get("discountPct") as string) || "0")
+      const discountCode = formData.get("discountCode") as string
+      const discountPct = parseFloat((formData.get("discountPct") as string) || "0")
+      const formDiscountAmount = parseFloat((formData.get("discountAmount") as string) || "0")
 
   if (!clientId) {
     return NextResponse.json({ error: "Missing clientId" }, { status: 400 })
@@ -40,16 +41,20 @@ export async function POST(request: Request) {
 
       // Validate and recalculate discount server-side
       let finalDiscountCode: string | null = null
-      let finalDiscountAmount = 0
+      let finalDiscountAmount = formDiscountAmount
+      let finalDiscountPct = discountPct
       if (discountCode) {
         const result = await applyDiscountCode(discountCode)
         if (result.valid) {
           finalDiscountCode = discountCode.toUpperCase()
           finalDiscountAmount = calculateDiscount(subtotal, result.discountPct, result.discountAmt)
+          finalDiscountPct = result.discountPct
         }
       }
+      const pctDiscount = subtotal * (finalDiscountPct / 100)
+      const totalDiscount = pctDiscount + finalDiscountAmount
 
-      const finalTotal = Math.max(0, subtotal + taxAmount - finalDiscountAmount)
+      const finalTotal = Math.max(0, subtotal + taxAmount - totalDiscount)
 
       await prisma.invoice.create({
         data: {
@@ -62,7 +67,7 @@ export async function POST(request: Request) {
           taxRate,
           taxAmount,
           discountCode: finalDiscountCode,
-          discountPct,
+          discountPct: finalDiscountPct,
           discountAmount: finalDiscountAmount,
           status: "DRAFT",
           notes: notes || null,

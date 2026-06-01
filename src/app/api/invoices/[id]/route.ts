@@ -36,7 +36,9 @@ export async function POST(request: Request, props: { params: Promise<{ id: stri
     if (linesJson) {
       const lines = JSON.parse(linesJson) as Array<{ description: string; hours: number; rate: number; amount: number }>
       const validLines = lines.filter(l => l.description && l.amount > 0)
-      const totalAmount = Math.max(0, subtotal + taxAmount - discountAmount)
+      const pctDiscount = subtotal * (discountPct / 100)
+      const totalDiscount = pctDiscount + discountAmount
+      const totalAmount = Math.max(0, subtotal + taxAmount - totalDiscount)
 
       await prisma.$transaction(async (tx) => {
         await tx.invoiceItem.deleteMany({ where: { invoiceId: id } })

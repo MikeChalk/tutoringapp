@@ -135,7 +135,7 @@ export function CreateInvoiceForm({ clients }: { clients: Client[] }) {
           <input type="hidden" name="taxAmount" value={taxAmount.toFixed(2)} />
           <input type="hidden" name="discountCode" value={discountCode} />
           <input type="hidden" name="discountPct" value={discountPct} />
-          <input type="hidden" name="discountAmount" value={discAmt.toFixed(2)} />
+          <input type="hidden" name="discountAmount" value={discountAmt.toFixed(2)} />
         </div>
 
         {/* Totals */}
@@ -184,7 +184,7 @@ export function CreateInvoiceForm({ clients }: { clients: Client[] }) {
               className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">or Custom $ Off</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Custom $ Off</label>
             <input type="number" value={discountAmt || ""} onChange={e => { setDiscountAmt(parseFloat(e.target.value) || 0); setDiscountCode("") }}
               placeholder="0" step="0.01" min="0"
               className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
