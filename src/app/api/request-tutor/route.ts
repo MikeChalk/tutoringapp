@@ -19,6 +19,7 @@ export async function POST(request: Request) {
   const description = (formData.get("description") as string)?.trim()
   const discountCode = (formData.get("discountCode") as string)?.trim() || null
   const address = (formData.get("address") as string)?.trim() || null
+  const cityId = (formData.get("cityId") as string)?.trim() || null
   const prefInPerson = formData.get("prefInPerson") === "on"
   const prefOnline = formData.get("prefOnline") === "on"
 
@@ -75,6 +76,7 @@ export async function POST(request: Request) {
       address,
       discountCode: validDiscountCode,
       clientId: existingClient?.id || null,
+      cityId: cityId || null,
       status: "NEW",
     },
   })

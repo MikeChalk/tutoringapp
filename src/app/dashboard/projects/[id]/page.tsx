@@ -1,32 +1,46 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin, isTutor, getTutorId } from "@/lib/auth-helpers"
+import { requireAuth, isAdmin, isTutor, isClient, getClientId, getTutorId, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
 import { GRADE_LABELS } from "@/lib/constants"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { EditProjectForm } from "@/components/edit-project-form"
 import { PageBreadcrumb } from "@/components/page-breadcrumb"
 import { ModeBadge, StatusBadge } from "@/components/ui"
+
+export const dynamic = "force-dynamic"
 
 export default async function ProjectDetailPage(props: { params: Promise<{ id: string }> }) {
   const session = await requireAuth()
   const admin = isAdmin(session.user.role)
   const tutor = isTutor(session.user.role)
+  const client = isClient(session.user.role)
+  const superAdmin = isSuperAdmin(session.user.role)
+  const cityAdminId = isCityAdmin(session.user.role) ? await getActiveCityId(session.user.role, session.user.id) : null
 
   const { id } = await props.params
 
-  let hasAccess = true
-  if (tutor) {
+  let hasAccess = false
+  if (superAdmin) {
+    hasAccess = true
+  } else if (isCityAdmin(session.user.role)) {
+    const proj = await prisma.project.findUnique({ where: { id }, select: { cityId: true } })
+    hasAccess = !!proj && proj.cityId === cityAdminId
+  } else if (tutor) {
     const tutorId = await getTutorId(session.user.id, session.user.email)
-    if (!tutorId) {
-      hasAccess = false
-    } else {
+    if (tutorId) {
       const assignment = await prisma.projectTutor.findFirst({
         where: { projectId: id, tutorId },
       })
       hasAccess = !!assignment
     }
+  } else if (client) {
+    const clientId = await getClientId(session.user.id, session.user.email)
+    if (clientId) {
+      const project = await prisma.project.findUnique({ where: { id }, select: { clientId: true } })
+      hasAccess = !!project && project.clientId === clientId
+    }
   }
 
-  if (!hasAccess) notFound()
+  if (!hasAccess) redirect("/dashboard/projects")
 
   const project = await prisma.project.findUnique({
     where: { id },
@@ -65,6 +79,9 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
   const allCities = admin ? await prisma.city.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }) : []
 
   const subjectList = project.subjects ? project.subjects.split(",").map((s) => s.trim()).filter(Boolean) : []
+
+  const showBilling = admin
+  const showTutorPay = admin || tutor
 
   return (
     <div>
@@ -110,7 +127,7 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
               {project.projectTutors.map((pt) => (
                 <li key={pt.id} className="text-sm flex justify-between">
                   <span className="text-zinc-900 dark:text-zinc-100">{pt.tutor.user.name}</span>
-                  <span className="text-zinc-500">{pt.tutor.user.email}</span>
+                  {showTutorPay && <span className="text-zinc-500">{pt.tutor.user.email}</span>}
                 </li>
               ))}
             </ul>
@@ -140,8 +157,8 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
                     <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">Tutor</th>
                     <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">Mode</th>
                     <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500">Hours</th>
-                    <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500">Billing</th>
-                    <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500">Tutor Pay</th>
+                    {showBilling && <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500">Billing</th>}
+                    {showTutorPay && <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500">Tutor Pay</th>}
                     <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">Description</th>
                   </tr>
                 </thead>
@@ -156,8 +173,8 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
                         <ModeBadge mode={log.mode} />
                       </td>
                       <td className="px-4 py-3 text-right text-zinc-900 dark:text-zinc-100">{log.hours}</td>
-                      <td className="px-4 py-3 text-right text-zinc-600 dark:text-zinc-400">${(log.hours * log.billingRate).toFixed(2)}</td>
-                      <td className="px-4 py-3 text-right text-green-600 dark:text-green-400">${(log.hours * log.tutorPayRate).toFixed(2)}</td>
+                      {showBilling && <td className="px-4 py-3 text-right text-zinc-600 dark:text-zinc-400">${(log.hours * log.billingRate).toFixed(2)}</td>}
+                      {showTutorPay && <td className="px-4 py-3 text-right text-green-600 dark:text-green-400">${(log.hours * log.tutorPayRate).toFixed(2)}</td>}
                       <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{log.description || "-"}</td>
                     </tr>
                   ))}

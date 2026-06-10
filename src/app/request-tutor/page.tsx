@@ -14,9 +14,15 @@ function RequestTutorForm() {
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([])
   const [otherSubject, setOtherSubject] = useState("")
   const [discountCodes, setDiscountCodes] = useState<Array<{ code: string; description: string; discountPct: number; discountAmt: number }>>([])
+  const [cities, setCities] = useState<Array<{ id: string; name: string }>>([])
+  const [selectedCity, setSelectedCity] = useState("")
 
   useEffect(() => {
     fetch("/api/discounts").then(r => r.json()).then(d => setDiscountCodes(d.codes?.filter((c: { isActive: boolean }) => c.isActive) || []))
+    fetch("/api/city").then(r => r.json()).then(d => {
+      setCities(d.cities || [])
+      if (d.cities?.length === 1) setSelectedCity(d.cities[0].id)
+    })
   }, [])
 
   function toggleSubject(s: string) {
@@ -85,6 +91,27 @@ function RequestTutorForm() {
             <label className="block text-sm font-medium text-zinc-700 mb-1">Address of tutoring sessions</label>
             <input type="text" name="address" className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
+
+          {cities.length > 1 && (
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-2">Which city? *</label>
+              <div className="flex flex-wrap gap-2">
+                {cities.map(c => (
+                  <button key={c.id} type="button" onClick={() => setSelectedCity(c.id)}
+                    className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                      selectedCity === c.id
+                        ? "bg-zinc-900 text-white border-zinc-900"
+                        : "border-zinc-300 text-zinc-600 hover:border-zinc-900"
+                    }`}>
+                    {c.name}
+                  </button>
+                ))}
+              </div>
+              <input type="hidden" name="cityId" value={selectedCity} />
+            </div>
+          )}
+
+          {cities.length <= 1 && <input type="hidden" name="cityId" value={selectedCity} />}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>

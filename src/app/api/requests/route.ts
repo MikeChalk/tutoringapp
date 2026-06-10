@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
+import { isAdmin } from "@/lib/auth-helpers"
 import { prisma } from "@/lib/db"
 
 export async function POST(request: Request) {
   const session = await auth()
-  if (!session) {
+  if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+  if (!isAdmin(session.user.role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
   const formData = await request.formData()
@@ -16,6 +20,7 @@ export async function POST(request: Request) {
   const description = formData.get("description") as string
   const preferredSchedule = formData.get("preferredSchedule") as string
   const matchedTutorId = formData.get("matchedTutorId") as string
+  const cityId = (formData.get("cityId") as string)?.trim() || null
 
   if (!name || !email || !subject) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 })
@@ -30,6 +35,7 @@ export async function POST(request: Request) {
       description: description || null,
       preferredSchedule: preferredSchedule || null,
       matchedTutorId: matchedTutorId || null,
+      cityId: cityId || null,
       status: matchedTutorId ? "MATCHED" : "NEW",
     },
   })

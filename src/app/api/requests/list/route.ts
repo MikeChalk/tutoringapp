@@ -15,10 +15,7 @@ export async function GET(request: Request) {
 
   const where: Record<string, unknown> = { status }
   if (cityId && cityId !== "all") {
-    where.OR = [
-      { matchedTutor: { user: { cityId } } },
-      { client: { user: { cityId } } },
-    ]
+    where.cityId = cityId
   }
 
   // Tutors only see requests matched to them
@@ -39,6 +36,7 @@ export async function GET(request: Request) {
     where,
     include: {
       matchedTutor: { include: { user: { select: { name: true } } } },
+      city: { select: { name: true } },
     },
     orderBy: { createdAt: "desc" },
   })

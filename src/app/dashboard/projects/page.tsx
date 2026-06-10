@@ -1,20 +1,29 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin, isTutor, getTutorId, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
+import { requireAuth, isAdmin, isTutor, isClient, getClientId, getTutorId, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
 import { GRADE_LABELS } from "@/lib/constants"
 import { StatusBadge } from "@/components/ui"
-import { CityFilter } from "@/components/city-filter"
+import { CityFilterClient } from "@/components/city-filter-client"
 import { CreateProjectForm } from "@/components/create-project-form"
 import { EmptyState } from "@/components/empty-state"
 import { FolderOpen } from "lucide-react"
 import Link from "next/link"
-import Script from "next/script"
+import { StatusFilterClient } from "@/components/status-filter-client"
+
+export const dynamic = "force-dynamic"
 
 export default async function ProjectsPage(props: { searchParams: Promise<{ status?: string; type?: string; city?: string; page?: string; view?: string; search?: string }> }) {
   const session = await requireAuth()
   const admin = isAdmin(session.user.role)
   const tutor = isTutor(session.user.role)
+  const client = isClient(session.user.role)
 
   const { status: statusFilter, type: typeFilter, city: cityParam, page: pageParam, view: viewParam, search: searchParam } = await props.searchParams
+  const currentParams: Record<string, string> = {}
+  if (statusFilter) currentParams.status = statusFilter
+  if (typeFilter) currentParams.type = typeFilter
+  if (cityParam) currentParams.city = cityParam
+  if (viewParam) currentParams.view = viewParam
+  if (searchParam) currentParams.search = searchParam
   const projectType = typeFilter || "ALL"
   const selectedCity = cityParam || "all"
   const searchQuery = searchParam || ""
@@ -31,6 +40,11 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
     const tutorId = await getTutorId(session.user.id, session.user.email)
     if (tutorId) {
       whereClause = { ...whereClause, projectTutors: { some: { tutorId } }, status: "IN_PROGRESS" }
+    }
+  } else if (client) {
+    const clientId = await getClientId(session.user.id, session.user.email)
+    if (clientId) {
+      whereClause = { ...whereClause, clientId }
     }
   } else {
     if (statusFilter && statusFilter !== "ALL") {
@@ -109,7 +123,7 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
               )
             })}
           </div>
-          {superAdmin && <CityFilter selected={selectedCity} />}
+          {superAdmin && <CityFilterClient cities={cities} selected={selectedCity} name="city" currentParams={currentParams} />}
         </div>
       </div>
 
@@ -126,18 +140,7 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
           )
         })}
         {admin && (
-          <form id="statusForm" method="GET" className="ml-auto">
-            <select name="status" defaultValue={statusFilter || "ALL"} id="statusFilterSelect"
-              className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-1.5 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="ALL">All</option>
-              <option value="IN_PROGRESS">In Progress</option>
-              <option value="ON_HOLD">On Hold</option>
-              <option value="FINISHED">Finished</option>
-              <option value="CANCELLED">Cancelled</option>
-            </select>
-            <input type="hidden" name="type" value={projectType} />
-            {superAdmin && selectedCity !== "all" && <input type="hidden" name="city" value={selectedCity} />}
-          </form>
+          <StatusFilterClient defaultValue={statusFilter || "ALL"} currentParams={currentParams} />
         )}
       </div>
 
@@ -288,7 +291,6 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
           )}
         </div>
       )}
-      {admin && <Script id="statusFormScript" strategy="afterInteractive">{`document.getElementById('statusFilterSelect')?.addEventListener('change',function(){this.form.submit()})`}</Script>}
-    </div>
+      </div>
   )
 }

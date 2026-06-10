@@ -25,7 +25,8 @@ const TUTOR_STATUS_FILTERS = [
 interface Request {
   id: string; name: string; email: string; phone?: string | null
   subject: string; description?: string | null; preferredSchedule?: string | null
-  status: string; createdAt: string
+  status: string; createdAt: string; cityId?: string | null
+  city?: { name: string } | null
   matchedTutor?: { id: string; user: { name: string } } | null
 }
 
@@ -52,14 +53,22 @@ function RequestsContent() {
   const [loading, setLoading] = useState(false)
   const [cityFilter, setCityFilter] = useState(searchParams.get("city") || "all")
   const [cities, setCities] = useState<{ id: string; name: string }[]>([])
-  const isAdmin = session?.user?.role === "ADMIN"
+  const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "CITY_ADMIN"
   const isTutorRole = session?.user?.role === "TUTOR"
+  const showCityFilter = session?.user?.role === "ADMIN"
+  const isCityAdmin = session?.user?.role === "CITY_ADMIN"
 
   const STATUS_FILTERS = isTutorRole ? TUTOR_STATUS_FILTERS : ADMIN_STATUS_FILTERS
 
   useEffect(() => {
-    fetch("/api/city").then(r => r.json()).then(d => setCities(d.cities || []))
-  }, [])
+    fetch("/api/city").then(r => r.json()).then(d => {
+      const cityList = d.cities || []
+      setCities(cityList)
+      if (isCityAdmin && cityList.length === 1) {
+        setCityFilter(cityList[0].id)
+      }
+    })
+  }, [isCityAdmin])
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login")
@@ -114,7 +123,7 @@ function RequestsContent() {
           {isTutorRole ? "Tutoring Offers" : "Tutoring Requests"}
         </h2>
         <div className="flex gap-2">
-          {session?.user?.role === "ADMIN" && (
+          {showCityFilter && (
             <select value={cityFilter} onChange={(e) => { setCityFilter(e.target.value); router.push(`/dashboard/requests?city=${e.target.value}`) }}
               className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="all">All Cities</option>
@@ -167,9 +176,12 @@ function RequestsContent() {
                 <StatusBadge status={req.status} />
               </div>
               <p className="text-sm text-zinc-700 dark:text-zinc-300 mb-1">{req.subject}</p>
-              {req.description && (
-                <p className="text-xs text-zinc-500 line-clamp-2">{req.description}</p>
-              )}
+              <div className="flex items-center gap-2">
+                {req.city && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400">{req.city.name}</span>}
+                {req.description && (
+                  <p className="text-xs text-zinc-500 line-clamp-1">{req.description}</p>
+                )}
+              </div>
               {req.matchedTutor && (
                 <p className="text-xs text-green-600 dark:text-green-400 mt-2">
                   Matched with: {req.matchedTutor.user.name}

@@ -20,7 +20,7 @@ model User {
   resetToken        String?  @unique
   resetTokenExpiry  DateTime?
   totpSecret        String?
-totpEnabled       Boolean @default(false)
+totpEnabled       Boolean  @default(false)
   firstLoginAt      DateTime?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -245,11 +245,13 @@ model TutoringRequest {
   status             String    @default("NEW")
   matchedTutorId     String?
   clientId           String?
+  cityId             String?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
   matchedTutor Tutor?  @relation("MatchedTutor", fields: [matchedTutorId], references: [id], onDelete: SetNull)
   client       Client? @relation("RequestClient", fields: [clientId], references: [id], onDelete: SetNull)
+  city         City?   @relation(fields: [cityId], references: [id])
 
   @@map("tutoring_requests")
 }
@@ -344,10 +346,11 @@ model City {
   profitPct Float    @default(30)
   createdAt DateTime @default(now())
 
-  users    User[]
-  projects Project[]
-  expenses Expense[]
-  leads    Lead[]
+  users            User[]
+  projects         Project[]
+  expenses         Expense[]
+  leads            Lead[]
+  tutoringRequests TutoringRequest[]
 
   @@map("cities")
 }
