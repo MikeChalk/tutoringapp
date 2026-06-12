@@ -13,3 +13,9 @@ This is a confirmed regression in Next.js 16.2.6's client-side router / bfcache 
 **Workaround:** Refresh the page if interactivity is lost after using back/forward navigation.
 
 **DO NOT downgrade to 16.2.5.** Version 16.2.5 is vulnerable to CVE-2026-45109 (middleware/proxy auth bypass on Turbopack), which is patched in 16.2.6. Downgrading would reintroduce a real security vulnerability that is worse than this UX bug. Once #94139 ships in a patch release (16.2.7+), upgrade immediately.
+
+## npm audit — postcss & next (moderate)
+
+**Warnings:** `postcss` (< 8.5.10, XSS) and `next` (depends on vulnerable postcss).
+
+**Deferred** until the planned Next.js upgrade. Fixing these warnings with `npm audit fix --force` would downgrade Next.js past 16.2.6 and reopen CVE-2026-45109, which is a high-severity auth bypass. Both warnings should resolve automatically when we upgrade off 16.2.6 once the bfcache fix (#94139) ships in 16.2.7+.
