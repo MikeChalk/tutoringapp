@@ -1,3 +1,4 @@
+import React from "react"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -15,14 +16,16 @@ export function PageBreadcrumb({
     <Breadcrumb className="mb-4">
       <BreadcrumbList>
         {items.map((item, i) => (
-          <BreadcrumbItem key={i}>
-            {item.href ? (
-              <BreadcrumbLink href={item.href}>{item.label}</BreadcrumbLink>
-            ) : (
-              <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{item.label}</span>
-            )}
+          <React.Fragment key={i}>
+            <BreadcrumbItem>
+              {item.href ? (
+                <BreadcrumbLink href={item.href}>{item.label}</BreadcrumbLink>
+              ) : (
+                <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{item.label}</span>
+              )}
+            </BreadcrumbItem>
             {i < items.length - 1 && <BreadcrumbSeparator />}
-          </BreadcrumbItem>
+          </React.Fragment>
         ))}
       </BreadcrumbList>
     </Breadcrumb>

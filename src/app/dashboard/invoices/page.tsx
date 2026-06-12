@@ -9,10 +9,16 @@ import { Receipt } from "lucide-react"
 import { StatCard } from "@/components/ui"
 import Link from "next/link"
 
-const STATUS_TABS = [
+const ADMIN_STATUS_TABS = [
   { value: "", label: "All" },
   { value: "DRAFT", label: "Drafts" },
   { value: "SENT", label: "Sent" },
+  { value: "PAID", label: "Paid" },
+  { value: "OVERDUE", label: "Overdue" },
+]
+
+const CLIENT_STATUS_TABS = [
+  { value: "SENT", label: "Unpaid" },
   { value: "PAID", label: "Paid" },
   { value: "OVERDUE", label: "Overdue" },
 ]
@@ -27,7 +33,7 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
 
   const { city: cityParam, status: statusParam, search: searchParam, page: pageParam, generated: generatedParam, reminded: remindedParam } = await props.searchParams
   const selectedCity = cityParam || "all"
-  const selectedStatus = statusParam || ""
+  const selectedStatus = statusParam || (client ? "SENT" : "")
   const searchQuery = searchParam || ""
   const page = parseInt(pageParam || "1") || 1
   const pageSize = 50
@@ -37,7 +43,7 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
   let whereClause: Record<string, unknown> = {}
   if (client) {
     const clientId = await getClientId(session.user.id, session.user.email)
-    if (clientId) { whereClause = { clientId } }
+    if (clientId) { whereClause = { clientId, status: { not: "DRAFT" } } }
   }
 
   if (effectiveCityId) {
@@ -77,7 +83,7 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
   const statsWhere: Record<string, unknown> = {}
   if (client) {
     const clientId = await getClientId(session.user.id, session.user.email)
-    if (clientId) statsWhere.clientId = clientId
+    if (clientId) { statsWhere.clientId = clientId; statsWhere.status = { not: "DRAFT" } }
   }
   if (effectiveCityId) {
     statsWhere.client = { user: { cityId: effectiveCityId } }
@@ -139,7 +145,7 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
 
       {/* Status tabs */}
       <div className="flex gap-2 mb-4">
-        {STATUS_TABS.map(tab => (
+        {(client ? CLIENT_STATUS_TABS : ADMIN_STATUS_TABS).map(tab => (
           <Link
             key={tab.value}
             href={`/dashboard/invoices${tab.value ? `?status=${tab.value}` : ""}${selectedCity !== "all" ? `${tab.value ? "&" : "?"}city=${selectedCity}` : ""}`}
@@ -169,27 +175,46 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-        <StatCard
-          label={selectedStatus ? `${selectedStatus} Total` : "Total Outstanding"}
-          value={`$${allForStats
-            .filter((i) => selectedStatus ? i.status === selectedStatus : (i.status === "SENT" || i.status === "OVERDUE"))
-            .reduce((sum, i) => sum + i.totalAmount, 0)
-            .toFixed(2)}`}
-        />
-        <StatCard
-          label="Paid This Month"
-          value={`$${allForStats
-            .filter(
-              (i) =>
-                i.status === "PAID" &&
-                i.paidAt &&
-                new Date(i.paidAt).getMonth() === new Date().getMonth() &&
-                new Date(i.paidAt).getFullYear() === new Date().getFullYear()
-            )
-            .reduce((sum, i) => sum + i.totalAmount, 0)
-            .toFixed(2)}`}
-        />
-        <StatCard label={selectedStatus ? "All Invoices" : "Draft Total"} value={selectedStatus ? allForStats.length.toString() : `$${draftTotal.toFixed(2)}`} />
+        {client ? (
+          <>
+            <StatCard
+              label="Unpaid"
+              value={`$${allForStats.filter(i => i.status === "SENT").reduce((sum, i) => sum + i.totalAmount, 0).toFixed(2)}`}
+            />
+            <StatCard
+              label="Paid"
+              value={`$${allForStats.filter(i => i.status === "PAID").reduce((sum, i) => sum + i.totalAmount, 0).toFixed(2)}`}
+            />
+            <StatCard
+              label="Overdue"
+              value={`$${allForStats.filter(i => i.status === "OVERDUE").reduce((sum, i) => sum + i.totalAmount, 0).toFixed(2)}`}
+            />
+          </>
+        ) : (
+          <>
+            <StatCard
+              label={selectedStatus ? `${selectedStatus} Total` : "Total Outstanding"}
+              value={`$${allForStats
+                .filter((i) => selectedStatus ? i.status === selectedStatus : (i.status === "SENT" || i.status === "OVERDUE"))
+                .reduce((sum, i) => sum + i.totalAmount, 0)
+                .toFixed(2)}`}
+            />
+            <StatCard
+              label="Paid This Month"
+              value={`$${allForStats
+                .filter(
+                  (i) =>
+                    i.status === "PAID" &&
+                    i.paidAt &&
+                    new Date(i.paidAt).getMonth() === new Date().getMonth() &&
+                    new Date(i.paidAt).getFullYear() === new Date().getFullYear()
+                )
+                .reduce((sum, i) => sum + i.totalAmount, 0)
+                .toFixed(2)}`}
+            />
+            <StatCard label={selectedStatus ? "All Invoices" : "Draft Total"} value={selectedStatus ? allForStats.length.toString() : `$${draftTotal.toFixed(2)}`} />
+          </>
+        )}
       </div>
 
       <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
@@ -278,8 +303,8 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
                 <td colSpan={admin ? 8 : 7} className="px-4 py-8">
                   <EmptyState
                     icon={Receipt}
-                    title={selectedStatus ? `No ${selectedStatus.toLowerCase()} invoices` : "No invoices yet"}
-                    description="Create an invoice or generate one from unbilled hours."
+                    title={selectedStatus ? `No ${selectedStatus === "SENT" ? "unpaid" : selectedStatus.toLowerCase()} invoices` : "No invoices yet"}
+                    description={client ? "Invoices will appear here once they are sent to you." : "Create an invoice or generate one from unbilled hours."}
                     action={admin ? { label: "Create Invoice", href: "#create-invoice" } : undefined}
                   />
                 </td>
