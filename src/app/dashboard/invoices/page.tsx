@@ -58,7 +58,7 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
     whereClause = { ...whereClause, client: { user: { cityId: effectiveCityId } } }
   }
 
-  if (selectedStatus) {
+  if (admin && selectedStatus) {
     whereClause = { ...whereClause, status: selectedStatus }
   }
 
