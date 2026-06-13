@@ -6,7 +6,7 @@ import { verifyRecaptcha } from "@/lib/recaptcha"
 
 export async function POST(req: Request) {
   try {
-    const { email, password, recaptchaToken } = await req.json()
+    const { email, password, recaptchaToken, role } = await req.json()
 
     if (!email || !password) {
       return NextResponse.json({ error: "Email and password required" }, { status: 400 })
@@ -19,6 +19,17 @@ export async function POST(req: Request) {
     const user = await prisma.user.findUnique({ where: { email } })
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return NextResponse.json({ error: "Invalid email or password" }, { status: 401 })
+    }
+
+    const adminRoles = ["ADMIN", "CITY_ADMIN"]
+    const isAdmin = adminRoles.includes(user.role)
+
+    if (!isAdmin && role && role.toUpperCase() !== user.role) {
+      const actualRole = user.role === "CLIENT" ? "client" : user.role === "TUTOR" ? "tutor" : user.role.toLowerCase()
+      return NextResponse.json(
+        { error: `This account is a ${actualRole} account. Please select ${actualRole === "client" ? "Client" : "Tutor"} to sign in.` },
+        { status: 403 }
+      )
     }
 
     const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET!

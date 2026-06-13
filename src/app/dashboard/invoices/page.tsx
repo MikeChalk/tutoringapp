@@ -42,8 +42,16 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
 
   let whereClause: Record<string, unknown> = {}
   if (client) {
+    const allowedStatuses = ["SENT", "OVERDUE", "PAID"]
     const clientId = await getClientId(session.user.id, session.user.email)
-    if (clientId) { whereClause = { clientId, status: { not: "DRAFT" } } }
+    if (clientId) {
+      whereClause = {
+        clientId,
+        status: (selectedStatus && allowedStatuses.includes(selectedStatus))
+          ? selectedStatus
+          : { in: allowedStatuses },
+      }
+    }
   }
 
   if (effectiveCityId) {

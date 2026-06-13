@@ -136,6 +136,50 @@ export function getMondayOfWeek(montrealNow: Date): Date {
   return d
 }
 
+// ── Client greeting ──────────────────────────────────────────────
+// Separate from tutor greetings — calm, client-appropriate phrasing.
+// Priority:
+//   1. Friday or Saturday → "Shabbat Shalom, [name]"
+//   2. Otherwise → time-of-day (Good morning before noon / Good afternoon from noon)
+//   3. Fallback → simple pool (including "Hope you're having a good week" on Tue–Thu)
+
+const CLIENT_SIMPLE_GREETINGS = [
+  "Welcome back, [name]",
+  "Good to see you, [name]",
+  "Nice to see you, [name]",
+  "Welcome back",
+]
+
+export function computeClientGreeting(firstName: string, localHour: number, localDayOfWeek: number, lastGreeting?: string | null): string {
+  function sub(line: string): string {
+    return line.replace(/\[name\]/g, firstName)
+  }
+
+  // Shabbat overrides everything
+  if (localDayOfWeek === 5 || localDayOfWeek === 6) {
+    return sub("Shabbat Shalom, [name]")
+  }
+
+  // Time-of-day contextual
+  const contextual: string[] = []
+  if (localHour < 12) {
+    contextual.push("Good morning, [name]")
+  } else {
+    contextual.push("Good afternoon, [name]")
+  }
+
+  // Midweek bonus
+  if (localDayOfWeek >= 2 && localDayOfWeek <= 4) {
+    contextual.push("Hope you're having a good week")
+  }
+
+  // Combine contextual + simple
+  const pool = [...contextual, ...CLIENT_SIMPLE_GREETINGS]
+  const filtered = lastGreeting ? pool.filter(g => sub(g) !== lastGreeting) : pool
+  const use = filtered.length > 0 ? filtered : pool
+  return sub(use[Math.floor(Math.random() * use.length)])
+}
+
 export function getMontrealTodayStr(): string {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Montreal",

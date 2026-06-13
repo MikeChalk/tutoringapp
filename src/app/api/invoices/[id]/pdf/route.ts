@@ -19,10 +19,12 @@ export async function GET(request: Request, props: { params: Promise<{ id: strin
 
   if (!invoice) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
-  const clientId = await getClientId(session.user.id, (session.user as { email?: string }).email || "")
-  if (!isAdmin(session.user.role) && clientId !== invoice.clientId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+const clientId = await getClientId(session.user.id, (session.user as { email?: string }).email || "")
+if (!isAdmin(session.user.role)) {
+  if (!clientId || clientId !== invoice.clientId || !["SENT", "OVERDUE", "PAID"].includes(invoice.status)) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 })
   }
+}
 
   const settings = await prisma.companySettings.findUnique({ where: { id: "main" } })
   const companyName = settings?.name || "J.A.S.S. Tutoring"

@@ -23,3 +23,7 @@ export const WELCOME_SUBLINE_DELAY_BRIEF = 0.15 // seconds — subline delay (br
 export const WELCOME_FADE_DURATION = 0.4        // seconds — panel fade-out duration
 export const WELCOME_FADE_EASE = "easeInOut" as const
 export const WELCOME_SUBLINE_FADE_DURATION = 0.4  // seconds — subline text fade-in
+
+// ── Login reveal timing ───────────────────────────────────
+export const LOGIN_REVEAL_DURATION = 0.4   // seconds — landing fade-out / card fade-in
+export const LOGIN_REVEAL_EASE: [number, number, number, number] = [0.25, 0.1, 0.25, 1]  // matches EASE_DEFAULT

@@ -4,6 +4,10 @@ import { CONTRACT_TYPE_LABELS, TENURE_LABELS } from "@/lib/constants"
 import { CityFilter } from "@/components/city-filter"
 import { StatCard } from "@/components/ui"
 import TutorDashboard from "@/app/dashboard/tutor-dashboard"
+import ClientWelcome from "@/components/client-welcome"
+import ClientDashboardContent from "@/components/client-dashboard-content"
+import { computeClientGreeting, getMontrealNow, getMontrealInfo, getMontrealTodayStr } from "@/lib/greeting"
+import { cookies } from "next/headers"
 import Link from "next/link"
 
 export default async function DashboardPage(props: { searchParams: Promise<{ city?: string }> }) {
@@ -75,18 +79,49 @@ export default async function DashboardPage(props: { searchParams: Promise<{ cit
   } else if (client) {
     const clientId = await getClientId(session.user.id, session.user.email)
     if (clientId) {
-      const [, pc, unpaidAgg] = await Promise.all([
-        Promise.resolve(0),
+      const [pc, unpaidAgg, paidAgg] = await Promise.all([
         prisma.project.count({ where: { clientId } }),
         prisma.invoice.aggregate({ where: { clientId, status: { in: ["SENT", "OVERDUE"] } }, _sum: { totalAmount: true } }),
+        prisma.invoice.aggregate({ where: { clientId, status: "PAID" }, _sum: { totalAmount: true } }),
       ])
-      recentInvoices = await prisma.invoice.findMany({
-        where: { clientId },
-        select: { id: true, number: true, status: true, totalAmount: true, dueDate: true },
-        orderBy: { createdAt: "desc" },
-        take: 5,
-      })
-      stats = { tutorCount: 0, clientCount: 0, projectCount: pc, pendingInvoices: unpaidAgg._sum.totalAmount || 0, totalHours: 0, newRequests: 0, totalEarned: 0, totalPaid: 0 }
+      const [unpaidInvoices, paidInvoices] = await Promise.all([
+        prisma.invoice.findMany({
+          where: { clientId, status: { in: ["SENT", "OVERDUE"] } },
+          select: { id: true, number: true, status: true, totalAmount: true, dueDate: true, paidAt: true },
+          orderBy: { dueDate: "asc" },
+        }),
+        prisma.invoice.findMany({
+          where: { clientId, status: "PAID" },
+          select: { id: true, number: true, status: true, totalAmount: true, dueDate: true, paidAt: true },
+          orderBy: { paidAt: "desc" },
+          take: 5,
+        }),
+      ])
+      const firstName = session.user.name?.split(" ")[0] || "there"
+      const montrealNow = getMontrealNow()
+      const { hour: localHour, dayOfWeek: localDayOfWeek } = getMontrealInfo()
+      const todayStr = getMontrealTodayStr()
+      const cookieStore = await cookies()
+      const lastClientWelcomeDate = cookieStore.get("lastClientWelcomeDate")?.value
+      const lastClientGreeting = cookieStore.get("lastClientGreeting")?.value ?? null
+      const welcomeMode: "full" | "brief" = lastClientWelcomeDate === todayStr ? "brief" : "full"
+      const greeting = computeClientGreeting(firstName, localHour, localDayOfWeek, lastClientGreeting)
+      const unpaidTotal = unpaidAgg._sum.totalAmount || 0
+      const subline = unpaidInvoices.length > 0
+        ? `You have ${unpaidInvoices.length} invoice${unpaidInvoices.length !== 1 ? "s" : ""} to pay`
+        : null
+
+      return (
+        <>
+          <ClientWelcome greeting={greeting} subline={subline ?? undefined} welcomeMode={welcomeMode} todayStr={todayStr} />
+          <ClientDashboardContent
+            greeting={greeting}
+            subline={subline}
+            unpaidInvoices={unpaidInvoices.map(i => ({ ...i, dueDate: i.dueDate.toISOString(), paidAt: i.paidAt?.toISOString() ?? null }))}
+            paidInvoices={paidInvoices.map(i => ({ ...i, dueDate: i.dueDate.toISOString(), paidAt: i.paidAt?.toISOString() ?? null }))}
+          />
+        </>
+      )
     }
   }
 
@@ -133,38 +168,11 @@ export default async function DashboardPage(props: { searchParams: Promise<{ cit
         </div>
       )}
 
-      {client && recentInvoices.length > 0 && (
-        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-5 mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-xs text-zinc-500 uppercase tracking-wide">Recent Invoices</p>
-            <Link href="/dashboard/invoices" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">View all →</Link>
-          </div>
-          <div className="space-y-2">
-            {recentInvoices.map(inv => (
-              <Link key={inv.id} href={`/dashboard/invoices/${inv.id}`} className="flex items-center justify-between text-sm py-1 hover:bg-zinc-50 dark:hover:bg-zinc-700/30 rounded px-2 -mx-2">
-                <span className="text-zinc-900 dark:text-zinc-100">{inv.number}</span>
-                <div className="flex items-center gap-3">
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${inv.status === "PAID" ? "bg-green-100 text-green-700" : inv.status === "SENT" ? "bg-blue-100 text-blue-700" : "bg-zinc-100 text-zinc-600"}`}>{inv.status}</span>
-                  <span className="font-medium text-zinc-900 dark:text-zinc-100">${inv.totalAmount.toFixed(2)}</span>
-                  <span className="text-xs text-zinc-400">Due {new Date(inv.dueDate).toLocaleDateString()}</span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         {admin && <StatCard label="Tutors" value={stats.tutorCount} href="/dashboard/tutors" />}
-        {!admin && !client && <StatCard label="My Students" value={stats.projectCount} href="/dashboard/projects" />}
-        {(admin || tutor) && <StatCard label="Clients" value={stats.clientCount} href="/dashboard/clients" />}
-        {client && <StatCard label="My Students" value={stats.projectCount} href="/dashboard/projects" />}
-        {!client && <StatCard label="Total Hours" value={stats.totalHours} href="/dashboard/hours" />}
-        {tutor && <StatCard label="Paid to Date" value={`$${stats.totalPaid.toFixed(0)}`} href="/dashboard/payments" green />}
-        {tutor && stats.totalEarned > stats.totalPaid && <StatCard label="Unpaid" value={`$${(stats.totalEarned - stats.totalPaid).toFixed(0)}`} href="/dashboard/payments" highlight />}
+        {admin && <StatCard label="Clients" value={stats.clientCount} href="/dashboard/clients" />}
+        {admin && <StatCard label="Total Hours" value={stats.totalHours} href="/dashboard/hours" />}
         {admin && <StatCard label="Outstanding" value={`$${stats.pendingInvoices.toFixed(0)}`} href="/dashboard/invoices" highlight />}
-        {client && <StatCard label="Unpaid Invoices" value={`$${stats.pendingInvoices.toFixed(0)}`} href="/dashboard/invoices" highlight />}
-        {tutor && <StatCard label="New Offers" value={stats.newRequests} href="/dashboard/requests" highlight />}
         {admin && <StatCard label="New Requests" value={stats.newRequests} href="/dashboard/requests" highlight />}
       </div>
     </div>

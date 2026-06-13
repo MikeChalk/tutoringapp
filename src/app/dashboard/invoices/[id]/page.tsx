@@ -30,7 +30,7 @@ export default async function InvoiceDetailPage(props: { params: Promise<{ id: s
 
   if (client) {
     const clientId = await getClientId(session.user.id, session.user.email)
-    if (!clientId || invoice.clientId !== clientId) notFound()
+    if (!clientId || invoice.clientId !== clientId || !["SENT", "OVERDUE", "PAID"].includes(invoice.status)) notFound()
   }
 
   const settings = await prisma.companySettings.findUnique({ where: { id: "main" } })

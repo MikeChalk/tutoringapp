@@ -16,13 +16,13 @@ export async function POST(request: Request) {
   if (!invoice) return NextResponse.json({ error: "Invoice not found" }, { status: 404 })
 
   // Only the invoice owner (client) or an admin can create a checkout session
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  if (!isAdmin(session.user.role)) {
-    const clientId = await getClientId(session.user.id, (session.user as { email?: string }).email || "")
-    if (!clientId || clientId !== invoice.clientId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+if (!isAdmin(session.user.role)) {
+  const clientId = await getClientId(session.user.id, (session.user as { email?: string }).email || "")
+  if (!clientId || clientId !== invoice.clientId || !["SENT", "OVERDUE"].includes(invoice.status)) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 })
   }
+}
 
   try {
     const stripeSession = await createCheckoutSession(invoice)

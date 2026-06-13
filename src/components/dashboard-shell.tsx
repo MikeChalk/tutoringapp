@@ -10,9 +10,11 @@ import FeedbackBubble from "@/components/feedback-bubble"
 import { ThemeToggle } from "@/components/theme-toggle"
 import TutorSidebar from "@/components/tutor-sidebar"
 import { Menu, X } from "lucide-react"
+import ClientSidebar from "@/components/client-sidebar"
 
 export default function DashboardShell({ children, role }: { children: React.ReactNode; role: string | null }) {
   const isTutorRole = role === "TUTOR"
+  const isClientRole = role === "CLIENT"
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
 
@@ -20,7 +22,7 @@ export default function DashboardShell({ children, role }: { children: React.Rea
     setMobileOpen(false)
   }, [pathname])
 
-  const sidebarContent = isTutorRole ? <TutorSidebar /> : <SidebarContent role={role} />
+  const sidebarContent = isTutorRole ? <TutorSidebar /> : isClientRole ? <ClientSidebar /> : <SidebarContent role={role} />
   const closeMobile = useCallback(() => setMobileOpen(false), [])
 
   return (
@@ -38,7 +40,7 @@ export default function DashboardShell({ children, role }: { children: React.Rea
           >
             <Menu className="h-5 w-5 text-zinc-700 dark:text-zinc-300" />
           </button>
-          <h1 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">Tutoring Manager</h1>
+          <Link href="/dashboard" className="text-lg font-bold text-zinc-900 dark:text-zinc-100 hover:opacity-80 transition-opacity">J.A.S.S. Portal</Link>
         </header>
 
         <main className="flex-1 overflow-y-auto">
@@ -53,7 +55,7 @@ export default function DashboardShell({ children, role }: { children: React.Rea
           <div className="absolute inset-0 bg-black/50" />
           <div className="absolute inset-y-0 left-0 w-64 bg-white dark:bg-zinc-800 shadow-xl flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-700">
-              <h1 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">Tutoring Manager</h1>
+              <Link href="/dashboard" className="text-lg font-bold text-zinc-900 dark:text-zinc-100 hover:opacity-80 transition-opacity">J.A.S.S. Portal</Link>
               <button onClick={closeMobile} className="p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors" aria-label="Close menu">
                 <X className="h-5 w-5 text-zinc-500" />
               </button>
@@ -76,7 +78,9 @@ function SidebarContent({ role, onNavigate }: { role: string | null; onNavigate?
   return (
     <>
       <div className="p-6 border-b border-zinc-200 dark:border-zinc-700">
-        <h1 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">Tutoring Manager</h1>
+        <Link href="/dashboard" className="hover:opacity-80 transition-opacity">
+        <h1 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">J.A.S.S. Portal</h1>
+      </Link>
         <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
           {role} &middot; {session?.user?.email}
         </p>

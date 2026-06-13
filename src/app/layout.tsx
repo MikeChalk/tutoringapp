@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { Geist, Geist_Mono, Inter } from "next/font/google"
+import { Geist, Geist_Mono, Inter, Fraunces } from "next/font/google"
 import "./globals.css"
 import { Providers } from "@/components/providers"
 
@@ -18,8 +18,13 @@ const inter = Inter({
   subsets: ["latin"],
 })
 
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
+  subsets: ["latin"],
+})
+
 export const metadata: Metadata = {
-  title: "Tutoring Manager",
+  title: "J.A.S.S. Portal",
   description: "Manage your tutoring business",
 }
 
@@ -31,7 +36,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${fraunces.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <Providers>{children}</Providers>

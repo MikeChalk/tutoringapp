@@ -400,9 +400,9 @@ export const TUTOR_NAV_LINKS: NavLink[] = [
 
 export const CLIENT_NAV_LINKS: NavLink[] = [
   { href: "/dashboard", label: "Overview" },
-  { href: "/dashboard/profile", label: "My Profile" },
-  { href: "/dashboard/projects", label: "My Projects" },
   { href: "/dashboard/invoices", label: "Invoices" },
+  { href: "/dashboard/projects", label: "My Students" },
+  { href: "/dashboard/profile", label: "Profile" },
 ]
 
 export const TOP_LEVEL_LINKS: NavLink[] = [

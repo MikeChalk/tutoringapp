@@ -587,8 +587,96 @@ async function main() {
     },
   })
 
+  // Invoices for Robert Dupont (client1) — one SENT (unpaid), one PAID
+  const inv1 = await prisma.invoice.create({
+    data: {
+      number: "INV-001",
+      clientId: client1.id,
+      status: "SENT",
+      totalAmount: 126.00,
+      subtotal: 126.00,
+      taxRate: 0,
+      taxAmount: 0,
+      dueDate: new Date("2026-07-01"),
+      invoiceDate: new Date("2026-06-01"),
+      sentAt: new Date("2026-06-02"),
+      notes: "June tutoring for Lucas and Chloe",
+    },
+  })
+  await prisma.invoiceItem.createMany({
+    data: [
+      { invoiceId: inv1.id, description: "Lucas — Math (2 hrs × $34/hr)", hours: 2, rate: 34, amount: 68 },
+      { invoiceId: inv1.id, description: "Chloe — Science (2 hrs × $29/hr)", hours: 2, rate: 29, amount: 58 },
+    ],
+  })
+
+  const inv2 = await prisma.invoice.create({
+    data: {
+      number: "INV-002",
+      clientId: client1.id,
+      status: "PAID",
+      totalAmount: 91.50,
+      subtotal: 91.50,
+      taxRate: 0,
+      taxAmount: 0,
+      dueDate: new Date("2026-06-01"),
+      invoiceDate: new Date("2026-05-01"),
+      sentAt: new Date("2026-05-02"),
+      paidAt: new Date("2026-05-28"),
+      paymentGateway: "e-transfer",
+    },
+  })
+  await prisma.invoiceItem.createMany({
+    data: [
+      { invoiceId: inv2.id, description: "Lucas — Math (1.5 hrs × $34/hr)", hours: 1.5, rate: 34, amount: 51 },
+      { invoiceId: inv2.id, description: "Chloe — Science (1.5 hrs × $27/hr)", hours: 1.5, rate: 27, amount: 40.50 },
+    ],
+  })
+
+  // DRAFT invoice for Robert Dupont (client1) — should be hidden from client view
+  const inv3 = await prisma.invoice.create({
+    data: {
+      number: "INV-003",
+      clientId: client1.id,
+      status: "DRAFT",
+      totalAmount: 68.00,
+      subtotal: 68.00,
+      taxRate: 0,
+      taxAmount: 0,
+      dueDate: new Date("2026-08-01"),
+      notes: "Draft — Lucas math sessions pending review",
+    },
+  })
+  await prisma.invoiceItem.createMany({
+    data: [
+      { invoiceId: inv3.id, description: "Lucas — Math (2 hrs × $34/hr)", hours: 2, rate: 34, amount: 68 },
+    ],
+  })
+
+  // SENT invoice for Marie Lambert (client2) — used to test cross-client access
+  const inv4 = await prisma.invoice.create({
+    data: {
+      number: "INV-004",
+      clientId: client2.id,
+      status: "SENT",
+      totalAmount: 72.00,
+      subtotal: 72.00,
+      taxRate: 0,
+      taxAmount: 0,
+      dueDate: new Date("2026-07-15"),
+      invoiceDate: new Date("2026-06-15"),
+      sentAt: new Date("2026-06-16"),
+      notes: "Camille — Math tutoring",
+    },
+  })
+  await prisma.invoiceItem.createMany({
+    data: [
+      { invoiceId: inv4.id, description: "Camille — Math (2 hrs × $36/hr)", hours: 2, rate: 36, amount: 72 },
+    ],
+  })
+
   console.log("Seed complete!")
-  console.log("Montreal: 1 admin, 5 tutors, 3 clients, 6 projects, 5 hour logs, 2 contracts")
+  console.log("Montreal: 1 admin, 5 tutors, 3 clients, 6 projects, 5 hour logs, 2 contracts, 4 invoices (1 SENT, 1 PAID, 1 DRAFT for Robert, 1 SENT for Marie)")
   console.log("Toronto: 1 city admin, 1 tutor, 1 client, 2 projects")
   console.log("All passwords: password123")
 }
