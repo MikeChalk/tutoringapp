@@ -1,19 +1,24 @@
 import { prisma } from "@/lib/db"
 import { requireAuth, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
+import { parseFinanceTimeFilter } from "@/lib/finance-filter"
 import { redirect } from "next/navigation"
 import { CityFilter } from "@/components/city-filter"
+import { FinanceTimeFilter } from "@/components/finance-time-filter"
+import { Suspense } from "react"
 import Link from "next/link"
 
-export default async function ExpensesPage(props: { searchParams: Promise<{ city?: string }> }) {
+export default async function ExpensesPage(props: { searchParams: Promise<{ city?: string; year?: string; from?: string; to?: string }> }) {
   const session = await requireAuth()
   const role = session.user.role
   if (role !== "ADMIN" && role !== "CITY_ADMIN") redirect("/dashboard")
 
-  const { city: cityParam } = await props.searchParams
+  const { city: cityParam, year: yearParam, from: fromParam, to: toParam } = await props.searchParams
   const selectedCity = cityParam || "all"
   const superAdmin = isSuperAdmin(role)
   const cityAdminId = isCityAdmin(role) ? await getActiveCityId(role, session.user.id) : null
   const effectiveCityId = cityAdminId || (superAdmin && selectedCity !== "all" ? selectedCity : null)
+
+  const { dateRange, localDateRange } = parseFinanceTimeFilter({ year: yearParam, from: fromParam, to: toParam })
 
   const cities = await prisma.city.findMany({ select: { id: true, name: true } })
 
@@ -27,26 +32,53 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
     ? { client: { user: { cityId: effectiveCityId } } }
     : {}
 
+  const hourLogWhere: Record<string, unknown> = { ...cityFilter }
+  const invoiceWhere: Record<string, unknown> = { status: { in: ["SENT", "PAID"] }, ...invoiceCityFilter }
+  const allInvoiceWhere: Record<string, unknown> = { status: { in: ["SENT", "PAID"] } }
+  const expenseWhere: Record<string, unknown> = { ...expenseCityFilter }
+  const allExpenseWhere: Record<string, unknown> = {}
+  const expenseAggWhere: Record<string, unknown> = { ...expenseCityFilter }
+
+  if (dateRange) {
+    const dr = { gte: dateRange.gte, lt: dateRange.lt }
+    const ldr = localDateRange ? { gte: localDateRange.gte, lt: localDateRange.lt } : null
+    hourLogWhere.date = dr
+    const invoiceDateFilter = ldr
+      ? { createdAt: ldr }
+      : {}
+    Object.assign(invoiceWhere, invoiceDateFilter)
+    Object.assign(allInvoiceWhere, invoiceDateFilter)
+    expenseWhere.date = dr
+    expenseAggWhere.date = dr
+    allExpenseWhere.date = dr
+  }
+
+  if (effectiveCityId) {
+    allInvoiceWhere.client = { user: { cityId: effectiveCityId } }
+    allExpenseWhere.OR = [{ cityId: effectiveCityId }, { client: { user: { cityId: effectiveCityId } } }]
+  }
+
   const [hourLogs, invoices, allInvoices, allExpenses] = await Promise.all([
     prisma.hourLog.findMany({
-      where: cityFilter,
+      where: hourLogWhere,
       select: { hours: true, tutorPayRate: true, paidAt: true, tutor: { select: { user: { select: { name: true } } } }, project: { select: { name: true } }, date: true },
       orderBy: { date: "desc" },
     }),
     prisma.invoice.findMany({
-      where: { status: { in: ["SENT", "PAID"] }, ...invoiceCityFilter },
+      where: invoiceWhere,
       select: { totalAmount: true, status: true },
     }),
     prisma.invoice.findMany({
-      where: { status: { in: ["SENT", "PAID"] } },
+      where: allInvoiceWhere,
       select: { totalAmount: true, status: true, client: { select: { user: { select: { cityId: true } } } } },
     }),
     prisma.expense.findMany({
+      where: allExpenseWhere,
       select: { amount: true, cityId: true },
     }),
   ])
 
-  const expenseAgg = await prisma.expense.aggregate({ where: expenseCityFilter, _sum: { amount: true } })
+  const expenseAgg = await prisma.expense.aggregate({ where: expenseAggWhere, _sum: { amount: true } })
 
   const totalBilled = invoices.reduce((s, i) => s + i.totalAmount, 0)
   const totalPaidInvoices = invoices.filter((i) => i.status === "PAID").reduce((s, i) => s + i.totalAmount, 0)
@@ -56,7 +88,6 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
 
   const cityName = selectedCity !== "all" ? cities.find((c) => c.id === selectedCity)?.name || selectedCity : "All Cities"
 
-  // Per-city breakdown
   const cityBreakdown = cities.map((city) => {
     const cityInvoices = allInvoices.filter((i) => i.client.user.cityId === city.id)
     const cityExpenses = allExpenses.filter((e) => e.cityId === city.id)
@@ -66,113 +97,132 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
     return { name: city.name, billed, collected, expenses: expensesAmt }
   })
 
+  const hasData = hourLogs.length > 0 || invoices.length > 0 || allExpenses.length > 0
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Finance</h2>
-          <p className="text-sm text-zinc-500">{cityName}</p>
+          <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Financial Overview</h2>
+          <p className="text-sm text-zinc-500">{cityName}{dateRange ? ` · ${dateRange.label}` : ""}</p>
         </div>
-        {superAdmin && <CityFilter selected={selectedCity} />}
+        <div className="flex items-center gap-3">
+          {superAdmin && <CityFilter selected={selectedCity} />}
+        </div>
       </div>
 
-      {superAdmin && (
-        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden mb-8">
-          <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-zinc-200 dark:border-zinc-700">
-                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">City</th>
-                <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Billed</th>
-                <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Collected</th>
-                <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Expenses</th>
-                <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Net</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700/50">
-              {cityBreakdown.map((c) => (
-                <tr key={c.name} className="text-sm">
-                  <td className="px-4 py-3 font-medium text-zinc-900 dark:text-zinc-100">{c.name}</td>
-                  <td className="px-4 py-3 text-right text-zinc-600 dark:text-zinc-400">${c.billed.toFixed(2)}</td>
-                  <td className="px-4 py-3 text-right text-green-600 dark:text-green-400">${c.collected.toFixed(2)}</td>
-                  <td className="px-4 py-3 text-right text-red-600 dark:text-red-400">${c.expenses.toFixed(2)}</td>
-                  <td className="px-4 py-3 text-right font-medium text-zinc-900 dark:text-zinc-100">${(c.collected - c.expenses).toFixed(2)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          </div>
+      <div className="flex items-center gap-3 mb-6">
+        <Suspense fallback={null}>
+          <FinanceTimeFilter />
+        </Suspense>
+      </div>
+
+      {!hasData && dateRange ? (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">No data for this period</p>
+          <p className="text-sm text-zinc-500 mt-1">No financial records found in the selected time range.</p>
         </div>
+      ) : (
+        <>
+          {superAdmin && (
+            <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden mb-8">
+              <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-zinc-200 dark:border-zinc-700">
+                    <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 uppercase">City</th>
+                    <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Billed</th>
+                    <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Collected</th>
+                    <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Expenses</th>
+                    <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500 uppercase">Net</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700/50">
+                  {cityBreakdown.map((c) => (
+                    <tr key={c.name} className="text-sm">
+                      <td className="px-4 py-3 font-medium text-zinc-900 dark:text-zinc-100">{c.name}</td>
+                      <td className="px-4 py-3 text-right text-zinc-600 dark:text-zinc-400">${c.billed.toFixed(2)}</td>
+                      <td className="px-4 py-3 text-right text-green-600 dark:text-green-400">${c.collected.toFixed(2)}</td>
+                      <td className="px-4 py-3 text-right text-red-600 dark:text-red-400">${c.expenses.toFixed(2)}</td>
+                      <td className="px-4 py-3 text-right font-medium text-zinc-900 dark:text-zinc-100">${(c.collected - c.expenses).toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
+              <p className="text-xs text-zinc-500 uppercase">Gross Revenue</p>
+              <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">${totalBilled.toFixed(2)}</p>
+              <p className="text-xs text-zinc-400 mt-1">All invoiced amounts</p>
+            </div>
+            <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
+              <p className="text-xs text-zinc-500 uppercase">Net Revenue</p>
+              <p className="text-2xl font-bold text-green-600 dark:text-green-400">${totalPaidInvoices.toFixed(2)}</p>
+              <p className="text-xs text-zinc-400 mt-1">Collected invoices</p>
+            </div>
+            <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
+              <p className="text-xs text-zinc-500 uppercase">Tutor Cost</p>
+              <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">${totalTutorPay.toFixed(2)}</p>
+              <p className="text-xs text-zinc-400 mt-1">${totalTutorPaid.toFixed(2)} paid</p>
+            </div>
+            <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
+              <p className="text-xs text-zinc-500 uppercase">Profit</p>
+              <p className={`text-2xl font-bold ${totalPaidInvoices - totalTutorPaid - totalOtherExpenses >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+                ${(totalPaidInvoices - totalTutorPaid - totalOtherExpenses).toFixed(2)}
+              </p>
+              <p className="text-xs text-zinc-400 mt-1">Revenue - all costs</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Revenue</h3>
+                <Link href="/dashboard/invoices" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">View Invoices →</Link>
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-zinc-600 dark:text-zinc-400">Total Invoiced</span>
+                  <span className="font-medium text-zinc-900 dark:text-zinc-100">${totalBilled.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-zinc-600 dark:text-zinc-400">Total Collected</span>
+                  <span className="font-medium text-green-600 dark:text-green-400">${totalPaidInvoices.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-zinc-600 dark:text-zinc-400">Outstanding</span>
+                  <span className="font-medium text-amber-600 dark:text-amber-400">${(totalBilled - totalPaidInvoices).toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Costs</h3>
+                <Link href="/dashboard/expenses-only" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">View Expenses →</Link>
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-zinc-600 dark:text-zinc-400">Tutor Pay</span>
+                  <span className="font-medium text-amber-600 dark:text-amber-400">${totalTutorPay.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-zinc-600 dark:text-zinc-400">Other Expenses</span>
+                  <span className="font-medium text-red-600 dark:text-red-400">${totalOtherExpenses.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm pt-2 border-t border-zinc-200 dark:border-zinc-700">
+                  <span className="font-semibold text-zinc-700 dark:text-zinc-300">Total Costs</span>
+                  <span className="font-semibold text-zinc-900 dark:text-zinc-100">${(totalTutorPay + totalOtherExpenses).toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
       )}
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
-          <p className="text-xs text-zinc-500 uppercase">Gross Revenue</p>
-          <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">${totalBilled.toFixed(2)}</p>
-          <p className="text-xs text-zinc-400 mt-1">All invoiced amounts</p>
-        </div>
-        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
-          <p className="text-xs text-zinc-500 uppercase">Net Revenue</p>
-          <p className="text-2xl font-bold text-green-600 dark:text-green-400">${totalPaidInvoices.toFixed(2)}</p>
-          <p className="text-xs text-zinc-400 mt-1">Collected invoices</p>
-        </div>
-        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
-          <p className="text-xs text-zinc-500 uppercase">Tutor Cost</p>
-          <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">${totalTutorPay.toFixed(2)}</p>
-          <p className="text-xs text-zinc-400 mt-1">${totalTutorPaid.toFixed(2)} paid</p>
-        </div>
-        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
-          <p className="text-xs text-zinc-500 uppercase">Profit</p>
-          <p className={`text-2xl font-bold ${totalPaidInvoices - totalTutorPaid - totalOtherExpenses >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
-            ${(totalPaidInvoices - totalTutorPaid - totalOtherExpenses).toFixed(2)}
-          </p>
-          <p className="text-xs text-zinc-400 mt-1">Revenue - all costs</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Revenue</h3>
-            <Link href="/dashboard/invoices" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">View Invoices →</Link>
-          </div>
-          <div className="space-y-3">
-            <div className="flex justify-between text-sm">
-              <span className="text-zinc-600 dark:text-zinc-400">Total Invoiced</span>
-              <span className="font-medium text-zinc-900 dark:text-zinc-100">${totalBilled.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-zinc-600 dark:text-zinc-400">Total Collected</span>
-              <span className="font-medium text-green-600 dark:text-green-400">${totalPaidInvoices.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-zinc-600 dark:text-zinc-400">Outstanding</span>
-              <span className="font-medium text-amber-600 dark:text-amber-400">${(totalBilled - totalPaidInvoices).toFixed(2)}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Costs</h3>
-            <Link href="/dashboard/expenses-only" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">View Expenses →</Link>
-          </div>
-          <div className="space-y-3">
-            <div className="flex justify-between text-sm">
-              <span className="text-zinc-600 dark:text-zinc-400">Tutor Pay</span>
-              <span className="font-medium text-amber-600 dark:text-amber-400">${totalTutorPay.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-zinc-600 dark:text-zinc-400">Other Expenses</span>
-              <span className="font-medium text-red-600 dark:text-red-400">${totalOtherExpenses.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between text-sm pt-2 border-t border-zinc-200 dark:border-zinc-700">
-              <span className="font-semibold text-zinc-700 dark:text-zinc-300">Total Costs</span>
-              <span className="font-semibold text-zinc-900 dark:text-zinc-100">${(totalTutorPay + totalOtherExpenses).toFixed(2)}</span>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }

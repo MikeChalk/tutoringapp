@@ -1,8 +1,13 @@
 import { prisma } from "@/lib/db"
 import { requireAdmin, isCityAdmin, getActiveCityId, isSuperAdmin } from "@/lib/auth-helpers"
 import { CityFilter } from "@/components/city-filter"
+import { FinanceTimeFilter } from "@/components/finance-time-filter"
+import { parseFinanceTimeFilter } from "@/lib/finance-filter"
 import { EXPENSE_CATEGORIES } from "@/lib/constants"
 import AddExpenseSection from "@/components/add-expense-section"
+import { EmptyState } from "@/components/empty-state"
+import { Receipt } from "lucide-react"
+import { Suspense } from "react"
 import Link from "next/link"
 
 const CATEGORY_FILTERS = ["ALL", ...EXPENSE_CATEGORIES] as const
@@ -18,10 +23,15 @@ const CATEGORY_LABELS: Record<string, string> = {
   OTHER: "Other",
 }
 
-export default async function ExpensesPage(props: { searchParams: Promise<{ city?: string; category?: string; search?: string; page?: string }> }) {
+function buildExpensesQs(params: Record<string, string>, base = "/dashboard/expenses-only"): string {
+  const qs = Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&")
+  return `${base}${qs ? `?${qs}` : ""}`
+}
+
+export default async function ExpensesPage(props: { searchParams: Promise<{ city?: string; category?: string; search?: string; page?: string; year?: string; from?: string; to?: string }> }) {
   const session = await requireAdmin()
 
-  const { city: cityParam, category: catParam, search: searchParam, page: pageParam } = await props.searchParams
+  const { city: cityParam, category: catParam, search: searchParam, page: pageParam, year: yearParam, from: fromParam, to: toParam } = await props.searchParams
   const selectedCity = cityParam || "all"
   const selectedCategory = catParam || "ALL"
   const searchQuery = searchParam || ""
@@ -31,6 +41,10 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
   const cityAdminId = isCityAdmin(session.user.role) ? await getActiveCityId(session.user.role, session.user.id) : null
   const effectiveCityId = cityAdminId || (superAdmin && selectedCity !== "all" ? selectedCity : null)
 
+  const { dateRange } = parseFinanceTimeFilter({ year: yearParam, from: fromParam, to: toParam })
+
+  const timeQs = yearParam ? `year=${yearParam}` : fromParam && toParam ? `from=${fromParam}&to=${toParam}` : ""
+
   const where: Record<string, unknown> = {}
   if (effectiveCityId) {
     where.OR = [
@@ -39,6 +53,9 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
     ]
   }
   if (selectedCategory !== "ALL") where.category = selectedCategory
+  if (dateRange) {
+    where.date = { gte: dateRange.gte, lt: dateRange.lt }
+  }
   if (searchQuery) {
     const cityOr = Array.isArray(where.OR) ? where.OR as Record<string, unknown>[] : []
     where.AND = [
@@ -75,12 +92,17 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
   const totalExpenseAgg = await prisma.expense.aggregate({ where, _sum: { amount: true } })
   const totalExpenseAmount = totalExpenseAgg._sum.amount ?? 0
 
+  const preservedParams: Record<string, string> = {}
+  if (selectedCategory !== "ALL") preservedParams.category = selectedCategory
+  if (selectedCity !== "all") preservedParams.city = selectedCity
+  if (timeQs) timeQs.split("&").forEach((p: string) => { const [k, v] = p.split("="); preservedParams[k] = v })
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Expenses</h2>
-          <p className="text-sm text-zinc-500">${totalExpenseAmount.toFixed(2)} · {totalCount} entries</p>
+          <p className="text-sm text-zinc-500">${totalExpenseAmount.toFixed(2)} · {totalCount} entries{dateRange ? ` · ${dateRange.label}` : ""}</p>
         </div>
         <div className="flex items-center gap-3">
           <form action="/api/expenses/seed" method="POST" data-confirm="Sync all historical hour logs as expenses?">
@@ -90,32 +112,44 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
         </div>
       </div>
 
+      <div className="flex items-center gap-3 mb-4">
+        <Suspense fallback={null}>
+          <FinanceTimeFilter />
+        </Suspense>
+      </div>
+
       <form action="/dashboard/expenses-only" method="GET" className="mb-4 flex gap-2">
         {selectedCategory !== "ALL" ? <input type="hidden" name="category" value={selectedCategory} /> : null}
         {selectedCity !== "all" ? <input type="hidden" name="city" value={selectedCity} /> : null}
+        {yearParam ? <input type="hidden" name="year" value={yearParam} /> : null}
+        {fromParam ? <input type="hidden" name="from" value={fromParam} /> : null}
+        {toParam ? <input type="hidden" name="to" value={toParam} /> : null}
         <input type="text" name="search" key={searchQuery} defaultValue={searchQuery} placeholder="Search expenses by description or client..."
           className="flex-1 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
         <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Search</button>
+        {searchQuery && <Link href={buildExpensesQs(preservedParams)} className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-500 hover:bg-zinc-100">Clear</Link>}
       </form>
-      {searchQuery && (() => { const p = new URLSearchParams(); if (selectedCategory !== "ALL") p.set("category", selectedCategory); if (selectedCity !== "all") p.set("city", selectedCity); const qs = p.toString(); return <Link href={`/dashboard/expenses-only${qs ? `?${qs}` : ""}`} className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-500 hover:bg-zinc-100">Clear</Link> })()}
-
       <AddExpenseSection clients={clients} />
 
       {/* Category filter toggles */}
       <div className="flex flex-wrap gap-2 mb-6">
-        {CATEGORY_FILTERS.map(cat => (
-          <Link
-            key={cat}
-            href={`/dashboard/expenses-only?category=${cat}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
-            className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${
-              selectedCategory === cat
-                ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900"
-                : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700 border border-zinc-300 dark:border-zinc-600"
-            }`}
-          >
-            {CATEGORY_LABELS[cat] || cat}
-          </Link>
-        ))}
+        {CATEGORY_FILTERS.map(cat => {
+          const catParams: Record<string, string> = { ...preservedParams, category: cat }
+          if (cat === "ALL") delete catParams.category
+          return (
+            <Link
+              key={cat}
+              href={buildExpensesQs(catParams)}
+              className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${
+                selectedCategory === cat
+                  ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900"
+                  : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700 border border-zinc-300 dark:border-zinc-600"
+              }`}
+            >
+              {CATEGORY_LABELS[cat] || cat}
+            </Link>
+          )
+        })}
       </div>
 
       <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
@@ -160,7 +194,7 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
                       <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Unpaid</span>
                     )
                   ) : (
-                    <span className="text-xs text-zinc-400">—</span>
+                    <span className="text-xs text-zinc-400">&mdash;</span>
                   )}
                 </td>
                 <td className="px-4 py-2.5 text-center">
@@ -176,21 +210,25 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
         </table>
         </div>
         {expenses.length === 0 && (
-          <div className="p-8 text-center text-sm text-zinc-500">No expenses found.</div>
+          dateRange ? (
+            <EmptyState icon={Receipt} title="No data for this period" description="No expenses found in the selected time range." />
+          ) : (
+            <div className="p-8 text-center text-sm text-zinc-500">No expenses found.</div>
+          )
         )}
       </div>
 
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 mt-4">
           {page > 1 && (
-            <Link href={`/dashboard/expenses-only?page=${page - 1}${selectedCategory !== "ALL" ? `&category=${selectedCategory}` : ""}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
+            <Link href={buildExpensesQs({ ...preservedParams, page: String(page - 1) })}
               className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
               Previous
             </Link>
           )}
           <span className="text-sm text-zinc-500 px-2">Page {page} of {totalPages} ({totalCount} total)</span>
           {page < totalPages && (
-            <Link href={`/dashboard/expenses-only?page=${page + 1}${selectedCategory !== "ALL" ? `&category=${selectedCategory}` : ""}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
+            <Link href={buildExpensesQs({ ...preservedParams, page: String(page + 1) })}
               className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
               Next
             </Link>

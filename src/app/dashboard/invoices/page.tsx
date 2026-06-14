@@ -1,12 +1,15 @@
 import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin, isTutor, isClient, getClientId, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
 import { INVOICE_STATUS_COLORS } from "@/lib/constants"
+import { parseFinanceTimeFilter } from "@/lib/finance-filter"
 import { redirect } from "next/navigation"
 import { CityFilter } from "@/components/city-filter"
+import { FinanceTimeFilter } from "@/components/finance-time-filter"
 import { CreateInvoiceForm } from "@/components/create-invoice-form"
 import { EmptyState } from "@/components/empty-state"
 import { Receipt } from "lucide-react"
 import { StatCard } from "@/components/ui"
+import { Suspense } from "react"
 import Link from "next/link"
 
 const ADMIN_STATUS_TABS = [
@@ -23,7 +26,7 @@ const CLIENT_STATUS_TABS = [
   { value: "OVERDUE", label: "Overdue" },
 ]
 
-export default async function InvoicesPage(props: { searchParams: Promise<{ city?: string; status?: string; search?: string; page?: string; generated?: string; reminded?: string }> }) {
+export default async function InvoicesPage(props: { searchParams: Promise<{ city?: string; status?: string; search?: string; page?: string; generated?: string; reminded?: string; year?: string; from?: string; to?: string }> }) {
   const session = await requireAuth()
   const admin = isAdmin(session.user.role)
   const tutor = isTutor(session.user.role)
@@ -31,7 +34,7 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
 
   if (tutor) redirect("/dashboard")
 
-  const { city: cityParam, status: statusParam, search: searchParam, page: pageParam, generated: generatedParam, reminded: remindedParam } = await props.searchParams
+  const { city: cityParam, status: statusParam, search: searchParam, page: pageParam, generated: generatedParam, reminded: remindedParam, year: yearParam, from: fromParam, to: toParam } = await props.searchParams
   const selectedCity = cityParam || "all"
   const selectedStatus = statusParam || (client ? "SENT" : "")
   const searchQuery = searchParam || ""
@@ -39,6 +42,18 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
   const pageSize = 50
   const cityAdminId = isCityAdmin(session.user.role) ? await getActiveCityId(session.user.role, session.user.id) : null
   const effectiveCityId = cityAdminId || (isSuperAdmin(session.user.role) && selectedCity !== "all" ? selectedCity : null)
+
+const { dateRange, localDateRange } = parseFinanceTimeFilter({ year: yearParam, from: fromParam, to: toParam })
+
+const timeQs = yearParam ? `year=${yearParam}` : fromParam && toParam ? `from=${fromParam}&to=${toParam}` : ""
+
+function invQs(params: Record<string, string>, base = ""): string {
+  const allParams: Record<string, string> = {}
+  if (timeQs) timeQs.split("&").forEach((p: string) => { const [k, v] = p.split("="); allParams[k] = v })
+  Object.entries(params).forEach(([k, v]) => { allParams[k] = v })
+  const qs = Object.entries(allParams).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&")
+  return `${base}${qs ? `?${qs}` : ""}`
+}
 
   let whereClause: Record<string, unknown> = {}
   if (client) {
@@ -62,15 +77,22 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
     whereClause = { ...whereClause, status: selectedStatus }
   }
 
-  if (searchQuery) {
-    whereClause = {
-      ...whereClause,
-      OR: [
-        { number: { contains: searchQuery } },
-        { client: { user: { name: { contains: searchQuery } } } },
-      ],
-    }
+if (searchQuery) {
+  whereClause = {
+    ...whereClause,
+    OR: [
+      { number: { contains: searchQuery } },
+      { client: { user: { name: { contains: searchQuery } } } },
+    ],
   }
+}
+
+if (localDateRange) {
+  whereClause = {
+    ...whereClause,
+    createdAt: { gte: localDateRange.gte, lt: localDateRange.lt },
+  }
+}
 
   const [invoices, totalCount] = await Promise.all([
     prisma.invoice.findMany({
@@ -88,14 +110,17 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
   const totalPages = Math.ceil(totalCount / pageSize)
 
   // Always fetch all invoices for stats (not just current page)
-  const statsWhere: Record<string, unknown> = {}
-  if (client) {
-    const clientId = await getClientId(session.user.id, session.user.email)
-    if (clientId) { statsWhere.clientId = clientId; statsWhere.status = { not: "DRAFT" } }
-  }
-  if (effectiveCityId) {
-    statsWhere.client = { user: { cityId: effectiveCityId } }
-  }
+const statsWhere: Record<string, unknown> = {}
+if (client) {
+  const clientId = await getClientId(session.user.id, session.user.email)
+  if (clientId) { statsWhere.clientId = clientId; statsWhere.status = { not: "DRAFT" } }
+}
+if (effectiveCityId) {
+  statsWhere.client = { user: { cityId: effectiveCityId } }
+}
+if (localDateRange) {
+  statsWhere.createdAt = { gte: localDateRange.gte, lt: localDateRange.lt }
+}
   const allForStats = await prisma.invoice.findMany({
     where: statsWhere,
     select: { status: true, totalAmount: true, paidAt: true },
@@ -127,18 +152,27 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
               <a href="/api/export?type=accounting" className="text-xs text-purple-600 dark:text-purple-400 hover:underline">Accounting Export</a>
             </>
           )}
-          {isSuperAdmin(session.user.role) && <CityFilter selected={selectedCity} />}
-        </div>
+{isSuperAdmin(session.user.role) && <CityFilter selected={selectedCity} />}
+         </div>
+       </div>
+
+      <div className="flex items-center gap-3 mb-4">
+        <Suspense fallback={null}>
+          <FinanceTimeFilter />
+        </Suspense>
       </div>
 
       {admin && (
-        <form action="/dashboard/invoices" method="GET" className="mb-4 flex gap-2">
-          {selectedStatus ? <input type="hidden" name="status" value={selectedStatus} /> : null}
-          {selectedCity !== "all" ? <input type="hidden" name="city" value={selectedCity} /> : null}
+<form action="/dashboard/invoices" method="GET" className="mb-4 flex gap-2">
+           {selectedStatus ? <input type="hidden" name="status" value={selectedStatus} /> : null}
+           {selectedCity !== "all" ? <input type="hidden" name="city" value={selectedCity} /> : null}
+{yearParam ? <input type="hidden" name="year" value={yearParam} /> : null}
+            {fromParam ? <input type="hidden" name="from" value={fromParam} /> : null}
+           {toParam ? <input type="hidden" name="to" value={toParam} /> : null}
           <input type="text" name="search" defaultValue={searchQuery} placeholder="Search by client name or invoice number..."
             className="flex-1 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Search</button>
-          {searchQuery && <Link href={`/dashboard/invoices${selectedStatus ? `?status=${selectedStatus}` : ""}${selectedCity !== "all" ? `${selectedStatus ? "&" : "?"}city=${selectedCity}` : ""}`} className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-500 hover:bg-zinc-100">Clear</Link>}
+          {searchQuery && <Link href={invQs({ ...(selectedStatus ? { status: selectedStatus } : {}), ...(selectedCity !== "all" ? { city: selectedCity } : {}) }, "/dashboard/invoices")} className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-500 hover:bg-zinc-100">Clear</Link>}
         </form>
       )}
 
@@ -153,22 +187,27 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
 
       {/* Status tabs */}
       <div className="flex gap-2 mb-4">
-        {(client ? CLIENT_STATUS_TABS : ADMIN_STATUS_TABS).map(tab => (
-          <Link
-            key={tab.value}
-            href={`/dashboard/invoices${tab.value ? `?status=${tab.value}` : ""}${selectedCity !== "all" ? `${tab.value ? "&" : "?"}city=${selectedCity}` : ""}`}
-            className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${
-              selectedStatus === tab.value
-                ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900"
-                : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700 border border-zinc-300 dark:border-zinc-600"
-            }`}
-          >
-            {tab.label}
-            {tab.value === "DRAFT" && draftCount > 0 && (
-              <span className="ml-1 text-[10px] opacity-70">({draftCount})</span>
-            )}
-          </Link>
-        ))}
+        {(client ? CLIENT_STATUS_TABS : ADMIN_STATUS_TABS).map(tab => {
+            const tabParams: Record<string, string> = {}
+            if (tab.value) tabParams.status = tab.value
+            if (selectedCity !== "all") tabParams.city = selectedCity
+            return (
+              <Link
+                key={tab.value}
+                href={invQs(tabParams, "/dashboard/invoices")}
+                className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${
+                  selectedStatus === tab.value
+                    ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900"
+                    : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700 border border-zinc-300 dark:border-zinc-600"
+                }`}
+              >
+                {tab.label}
+                {tab.value === "DRAFT" && draftCount > 0 && (
+                  <span className="ml-1 text-[10px] opacity-70">({draftCount})</span>
+                )}
+              </Link>
+            )
+          })}
       </div>
 
       {/* Bulk send drafts button */}
@@ -278,25 +317,25 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
                     {invoice.status === "DRAFT" && (
                       <form action={`/api/invoices/${invoice.id}`} method="POST" className="inline">
                         <input type="hidden" name="_action" value="markSent" />
-                        <input type="hidden" name="redirectTo" value={`/dashboard/invoices${selectedStatus ? `?status=${selectedStatus}` : ""}${selectedCity !== "all" ? `${selectedStatus ? "&" : "?"}city=${selectedCity}` : ""}`} />
-                        <button type="submit" className="text-xs px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors">
-                          Send
-                        </button>
-                      </form>
-                    )}
-                    {invoice.status === "OVERDUE" && (
-                      <form action={`/api/invoices/${invoice.id}`} method="POST" className="inline" data-confirm="Send a payment reminder for this invoice?">
-                        <input type="hidden" name="_action" value="sendReminder" />
-                        <input type="hidden" name="redirectTo" value={`/dashboard/invoices${selectedStatus ? `?status=${selectedStatus}` : ""}${selectedCity !== "all" ? `${selectedStatus ? "&" : "?"}city=${selectedCity}` : ""}`} />
-                        <button type="submit" className="text-xs px-2 py-1 rounded bg-amber-600 text-white hover:bg-amber-700 transition-colors">
-                          Remind
-                        </button>
-                      </form>
-                    )}
-                    {invoice.status === "SENT" && (
-                      <form action={`/api/invoices/${invoice.id}`} method="POST" className="inline" data-confirm="Send a payment reminder for this invoice?">
-                        <input type="hidden" name="_action" value="sendReminder" />
-                        <input type="hidden" name="redirectTo" value={`/dashboard/invoices${selectedStatus ? `?status=${selectedStatus}` : ""}${selectedCity !== "all" ? `${selectedStatus ? "&" : "?"}city=${selectedCity}` : ""}`} />
+<input type="hidden" name="redirectTo" value={invQs({ ...(selectedStatus ? { status: selectedStatus } : {}), ...(selectedCity !== "all" ? { city: selectedCity } : {}) }, "/dashboard/invoices")} />
+                         <button type="submit" className="text-xs px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors">
+                           Send
+                         </button>
+                       </form>
+                     )}
+                     {invoice.status === "OVERDUE" && (
+                       <form action={`/api/invoices/${invoice.id}`} method="POST" className="inline" data-confirm="Send a payment reminder for this invoice?">
+                         <input type="hidden" name="_action" value="sendReminder" />
+                         <input type="hidden" name="redirectTo" value={invQs({ ...(selectedStatus ? { status: selectedStatus } : {}), ...(selectedCity !== "all" ? { city: selectedCity } : {}) }, "/dashboard/invoices")} />
+                         <button type="submit" className="text-xs px-2 py-1 rounded bg-amber-600 text-white hover:bg-amber-700 transition-colors">
+                           Remind
+                         </button>
+                       </form>
+                     )}
+                     {invoice.status === "SENT" && (
+                       <form action={`/api/invoices/${invoice.id}`} method="POST" className="inline" data-confirm="Send a payment reminder for this invoice?">
+                         <input type="hidden" name="_action" value="sendReminder" />
+                         <input type="hidden" name="redirectTo" value={invQs({ ...(selectedStatus ? { status: selectedStatus } : {}), ...(selectedCity !== "all" ? { city: selectedCity } : {}) }, "/dashboard/invoices")} />
                         <button type="submit" className="text-xs px-2 py-1 rounded bg-amber-600 text-white hover:bg-amber-700 transition-colors">
                           Remind
                         </button>
@@ -326,14 +365,14 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 mt-4">
           {page > 1 && (
-            <Link href={`/dashboard/invoices?page=${page - 1}${selectedStatus ? `&status=${selectedStatus}` : ""}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
+            <Link href={invQs({ page: String(page - 1), ...(selectedStatus ? { status: selectedStatus } : {}), ...(searchQuery ? { search: searchQuery } : {}), ...(selectedCity !== "all" ? { city: selectedCity } : {}) }, "/dashboard/invoices")}
               className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-700">
               Previous
             </Link>
           )}
           <span className="text-sm text-zinc-500">Page {page} of {totalPages} ({totalCount} total)</span>
           {page < totalPages && (
-            <Link href={`/dashboard/invoices?page=${page + 1}${selectedStatus ? `&status=${selectedStatus}` : ""}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ""}${selectedCity !== "all" ? `&city=${selectedCity}` : ""}`}
+            <Link href={invQs({ page: String(page + 1), ...(selectedStatus ? { status: selectedStatus } : {}), ...(searchQuery ? { search: searchQuery } : {}), ...(selectedCity !== "all" ? { city: selectedCity } : {}) }, "/dashboard/invoices")}
               className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-700">
               Next
             </Link>
