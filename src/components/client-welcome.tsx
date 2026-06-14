@@ -22,7 +22,6 @@ interface ClientWelcomeProps {
 export default function ClientWelcome({ greeting, subline, welcomeMode, todayStr }: ClientWelcomeProps) {
   const prefersReducedMotion = useReducedMotion()
   const [showOverlay, setShowOverlay] = useState(false)
-  const [showCover, setShowCover] = useState(false)
   const [dismissed, setDismissed] = useState(false)
   const [shouldSkip, setShouldSkip] = useState<boolean | null>(null)
 
@@ -33,7 +32,6 @@ export default function ClientWelcome({ greeting, subline, welcomeMode, todayStr
       setShouldSkip(true)
     } else {
       setShouldSkip(false)
-      setShowCover(true)
       setShowOverlay(true)
     }
   }, [todayStr])
@@ -76,21 +74,7 @@ export default function ClientWelcome({ greeting, subline, welcomeMode, todayStr
 
   return (
     <>
-      {showCover && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 100,
-            backgroundColor: "#1E3A5F",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        />
-      )}
-
-      {shouldSkip !== null && !shouldSkip && prefersReducedMotion && (
+      {shouldSkip !== null && !shouldSkip && !dismissed && prefersReducedMotion && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-[#1E3A5F] cursor-pointer"
           onClick={dismiss}
