@@ -5,8 +5,6 @@ import { motion, AnimatePresence, useReducedMotion } from "motion/react"
 import {
   WELCOME_HOLD_FULL, WELCOME_HOLD_BRIEF,
   WELCOME_TEXT_DURATION_FULL, WELCOME_TEXT_DURATION_BRIEF,
-  WELCOME_SUBLINE_DELAY_FULL, WELCOME_SUBLINE_DELAY_BRIEF,
-  WELCOME_SUBLINE_FADE_DURATION,
   WELCOME_FADE_DURATION, WELCOME_FADE_EASE,
 } from "@/lib/motion-config"
 
@@ -14,12 +12,11 @@ type WelcomeMode = "full" | "brief"
 
 interface ClientWelcomeProps {
   greeting: string
-  subline?: string
   welcomeMode: WelcomeMode
   todayStr: string
 }
 
-export default function ClientWelcome({ greeting, subline, welcomeMode, todayStr }: ClientWelcomeProps) {
+export default function ClientWelcome({ greeting, welcomeMode, todayStr }: ClientWelcomeProps) {
   const prefersReducedMotion = useReducedMotion()
   const [showOverlay, setShowOverlay] = useState(false)
   const [dismissed, setDismissed] = useState(false)
@@ -83,18 +80,12 @@ export default function ClientWelcome({ greeting, subline, welcomeMode, todayStr
             <p className="text-6xl md:text-7xl font-bold text-white font-[family-name:var(--font-inter)]">
               {greeting}
             </p>
-            {subline && (
-              <p className="text-2xl md:text-3xl text-[#A8C4DE] mt-6 font-[family-name:var(--font-inter)]">
-                {subline}
-              </p>
-            )}
           </div>
         </div>
       )}
 
       {shouldSkip !== null && !shouldSkip && !prefersReducedMotion && (() => {
         const textDuration = welcomeMode === "full" ? WELCOME_TEXT_DURATION_FULL : WELCOME_TEXT_DURATION_BRIEF
-        const sublineDelay = welcomeMode === "full" ? WELCOME_SUBLINE_DELAY_FULL : WELCOME_SUBLINE_DELAY_BRIEF
 
         return (
           <AnimatePresence onExitComplete={handleExitComplete}>
@@ -115,16 +106,6 @@ export default function ClientWelcome({ greeting, subline, welcomeMode, todayStr
                   >
                     {greeting}
                   </motion.p>
-                  {subline && (
-                    <motion.p
-                      className="text-2xl md:text-3xl text-[#A8C4DE] mt-6 font-[family-name:var(--font-inter)]"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: WELCOME_SUBLINE_FADE_DURATION, delay: sublineDelay }}
-                    >
-                      {subline}
-                    </motion.p>
-                  )}
                 </div>
               </motion.div>
             )}

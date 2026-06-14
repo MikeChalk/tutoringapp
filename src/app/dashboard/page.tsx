@@ -113,7 +113,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ cit
 
       return (
         <>
-          <ClientWelcome greeting={greeting} subline={subline ?? undefined} welcomeMode={welcomeMode} todayStr={todayStr} />
+          <ClientWelcome greeting={greeting} welcomeMode={welcomeMode} todayStr={todayStr} />
           <ClientDashboardContent
             greeting={greeting}
             subline={subline}
