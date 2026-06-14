@@ -27,3 +27,15 @@ These items must be addressed when building the real payment flow. Do NOT act on
 - **`/api/stripe/webhook`** — Needs real signature-verification scrutiny when payments go live. Currently trusts the Stripe signature header but should be audited for replay attacks, event ordering, and idempotency before production use.
 - **`/api/stripe/connect`** — Tutor-only route. Revisit at payment time to confirm scope and access control when Stripe Connect onboarding flow is fully built.
 - **`/api/stripe/checkout`** — Guard is in place (`["SENT", "OVERDUE"]` whitelist, 404 on rejection), but needs real runtime testing when Pay Now is enabled. It's a POST endpoint — not browser-testable via URL bar. Test with actual Stripe test keys and authenticated client sessions before going live.
+
+## Flash of dashboard before auth redirect (cosmetic, low priority)
+
+When an unauthenticated user loads a `/dashboard` URL directly, the page paints for ~1 frame before the auth guard redirects to login. No data leaks — the guard fires before any real content or query results render; only the empty shell flashes. Behavior is otherwise correct (unauthenticated users are correctly redirected to login).
+
+Fix when convenient: gate the dashboard render on auth state resolving before painting (e.g. server-side auth check / redirect before render, or a loading state until session resolves) so there's no flash. Cosmetic only — does not block release.
+
+## Brief dashboard flash before client welcome overlay (cosmetic, low priority)
+
+On first load of the day, the client dashboard paints for a frame before the navy welcome overlay appears. `useLayoutEffect` (commit 08ba902) reduced it but didn't eliminate it — a client-component overlay can't paint before the server-rendered dashboard hydrates, so a sliver of dashboard shows first.
+
+Real fix (deferred): render the welcome cover server-side or as a CSS-from-first-paint element so it's present before hydration, rather than a client overlay that mounts after. Cosmetic only — overlay shows and dismisses correctly; no data or security impact.
