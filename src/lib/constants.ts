@@ -308,6 +308,8 @@ export interface NavSection {
   links: NavLink[]
 }
 
+export const SIDEBAR_DEFAULT_OPEN = new Set(["Overview", "HRM", "CRM", "Finance"])
+
 export const ADMIN_NAV_SECTIONS: NavSection[] = [
   {
     label: "Overview",
@@ -344,7 +346,7 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
     links: [
       { href: "/dashboard/invoices", label: "Invoices" },
       { href: "/dashboard/payments-admin", label: "Payroll" },
-      { href: "/dashboard/expenses", label: "Finance" },
+      { href: "/dashboard/expenses", label: "Financial Overview" },
       { href: "/dashboard/expenses-only", label: "Expenses" },
       { href: "/dashboard/rates", label: "Rates & Cities" },
       { href: "/dashboard/discounts", label: "Discounts" },

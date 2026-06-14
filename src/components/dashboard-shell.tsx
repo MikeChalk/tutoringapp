@@ -1,10 +1,10 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { signOut, useSession } from "next-auth/react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { ADMIN_NAV_SECTIONS, CLIENT_NAV_LINKS } from "@/lib/constants"
+import { ADMIN_NAV_SECTIONS, CLIENT_NAV_LINKS, SIDEBAR_DEFAULT_OPEN } from "@/lib/constants"
 import ImpersonationBanner from "@/components/impersonation-banner"
 import FeedbackBubble from "@/components/feedback-bubble"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -19,7 +19,7 @@ export default function DashboardShell({ children, role }: { children: React.Rea
   const [mobileOpen, setMobileOpen] = useState(false)
 
   useEffect(() => {
-    setMobileOpen(false)
+    setMobileOpen(false) // eslint-disable-line react-hooks/set-state-in-effect -- close mobile menu on navigation
   }, [pathname])
 
   const sidebarContent = isTutorRole ? <TutorSidebar /> : isClientRole ? <ClientSidebar /> : <SidebarContent role={role} />
@@ -123,26 +123,51 @@ function SidebarContent({ role, onNavigate }: { role: string | null; onNavigate?
   )
 }
 
+function adminGroupForPath(pathname: string): string | null {
+  for (const s of ADMIN_NAV_SECTIONS) {
+    if (s.links.some(l => l.href === pathname || (l.href !== "/dashboard" && pathname.startsWith(l.href + "/")))) {
+      return s.label
+    }
+  }
+  return null
+}
+
 function AdminNav({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
-  const [open, setOpen] = useState<Record<string, boolean>>(() => {
-    const initial: Record<string, boolean> = {}
-    for (const s of ADMIN_NAV_SECTIONS) initial[s.label] = true
-    return initial
+  const [toggled, setToggled] = useState<Record<string, boolean>>(() => {
+    const state: Record<string, boolean> = {}
+    for (const s of ADMIN_NAV_SECTIONS) {
+      state[s.label] = SIDEBAR_DEFAULT_OPEN.has(s.label)
+    }
+    return state
   })
 
+  const hydrated = useRef(false)
   useEffect(() => {
+    if (hydrated.current) return
+    hydrated.current = true
     const stored = localStorage.getItem("sidebar-sections")
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored)
-        if (parsed && typeof parsed === "object") setOpen(parsed)
-      } catch { /* ignore */ }
-    }
+    if (!stored) return
+    let parsed: Record<string, unknown>
+    try { parsed = JSON.parse(stored) } catch { return }
+    if (!parsed || typeof parsed !== "object") return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate sidebar preferences from localStorage
+    setToggled(prev => {
+      const next = { ...prev }
+      for (const s of ADMIN_NAV_SECTIONS) {
+        if (typeof parsed[s.label] === "boolean") {
+          next[s.label] = parsed[s.label] as boolean
+        }
+      }
+      return next
+    })
   }, [])
 
-  useEffect(() => {
-    try { localStorage.setItem("sidebar-sections", JSON.stringify(open)) } catch { /* ignore */ }
-  }, [open])
+  const open = useMemo(() => {
+    const result = { ...toggled }
+    const active = adminGroupForPath(pathname)
+    if (active) result[active] = true
+    return result
+  }, [toggled, pathname])
 
   function isActive(href: string) {
     if (pathname === href) return true
@@ -168,7 +193,11 @@ function AdminNav({ pathname, onNavigate }: { pathname: string; onNavigate?: () 
           ) : (
             <>
               <button
-                onClick={() => setOpen((p) => ({ ...p, [section.label]: !p[section.label] }))}
+                onClick={() => {
+                  const next = { ...toggled, [section.label]: !open[section.label] }
+                  setToggled(next)
+                  try { localStorage.setItem("sidebar-sections", JSON.stringify(next)) } catch { /* ignore */ }
+                }}
                 className="w-full flex items-center justify-between rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
               >
                 {section.label}
