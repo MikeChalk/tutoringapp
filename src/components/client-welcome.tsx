@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useLayoutEffect, useCallback } from "react"
 import { motion, AnimatePresence, useReducedMotion } from "motion/react"
 import {
   WELCOME_HOLD_FULL, WELCOME_HOLD_BRIEF,
@@ -22,7 +22,7 @@ export default function ClientWelcome({ greeting, welcomeMode, todayStr }: Clien
   const [dismissed, setDismissed] = useState(false)
   const [shouldSkip, setShouldSkip] = useState<boolean | null>(null)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const alreadyShown = sessionStorage.getItem("clientWelcomeShown")
     const shownDate = sessionStorage.getItem("clientWelcomeDate")
     if (alreadyShown === "true" && shownDate === todayStr) {
