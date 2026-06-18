@@ -72,7 +72,23 @@ export async function getActiveCityId(userRole: string, userId: string): Promise
   return null
 }
 
-export async function getCityFilter(userRole: string, userId: string): Promise<{ cityId?: string }> {
-  const cityId = await getActiveCityId(userRole, userId)
-  return cityId ? { cityId } : {}
+export type CityAccessScope =
+  | { kind: "all" }
+  | { kind: "single"; cityId: string }
+  | { kind: "none" }
+
+export async function getCityAccessScope(userRole: string, userId: string): Promise<CityAccessScope> {
+  if (isCityAdmin(userRole)) {
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { cityId: true } })
+    if (user?.cityId) return { kind: "single", cityId: user.cityId }
+    return { kind: "none" }
+  }
+  return { kind: "all" }
+}
+
+export async function getCityFilter(userRole: string, userId: string): Promise<Record<string, unknown>> {
+  const scope = await getCityAccessScope(userRole, userId)
+  if (scope.kind === "single") return { cityId: scope.cityId }
+  if (scope.kind === "none") return { cityId: { in: [] as string[] } }
+  return {}
 }

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
-import { isAdmin, getActiveCityId } from "@/lib/auth-helpers"
+import { isAdmin, getActiveCityId, getCityAccessScope } from "@/lib/auth-helpers"
 
 export async function POST(request: Request) {
   const session = await auth()
@@ -23,7 +23,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Name required" }, { status: 400 })
   }
 
-  const cityIdFinal = cityId || await getActiveCityId(session.user.role, session.user.id) || undefined
+  const scope = await getCityAccessScope(session.user.role, session.user.id)
+  if (scope.kind === "none") {
+    return NextResponse.json({ error: "No city assigned to your account" }, { status: 403 })
+  }
+  const cityIdFinal = cityId || (scope.kind === "single" ? scope.cityId : await getActiveCityId(session.user.role, session.user.id)) || undefined
 
   await prisma.project.create({
     data: {

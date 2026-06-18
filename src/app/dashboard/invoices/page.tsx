@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin, isTutor, isClient, getClientId, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
+import { requireAuth, isAdmin, isTutor, isClient, getClientId, isSuperAdmin, getCityAccessScope } from "@/lib/auth-helpers"
+import { NoCityAccess } from "@/components/no-city-access"
 import { INVOICE_STATUS_COLORS } from "@/lib/constants"
 import { parseFinanceTimeFilter } from "@/lib/finance-filter"
 import { redirect } from "next/navigation"
@@ -40,7 +41,9 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ city
   const searchQuery = searchParam || ""
   const page = parseInt(pageParam || "1") || 1
   const pageSize = 50
-  const cityAdminId = isCityAdmin(session.user.role) ? await getActiveCityId(session.user.role, session.user.id) : null
+  const scope = await getCityAccessScope(session.user.role, session.user.id)
+  if (scope.kind === "none") return <NoCityAccess />
+  const cityAdminId = scope.kind === "single" ? scope.cityId : null
   const effectiveCityId = cityAdminId || (isSuperAdmin(session.user.role) && selectedCity !== "all" ? selectedCity : null)
 
 const { dateRange, localDateRange } = parseFinanceTimeFilter({ year: yearParam, from: fromParam, to: toParam })

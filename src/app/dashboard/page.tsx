@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin, isTutor, isClient, getClientId, getTutorId, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
+import { requireAuth, isAdmin, isTutor, isClient, getClientId, getTutorId, isSuperAdmin, getCityAccessScope } from "@/lib/auth-helpers"
+import { NoCityAccess } from "@/components/no-city-access"
 import { CONTRACT_TYPE_LABELS, TENURE_LABELS } from "@/lib/constants"
 import { CityFilter } from "@/components/city-filter"
 import { StatCard } from "@/components/ui"
@@ -24,7 +25,9 @@ export default async function DashboardPage(props: { searchParams: Promise<{ cit
 
   const { city: cityParam } = await props.searchParams
   const selectedCity = cityParam || "all"
-  const cityAdminId = isCityAdmin(role) ? await getActiveCityId(role, session.user.id) : null
+  const scope = await getCityAccessScope(role, session.user.id)
+  if (scope.kind === "none") return <NoCityAccess />
+  const cityAdminId = scope.kind === "single" ? scope.cityId : null
   const effectiveCityId = cityAdminId || (superAdmin && selectedCity !== "all" ? selectedCity : null)
   const cityFilter = effectiveCityId ? { cityId: effectiveCityId } : {}
 

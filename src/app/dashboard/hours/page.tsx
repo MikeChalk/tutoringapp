@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isTutor, getTutorId, isSuperAdmin, isAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
+import { requireAuth, isTutor, getTutorId, isSuperAdmin, isAdmin, getCityAccessScope } from "@/lib/auth-helpers"
+import { NoCityAccess } from "@/components/no-city-access"
 import { CityFilter } from "@/components/city-filter"
 import { DeleteHourButton } from "@/components/delete-hour-button"
 import { ModeBadge, StatusBadge } from "@/components/ui"
@@ -40,7 +41,9 @@ export default async function HoursPage(props: { searchParams: Promise<{ city?: 
   const pageSize = 50
   const sort = sortParam || "date"
   const order = orderParam || "desc"
-  const cityAdminId = isCityAdmin(session.user.role) ? await getActiveCityId(session.user.role, session.user.id) : null
+  const scope = await getCityAccessScope(session.user.role, session.user.id)
+  if (scope.kind === "none") return <NoCityAccess />
+  const cityAdminId = scope.kind === "single" ? scope.cityId : null
   const effectiveCityId = cityAdminId || (superAdmin && selectedCity !== "all" ? selectedCity : null)
 
   let tutorId: string | null = null

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
+import { requireAuth, isSuperAdmin, getCityAccessScope } from "@/lib/auth-helpers"
+import { NoCityAccess } from "@/components/no-city-access"
 import { parseFinanceTimeFilter } from "@/lib/finance-filter"
 import { redirect } from "next/navigation"
 import { CityFilter } from "@/components/city-filter"
@@ -15,7 +16,9 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
   const { city: cityParam, year: yearParam, from: fromParam, to: toParam } = await props.searchParams
   const selectedCity = cityParam || "all"
   const superAdmin = isSuperAdmin(role)
-  const cityAdminId = isCityAdmin(role) ? await getActiveCityId(role, session.user.id) : null
+  const scope = await getCityAccessScope(role, session.user.id)
+  if (scope.kind === "none") return <NoCityAccess />
+  const cityAdminId = scope.kind === "single" ? scope.cityId : null
   const effectiveCityId = cityAdminId || (superAdmin && selectedCity !== "all" ? selectedCity : null)
 
   const { dateRange, localDateRange } = parseFinanceTimeFilter({ year: yearParam, from: fromParam, to: toParam })

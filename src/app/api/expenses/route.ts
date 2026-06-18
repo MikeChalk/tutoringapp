@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
-import { isAdmin, getActiveCityId } from "@/lib/auth-helpers"
+import { isAdmin, getActiveCityId, getCityAccessScope } from "@/lib/auth-helpers"
 import { writeFile, mkdir } from "fs/promises"
 import path from "path"
 import crypto from "crypto"
@@ -19,7 +19,11 @@ export async function POST(request: Request) {
   const category = (formData.get("category") as string) || "OTHER"
   const date = (formData.get("date") as string) || new Date().toISOString().split("T")[0]
   const clientId = (formData.get("clientId") as string)?.trim() || null
-  const cityId = await getActiveCityId(session.user.role, session.user.id)
+  const scope = await getCityAccessScope(session.user.role, session.user.id)
+  if (scope.kind === "none") {
+    return NextResponse.json({ error: "No city assigned to your account" }, { status: 403 })
+  }
+  const cityId = scope.kind === "single" ? scope.cityId : await getActiveCityId(session.user.role, session.user.id)
   const file = formData.get("receipt") as File | null
 
   if (!description || !amount || !date) {

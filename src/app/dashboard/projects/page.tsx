@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin, isTutor, isClient, getClientId, getTutorId, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
+import { requireAuth, isAdmin, isTutor, isClient, getClientId, getTutorId, isSuperAdmin, getCityAccessScope } from "@/lib/auth-helpers"
+import { NoCityAccess } from "@/components/no-city-access"
 import { GRADE_LABELS } from "@/lib/constants"
 import { StatusBadge } from "@/components/ui"
 import { CityFilterClient } from "@/components/city-filter-client"
@@ -31,7 +32,9 @@ export default async function ProjectsPage(props: { searchParams: Promise<{ stat
   const pageSize = 50
   const view = viewParam || "grid"
   const superAdmin = isSuperAdmin(session.user.role)
-  const cityAdminId = isCityAdmin(session.user.role) ? await getActiveCityId(session.user.role, session.user.id) : null
+  const scope = await getCityAccessScope(session.user.role, session.user.id)
+  if (scope.kind === "none") return <NoCityAccess />
+  const cityAdminId = scope.kind === "single" ? scope.cityId : null
   const effectiveCityId = cityAdminId || (superAdmin && selectedCity !== "all" ? selectedCity : null)
 
   let whereClause: Record<string, unknown> = {}

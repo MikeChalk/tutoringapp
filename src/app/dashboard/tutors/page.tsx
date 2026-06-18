@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db"
-import { requireAdmin, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
+import { requireAdmin, isSuperAdmin, getCityAccessScope } from "@/lib/auth-helpers"
+import { NoCityAccess } from "@/components/no-city-access"
 import { TENURE_LABELS, CONTRACT_TYPE_LABELS, GRADE_LABELS } from "@/lib/constants"
 import { CityFilter } from "@/components/city-filter"
 import { AddTutorForm } from "@/components/add-tutor-form"
@@ -31,7 +32,9 @@ export default async function TutorsPage(props: { searchParams: Promise<{ type?:
   const page = parseInt(pageParam || "1") || 1
   const pageSize = 50
   const superAdmin = isSuperAdmin(session.user.role)
-  const cityAdminId = isCityAdmin(session.user.role) ? await getActiveCityId(session.user.role, session.user.id) : null
+  const scope = await getCityAccessScope(session.user.role, session.user.id)
+  if (scope.kind === "none") return <NoCityAccess />
+  const cityAdminId = scope.kind === "single" ? scope.cityId : null
   const effectiveCityId = cityAdminId || (superAdmin && selectedCity !== "all" ? selectedCity : null)
 
   if (filter === "CITY_ADMIN") {

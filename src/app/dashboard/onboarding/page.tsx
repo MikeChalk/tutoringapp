@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin, isSuperAdmin, isCityAdmin, isTutor, getTutorId, getActiveCityId } from "@/lib/auth-helpers"
+import { requireAuth, isAdmin, isSuperAdmin, isTutor, getTutorId, getCityAccessScope } from "@/lib/auth-helpers"
+import { NoCityAccess } from "@/components/no-city-access"
 import { CityFilter } from "@/components/city-filter"
 import { GRADE_LABELS, ONBOARDING_STEPS } from "@/lib/constants"
 import { redirect } from "next/navigation"
@@ -69,7 +70,9 @@ export default async function OnboardingPage(props: { searchParams: Promise<{ cr
   const { created, city: cityParam } = await props.searchParams
   const selectedCity = cityParam || "all"
   const superAdmin = isSuperAdmin(session.user.role)
-  const cityAdminId = isCityAdmin(session.user.role) ? await getActiveCityId(session.user.role, session.user.id) : null
+  const scope = await getCityAccessScope(session.user.role, session.user.id)
+  if (scope.kind === "none") return <NoCityAccess />
+  const cityAdminId = scope.kind === "single" ? scope.cityId : null
   const effectiveCityId = cityAdminId || (superAdmin && selectedCity !== "all" ? selectedCity : null)
 
   const today = new Date()
