@@ -1,9 +1,10 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin, isTutor, isClient, getClientId, getTutorId, isSuperAdmin, isCityAdmin, getActiveCityId } from "@/lib/auth-helpers"
+import { requireAuth, isAdmin, isTutor, isClient, getClientId, getTutorId, isSuperAdmin, isCityAdmin, getCityAccessScope } from "@/lib/auth-helpers"
 import { GRADE_LABELS } from "@/lib/constants"
 import { notFound, redirect } from "next/navigation"
 import { EditProjectForm } from "@/components/edit-project-form"
 import { PageBreadcrumb } from "@/components/page-breadcrumb"
+import { DeleteHourButton } from "@/components/delete-hour-button"
 import { ModeBadge, StatusBadge } from "@/components/ui"
 
 export const dynamic = "force-dynamic"
@@ -14,18 +15,21 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
   const tutor = isTutor(session.user.role)
   const client = isClient(session.user.role)
   const superAdmin = isSuperAdmin(session.user.role)
-  const cityAdminId = isCityAdmin(session.user.role) ? await getActiveCityId(session.user.role, session.user.id) : null
+  const scope = await getCityAccessScope(session.user.role, session.user.id)
+  if (scope.kind === "none") redirect("/dashboard/projects")
+  const cityAdminId = scope.kind === "single" ? scope.cityId : null
 
   const { id } = await props.params
 
   let hasAccess = false
+  let tutorId: string | null = null
   if (superAdmin) {
     hasAccess = true
   } else if (isCityAdmin(session.user.role)) {
     const proj = await prisma.project.findUnique({ where: { id }, select: { cityId: true } })
     hasAccess = !!proj && proj.cityId === cityAdminId
   } else if (tutor) {
-    const tutorId = await getTutorId(session.user.id, session.user.email)
+    tutorId = await getTutorId(session.user.id, session.user.email)
     if (tutorId) {
       const assignment = await prisma.projectTutor.findFirst({
         where: { projectId: id, tutorId },
@@ -82,6 +86,7 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
 
   const showBilling = admin
   const showTutorPay = admin || tutor
+  const canManageLogs = admin || tutor
 
   return (
     <div>
@@ -160,6 +165,7 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
                     {showBilling && <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500">Billing</th>}
                     {showTutorPay && <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500">Tutor Pay</th>}
                     <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">Description</th>
+                    {canManageLogs && <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500">Actions</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -176,6 +182,11 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
                       {showBilling && <td className="px-4 py-3 text-right text-zinc-600 dark:text-zinc-400">${(log.hours * log.billingRate).toFixed(2)}</td>}
                       {showTutorPay && <td className="px-4 py-3 text-right text-green-600 dark:text-green-400">${(log.hours * log.tutorPayRate).toFixed(2)}</td>}
                       <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{log.description || "-"}</td>
+                      {canManageLogs && (
+                        <td className="px-4 py-3 text-right">
+                          {(admin || log.tutorId === tutorId) && <DeleteHourButton id={log.id} />}
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
