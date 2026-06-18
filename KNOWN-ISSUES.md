@@ -28,6 +28,16 @@ These items must be addressed when building the real payment flow. Do NOT act on
 - **`/api/stripe/connect`** — Tutor-only route. Revisit at payment time to confirm scope and access control when Stripe Connect onboarding flow is fully built.
 - **`/api/stripe/checkout`** — Guard is in place (`["SENT", "OVERDUE"]` whitelist, 404 on rejection), but needs real runtime testing when Pay Now is enabled. It's a POST endpoint — not browser-testable via URL bar. Test with actual Stripe test keys and authenticated client sessions before going live.
 
+## CITY_ADMIN can delete hour logs in any city (security, cross-city destructive access)
+
+**Issue:** `/api/hours/[id]` route's `canModify()` (`src/app/api/hours/[id]/route.ts:9`) calls `isAdmin()`, which returns `true` for both `ADMIN` and `CITY_ADMIN`. A CITY_ADMIN can therefore POST `_action=delete` (or `edit`/`pay`) on **any** hour log, including logs in cities other than their own. The delete action is destructive and also cascades to the linked `Expense` row (`route.ts:124`). Ownership is enforced for `TUTOR` (via `log.tutorId === tutorId`), but city scope is not enforced for `CITY_ADMIN`.
+
+**Affected:** `src/app/api/hours/[id]/route.ts` — all actions (`delete`, `edit`, `pay`). Pre-existing; surfaced while reviewing the in-progress DeleteHourButton wiring on `projects/[id]`.
+
+**Workaround:** None — CITY_ADMIN can currently delete/edit/pay hour logs across all cities.
+
+**Fix:** In the city-scoping sweep — gate `CITY_ADMIN` in `canModify()` by resolving the log's city (via `log.project.cityId`) and comparing to the admin's `cityId` (use `getCityAccessScope`), same `none`/`single`/`all` model as Part 1. Destructive cross-city access; fix before any broader city-scoping pass.
+
 ## Flash of dashboard before auth redirect (cosmetic, low priority)
 
 When an unauthenticated user loads a `/dashboard` URL directly, the page paints for ~1 frame before the auth guard redirects to login. No data leaks — the guard fires before any real content or query results render; only the empty shell flashes. Behavior is otherwise correct (unauthenticated users are correctly redirected to login).
