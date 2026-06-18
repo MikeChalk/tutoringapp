@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
-import { isTutor, isClient, getTutorId, getClientId } from "@/lib/auth-helpers"
+import { isTutor, isClient, getTutorId, getClientId, getCityAccessScope } from "@/lib/auth-helpers"
 
 export async function GET(request: Request) {
   const session = await auth()
@@ -11,11 +11,16 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url)
   const status = searchParams.get("status") || "NEW"
-  const cityId = searchParams.get("city")
-
   const where: Record<string, unknown> = { status }
-  if (cityId && cityId !== "all") {
-    where.cityId = cityId
+
+  // SECURITY: server-side city scope. Never trust client ?city= for CITY_ADMIN.
+  const scope = await getCityAccessScope(session.user.role, session.user.id)
+  if (scope.kind === "none") return NextResponse.json([])
+  if (scope.kind === "single") {
+    where.cityId = scope.cityId
+  } else {
+    const cityId = searchParams.get("city")
+    if (cityId && cityId !== "all") where.cityId = cityId
   }
 
   // Tutors only see requests matched to them

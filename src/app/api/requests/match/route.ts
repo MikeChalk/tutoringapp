@@ -1,8 +1,22 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
-import { isAdmin } from "@/lib/auth-helpers"
+import { isAdmin, getCityAccessScope, type CityAccessScope } from "@/lib/auth-helpers"
 import OpenAI from "openai"
+
+// SECURITY: assert the tutoringRequest is within the caller's city access scope.
+// all → allow; none → 403; single → request.cityId must match the admin's city.
+async function assertRequestInScope(
+  requestId: string,
+  scope: CityAccessScope
+): Promise<NextResponse | null> {
+  if (scope.kind === "all") return null
+  if (scope.kind === "none") return NextResponse.json({ error: "No city access" }, { status: 403 })
+  const req = await prisma.tutoringRequest.findUnique({ where: { id: requestId }, select: { cityId: true } })
+  if (!req) return NextResponse.json({ error: "Request not found" }, { status: 404 })
+  if (req.cityId !== scope.cityId) return NextResponse.json({ error: "Out of city scope" }, { status: 403 })
+  return null
+}
 
 export async function POST(request: Request) {
   const session = await auth()
@@ -10,10 +24,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const scope = await getCityAccessScope(session.user.role, session.user.id)
+  if (scope.kind === "none") return NextResponse.json({ error: "No city access" }, { status: 403 })
+
   const { requestId } = await request.json()
   if (!requestId) {
     return NextResponse.json({ error: "Missing requestId" }, { status: 400 })
   }
+
+  // SECURITY: request must be within caller's city scope
+  const scopeError = await assertRequestInScope(requestId, scope)
+  if (scopeError) return scopeError
 
   const tutoringRequest = await prisma.tutoringRequest.findUnique({
     where: { id: requestId },
@@ -23,8 +44,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Request not found" }, { status: 404 })
   }
 
+  // SECURITY: scope the waitlist tutor pool to the caller's city
+  const waitlistWhere: Record<string, unknown> = { onboarded: false, isActive: true }
+  if (scope.kind === "single") waitlistWhere.user = { cityId: scope.cityId }
   const waitlistTutors = await prisma.tutor.findMany({
-    where: { onboarded: false, isActive: true },
+    where: waitlistWhere,
     include: { user: { select: { id: true, name: true } } },
   })
 
@@ -96,12 +120,30 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const scope = await getCityAccessScope(session.user.role, session.user.id)
+  if (scope.kind === "none") return NextResponse.json({ error: "No city access" }, { status: 403 })
+
   const formData = await request.formData()
   const requestId = formData.get("requestId") as string
   const matchedTutorId = formData.get("matchedTutorId") as string
 
   if (!requestId || !matchedTutorId) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 })
+  }
+
+  // SECURITY: request must be within caller's city scope
+  const scopeError = await assertRequestInScope(requestId, scope)
+  if (scopeError) return scopeError
+
+  // SECURITY: chosen tutor must also be within caller's city scope
+  if (scope.kind === "single") {
+    const tutor = await prisma.tutor.findUnique({
+      where: { id: matchedTutorId },
+      select: { user: { select: { cityId: true } } },
+    })
+    if (!tutor || tutor.user.cityId !== scope.cityId) {
+      return NextResponse.json({ error: "Tutor out of city scope" }, { status: 403 })
+    }
   }
 
   await prisma.tutoringRequest.update({
