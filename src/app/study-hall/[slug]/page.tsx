@@ -6,7 +6,6 @@ import { toast } from "sonner"
 import CopyLinkButton from "@/components/copy-link-button"
 
 interface DayOption { id: string; label: string; sessionsCount: number; price: number }
-interface DiscountCode { code: string; description: string; discountPct: number; discountAmt: number }
 interface CycleConfig {
   id: string
   name: string
@@ -34,7 +33,7 @@ export default function StudyHallRegisterPage({ params }: { params: Promise<{ sl
   const router = useRouter()
 
   const [cycle, setCycle] = useState<CycleConfig | null>(null)
-  const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([])
+  const [discountCodesAvailable, setDiscountCodesAvailable] = useState(false)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -53,7 +52,7 @@ export default function StudyHallRegisterPage({ params }: { params: Promise<{ sl
       .then(d => {
         if (d) {
           setCycle(d.cycle)
-          setDiscountCodes(d.discountCodes || [])
+          setDiscountCodesAvailable(d.discountCodesAvailable || false)
         }
       })
       .catch(() => setNotFound(true))
@@ -98,15 +97,10 @@ export default function StudyHallRegisterPage({ params }: { params: Promise<{ sl
   const subtotal = selectedDayOptions.reduce((s, d) => s + d.price, 0)
   const sessionsCount = selectedDayOptions.reduce((s, d) => s + d.sessionsCount, 0)
 
-  const matchedDiscount = discountCodes.find(dc => dc.code.toUpperCase() === discountCode.toUpperCase().trim())
-  let discountAmount = 0
-  let discountPct = 0
-  if (matchedDiscount) {
-    discountPct = matchedDiscount.discountPct
-    discountAmount = matchedDiscount.discountAmt
-  }
-  const pctDiscount = Math.round(subtotal * (discountPct / 100) * 100) / 100
-  const totalDiscount = Math.round((pctDiscount + discountAmount) * 100) / 100
+  // The server is authoritative on discount validation. The client cannot
+  // preview the exact discount without the code value (codes are no longer
+  // leaked via the public GET), so we only show a neutral hint.
+  const hasDiscountCode = discountCode.trim().length > 0
 
   let preregDiscount = 0
   if (cycle.preregistrationDeadline && cycle.preregistrationDiscount > 0) {
@@ -115,7 +109,7 @@ export default function StudyHallRegisterPage({ params }: { params: Promise<{ sl
     }
   }
 
-  const total = Math.max(0, Math.round((subtotal - totalDiscount - preregDiscount) * 100) / 100)
+  const total = Math.max(0, Math.round((subtotal - preregDiscount) * 100) / 100)
 
   function toggleDay(dayId: string) {
     setSelectedDays(prev => prev.includes(dayId) ? prev.filter(d => d !== dayId) : [...prev, dayId])
@@ -130,10 +124,9 @@ export default function StudyHallRegisterPage({ params }: { params: Promise<{ sl
     setSubmitting(true)
     const formData = new FormData(e.currentTarget)
     formData.set("daySelections", JSON.stringify(selectedDays))
+    // Pricing is recomputed server-side; these are informational only.
     formData.set("sessionsCount", String(sessionsCount))
     formData.set("subtotal", String(subtotal))
-    formData.set("discountPct", String(discountPct))
-    formData.set("discountAmount", String(discountAmount))
     formData.set("preregDiscount", String(preregDiscount))
     formData.set("totalAmount", String(total))
 
@@ -180,21 +173,16 @@ export default function StudyHallRegisterPage({ params }: { params: Promise<{ sl
         {/* Discount deadline banners */}
         <div className="space-y-2 mb-6">
           {cycle.earlyBirdEnabled && cycle.earlyBirdDeadline && cycle.earlyBirdPct > 0 && (
-            new Date() <= new Date(cycle.earlyBirdDeadline) ? (() => {
-              const earlyBirdCode = discountCodes.find(dc => dc.code.startsWith("EARLYBIRD"))
-              return (
-                <div className="bg-green-50 dark:bg-green-900/20 border border-green-300 dark:border-green-700 rounded-lg p-4 text-center">
-                  <p className="text-sm font-semibold text-green-800 dark:text-green-300">
-                    EARLY BIRD DISCOUNT: {cycle.earlyBirdPct}% off — ends {new Date(cycle.earlyBirdDeadline).toLocaleDateString()}
-                  </p>
-                  {earlyBirdCode && (
-                    <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                      Use code <strong>{earlyBirdCode.code}</strong> at checkout
-                    </p>
-                  )}
-                </div>
-              )
-            })() : null
+            new Date() <= new Date(cycle.earlyBirdDeadline) ? (
+              <div className="bg-green-50 dark:bg-green-900/20 border border-green-300 dark:bg-green-700 rounded-lg p-4 text-center">
+                <p className="text-sm font-semibold text-green-800 dark:text-green-300">
+                  EARLY BIRD DISCOUNT: {cycle.earlyBirdPct}% off — ends {new Date(cycle.earlyBirdDeadline).toLocaleDateString()}
+                </p>
+                <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                  Enter your early-bird code in the discount field below.
+                </p>
+              </div>
+            ) : null
           )}
           {cycle.preregistrationDeadline && cycle.preregistrationDiscount > 0 && (
             new Date() <= new Date(cycle.preregistrationDeadline) ? (
@@ -312,8 +300,11 @@ export default function StudyHallRegisterPage({ params }: { params: Promise<{ sl
               <div className="mb-4">
                 <label className="block text-sm font-medium text-zinc-700 mb-1">Discount code</label>
                 <input type="text" value={discountCode} onChange={e => setDiscountCode(e.target.value)} placeholder="Enter code (if applicable)" className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                {discountCode && !matchedDiscount && (
-                  <p className="text-xs text-red-500 mt-1">Invalid code</p>
+                {discountCode && (
+                  <p className="text-xs text-zinc-400 mt-1">Your code will be validated and applied at checkout.</p>
+                )}
+                {discountCodesAvailable && !discountCode && (
+                  <p className="text-xs text-zinc-400 mt-1">A discount code is available for this cycle.</p>
                 )}
               </div>
             )}
@@ -372,10 +363,10 @@ export default function StudyHallRegisterPage({ params }: { params: Promise<{ sl
                     <span>Subtotal ({sessionsCount} sessions)</span>
                     <span>${subtotal.toFixed(2)}</span>
                   </div>
-                  {totalDiscount > 0 && (
-                    <div className="flex justify-between text-red-600">
-                      <span>Discount{matchedDiscount ? ` (${matchedDiscount.code})` : ""}</span>
-                      <span>-${totalDiscount.toFixed(2)}</span>
+                  {hasDiscountCode && (
+                    <div className="flex justify-between text-zinc-500">
+                      <span>Discount code</span>
+                      <span>{discountCode || "(entered below)"}</span>
                     </div>
                   )}
                   {preregDiscount > 0 && (

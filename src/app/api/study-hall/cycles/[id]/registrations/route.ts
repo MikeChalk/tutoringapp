@@ -14,21 +14,30 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   const { id } = await params
 
-  const cycle = await prisma.studyHallCycle.findUnique({ where: { id }, select: { cityId: true, billingModel: true } })
+  const cycle = await prisma.studyHallCycle.findUnique({ where: { id }, select: { cityId: true, billingModel: true, status: true } })
   if (!cycle) return NextResponse.json({ error: "Cycle not found" }, { status: 404 })
 
   const scopeError = assertInScope(cycle.cityId, scope)
   if (scopeError) return scopeError
 
+  // H5: manual roster-add is only valid for LUMP_SUM_ROSTER cycles.
+  if (cycle.billingModel !== "LUMP_SUM_ROSTER") {
+    return NextResponse.json({ error: "Manual roster entries are only available for Lump Sum + Roster cycles" }, { status: 400 })
+  }
+
   const formData = await request.formData()
   const studentName = (formData.get("studentName") as string)?.trim()
-  const grade = (formData.get("grade") as string)?.trim() || null
-  const parentName = (formData.get("parentName") as string)?.trim() || ""
-  const parentEmail = (formData.get("parentEmail") as string)?.trim() || ""
-  const parentPhone = (formData.get("parentPhone") as string)?.trim() || ""
+  const grade = ((formData.get("grade") as string)?.trim()) || null
+  const parentName = ((formData.get("parentName") as string)?.trim()) || ""
+  const parentEmail = ((formData.get("parentEmail") as string)?.trim()) || ""
+  const parentPhone = ((formData.get("parentPhone") as string)?.trim()) || ""
 
   if (!studentName) return NextResponse.json({ error: "Student name required" }, { status: 400 })
 
+  // Roster rows are nominal enrollment records, not billable registrations.
+  // Store them at $0 with a status distinct from the INDIVIDUAL lifecycle so
+  // they cannot distort pending/confirmed/revenue counts that apply to
+  // individually-invoiced parents.
   await prisma.registration.create({
     data: {
       cycleId: id,
@@ -39,6 +48,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       parentPhone,
       status: "CONFIRMED",
       confirmedAt: new Date(),
+      sessionsCount: 0,
+      subtotal: 0,
+      totalAmount: 0,
     },
   })
 

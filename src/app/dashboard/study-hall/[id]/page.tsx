@@ -204,11 +204,15 @@ export default async function StudyHallCycleDetailPage(props: { params: Promise<
                         <span className="text-zinc-400 ml-1">({reg.sessionsCount} sess.)</span>
                       </td>
                       <td className="px-4 py-3 text-right text-zinc-900 dark:text-zinc-100">
-                        ${reg.totalAmount.toFixed(2)}
-                        {(reg.discountAmount > 0 || reg.preregDiscount > 0) && (
-                          <span className="text-xs text-red-500 ml-1">
-                            -${(reg.discountAmount + reg.preregDiscount).toFixed(2)}
-                          </span>
+                        {reg.discountAmount > 0 || reg.preregDiscount > 0 ? (
+                          <>
+                            <span className="line-through text-zinc-400">${reg.subtotal.toFixed(2)}</span>{" "}
+                            <span className="text-xs text-red-500">-${(reg.discountAmount + reg.preregDiscount).toFixed(2)}</span>
+                            <br />
+                            <span className="font-medium">${reg.totalAmount.toFixed(2)}</span>
+                          </>
+                        ) : (
+                          <span className="font-medium">${reg.totalAmount.toFixed(2)}</span>
                         )}
                       </td>
                       <td className="px-4 py-3">

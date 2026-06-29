@@ -29,7 +29,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
   try { formConfig = JSON.parse(cycle.formConfig) } catch { /* */ }
 
   const now = new Date()
-  const discountCodes = await prisma.discountCode.findMany({
+  const activeDiscountExists = await prisma.discountCode.findFirst({
     where: {
       isActive: true,
       cycleId: cycle.id,
@@ -38,7 +38,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
         { OR: [{ validUntil: null }, { validUntil: { gte: now } }] },
       ],
     },
-    select: { code: true, description: true, discountPct: true, discountAmt: true },
+    select: { id: true },
   })
 
   return NextResponse.json({
@@ -51,7 +51,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
       earlyBirdDeadline: cycle.earlyBirdDeadline?.toISOString() || null,
       startDate: cycle.startDate.toISOString(),
       endDate: cycle.endDate.toISOString(),
+      // Do not surface actual discount code strings; only confirm existence.
+      // The client validates a user-typed code via the POST registration.
     },
-    discountCodes,
+    discountCodesAvailable: !!activeDiscountExists,
   })
 }

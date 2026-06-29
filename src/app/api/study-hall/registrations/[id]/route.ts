@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db"
 import { isAdmin, getCityAccessScope, assertInScope } from "@/lib/auth-helpers"
 import { sendClientInviteEmail } from "@/lib/email"
 import { logActivity } from "@/lib/activity"
+import crypto from "crypto"
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
@@ -18,7 +19,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   const registration = await prisma.registration.findUnique({
     where: { id },
-    include: { cycle: { select: { cityId: true, name: true } }, client: { include: { user: { select: { name: true, email: true } } } }, invoice: { select: { id: true, number: true, status: true } } },
+    include: {
+      cycle: { select: { cityId: true, name: true, status: true } },
+      client: { include: { user: { select: { id: true, name: true, email: true, signupToken: true } } } },
+      invoice: { select: { id: true, number: true, status: true } },
+    },
   })
   if (!registration) return NextResponse.json({ error: "Registration not found" }, { status: 404 })
 
@@ -31,6 +36,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (action === "confirm") {
     if (registration.status !== "PENDING") {
       return NextResponse.json({ error: "Registration is not pending" }, { status: 400 })
+    }
+    // H4: do not confirm (and email an invoice) for a cycle that is not OPEN.
+    // An admin who closed the cycle should not be able to send invoices from it.
+    if (registration.cycle?.status !== "OPEN") {
+      return NextResponse.json({ error: "Cannot confirm a registration for a cycle that is not open" }, { status: 400 })
     }
 
     await prisma.registration.update({
@@ -45,12 +55,23 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       })
 
       if (registration.client?.user.email) {
-        const invoiceUrl = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/dashboard/invoices/${registration.invoice.id}`
+        // H3: ensure the parent has a path to set a password. If their account
+        // is still pending activation (signupToken present), refresh the token
+        // and send the invite link so they can set a password and view/pay the
+        // invoice. The invoice link is always included for reference.
+        const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000"
+        const invoiceUrl = `${baseUrl}/dashboard/invoices/${registration.invoice.id}`
+        let inviteUrl: string | null = null
+        if (registration.client.user.signupToken) {
+          const token = registration.client.user.signupToken || crypto.randomBytes(16).toString("hex")
+          await prisma.user.update({ where: { id: registration.client.user.id }, data: { signupToken: token } })
+          inviteUrl = `${baseUrl}/invite/${token}`
+        }
         sendClientInviteEmail(
           registration.client.user.email,
           registration.client.user.name,
-          invoiceUrl,
-          "client_invite"
+          inviteUrl || invoiceUrl,
+          "client_invite",
         )
       }
     }
@@ -66,7 +87,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     })
 
     if (registration.invoice && registration.invoice.status === "DRAFT") {
+      const invNumber = registration.invoice.number
       await prisma.invoice.delete({ where: { id: registration.invoice.id } })
+      // L6: record the invoice deletion in the activity trail.
+      await logActivity(session.user.id, "deleted", "Invoice", invNumber, `Cancelled registration ${id} (cycle: ${registration.cycle?.name})`)
     }
 
     await logActivity(session.user.id, "cancelled", "Registration", id, `Cycle: ${registration.cycle?.name}`)

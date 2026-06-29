@@ -21,7 +21,12 @@ export function rateLimit(key: string): { allowed: boolean; retryAfterMs: number
 }
 
 export function rateLimitByIp(request: Request): { allowed: boolean; retryAfterMs: number } {
+  // The X-Forwarded-For header is client-controlled on the leftmost position.
+  // Take the LAST entry (closest to our trusted proxy/server) so a client
+  // cannot rotate arbitrary IPs to bypass the limit. If running behind a
+  // known multi-hop proxy, append the trusted hop's IP at the end.
   const forwarded = request.headers.get("x-forwarded-for")
-  const ip = forwarded?.split(",")[0]?.trim() || "unknown"
+  const parts = forwarded?.split(",").map(s => s.trim()).filter(Boolean) || []
+  const ip = parts.length > 0 ? parts[parts.length - 1] : "unknown"
   return rateLimit(`ip:${ip}`)
 }

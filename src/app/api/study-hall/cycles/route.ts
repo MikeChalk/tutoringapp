@@ -38,6 +38,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid billing model" }, { status: 400 })
     }
 
+    if (new Date(endDate) < new Date(startDate)) {
+      return NextResponse.json({ error: "End date must be on or after the start date" }, { status: 400 })
+    }
+    if (pricePerSession < 0) {
+      return NextResponse.json({ error: "Price per session cannot be negative" }, { status: 400 })
+    }
+
+    if (projectId) {
+      const existingProject = await prisma.studyHallCycle.findUnique({ where: { projectId } })
+      if (existingProject) {
+        return NextResponse.json({ error: "This project is already assigned to another study hall cycle" }, { status: 409 })
+      }
+    }
+
     const schoolClient = await prisma.client.findUnique({
       where: { id: schoolClientId },
       select: { user: { select: { cityId: true } } },
