@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   const description = (formData.get("description") as string)?.trim()
   const discountCode = (formData.get("discountCode") as string)?.trim() || null
   const address = (formData.get("address") as string)?.trim() || null
-  const cityId = (formData.get("cityId") as string)?.trim() || null
+  const formCityId = (formData.get("cityId") as string)?.trim() || null
   const prefInPerson = formData.get("prefInPerson") === "on"
   const prefOnline = formData.get("prefOnline") === "on"
 
@@ -30,6 +30,15 @@ export async function POST(request: Request) {
 
   if (!name || !email || !phone) {
     return NextResponse.json({ error: "Parent name, email, and phone are required." }, { status: 400 })
+  }
+
+  let cityId: string | null = null
+  if (formCityId) {
+    const city = await prisma.city.findUnique({ where: { id: formCityId } })
+    if (!city) {
+      return NextResponse.json({ error: "Invalid city selection." }, { status: 400 })
+    }
+    cityId = city.id
   }
 
   // Build a descriptive subject from selected subjects

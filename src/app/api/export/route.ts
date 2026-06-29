@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
-import { isAdmin } from "@/lib/auth-helpers"
+import { isAdmin, getCityFilter } from "@/lib/auth-helpers"
 
 export async function GET(request: Request) {
   const session = await auth()
   if (!session?.user || !isAdmin(session.user.role)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
+  const cityFilter = await getCityFilter(session.user.role, session.user.id)
+  const tutorCityFilter = await getCityFilter(session.user.role, session.user.id)
 
   const { searchParams } = new URL(request.url)
   const type = searchParams.get("type") || "hours"
@@ -16,6 +19,7 @@ export async function GET(request: Request) {
   if (type === "hours") {
     headers.push("Date", "Tutor", "Project", "Client", "Mode", "Hours", "Billing Rate", "Pay Rate", "Total Pay", "Category")
     const logs = await prisma.hourLog.findMany({
+      where: { project: cityFilter },
       include: {
         tutor: { include: { user: { select: { name: true } } } },
         project: { include: { client: { include: { user: { select: { name: true } } } } } },
@@ -39,13 +43,14 @@ export async function GET(request: Request) {
   } else if (type === "invoices") {
     headers.push("Number", "Client", "Status", "Amount", "Due Date", "Paid Date", "Gateway")
     const invoices = await prisma.invoice.findMany({
+      where: { client: { user: cityFilter } },
       include: { client: { include: { user: { select: { name: true } } } } },
       orderBy: { createdAt: "desc" },
     })
     for (const i of invoices) {
       rows.push([
         i.number,
-        i.client.user.name,
+        i.client?.user.name || "",
         i.status,
         String(i.totalAmount),
         new Date(i.dueDate).toISOString().split("T")[0],
@@ -56,6 +61,7 @@ export async function GET(request: Request) {
   } else if (type === "tutors") {
     headers.push("Name", "Email", "Tenure", "Subjects", "Grades", "Status", "City")
     const tutors = await prisma.tutor.findMany({
+      where: { user: tutorCityFilter },
       include: { user: { select: { name: true, email: true, city: { select: { name: true } } } } },
       orderBy: { user: { name: "asc" } },
     })
@@ -75,7 +81,7 @@ export async function GET(request: Request) {
     headers.push("Date", "Account", "Description", "Debit", "Credit", "Reference", "Client")
     
     const invoices = await prisma.invoice.findMany({
-      where: { status: { in: ["SENT", "PAID"] } },
+      where: { status: { in: ["SENT", "PAID"] }, client: { user: cityFilter } },
       include: { client: { include: { user: { select: { name: true } } } } },
       orderBy: { createdAt: "asc" },
     })
@@ -87,7 +93,7 @@ export async function GET(request: Request) {
         inv.totalAmount.toFixed(2),
         "0.00",
         inv.number,
-        inv.client.user.name,
+        inv.client?.user.name || "",
       ])
       rows.push([
         new Date(inv.createdAt).toISOString().split("T")[0],
@@ -96,7 +102,7 @@ export async function GET(request: Request) {
         "0.00",
         inv.totalAmount.toFixed(2),
         inv.number,
-        inv.client.user.name,
+        inv.client?.user.name || "",
       ])
     }
 
@@ -109,7 +115,7 @@ export async function GET(request: Request) {
         inv.totalAmount.toFixed(2),
         "0.00",
         inv.number,
-        inv.client.user.name,
+        inv.client?.user.name || "",
       ])
       rows.push([
         inv.paidAt ? new Date(inv.paidAt).toISOString().split("T")[0] : new Date(inv.createdAt).toISOString().split("T")[0],
@@ -118,11 +124,12 @@ export async function GET(request: Request) {
         "0.00",
         inv.totalAmount.toFixed(2),
         inv.number,
-        inv.client.user.name,
+        inv.client?.user.name || "",
       ])
     }
 
     const expenses = await prisma.expense.findMany({
+      where: cityFilter,
       include: { client: { include: { user: { select: { name: true } } } } },
       orderBy: { date: "asc" },
     })
@@ -149,7 +156,7 @@ export async function GET(request: Request) {
     }
   }
 
-  const csv = [headers.join(","), ...rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""').replace(/^=+/, "'=")}""`).join(","))].join("\n")
+  const csv = [headers.join(","), ...rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""').replace(/^[=@+\-]+/, "'$&")}"`).join(","))].join("\n")
 
   return new NextResponse(csv, {
     headers: {

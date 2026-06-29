@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
-import { isAdmin } from "@/lib/auth-helpers"
+import { isAdmin, getCityAccessScope, assertInScope } from "@/lib/auth-helpers"
 import { sendOnboardingEmail, sendParentNotificationEmail } from "@/lib/email"
 import { CONTRACT_TYPES, TENURE_VALUES } from "@/lib/constants"
 import bcrypt from "bcryptjs"
@@ -13,6 +13,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const scope = await getCityAccessScope(session.user.role, session.user.id)
+  if (scope.kind === "none") return NextResponse.json({ error: "No city access" }, { status: 403 })
+
   const formData = await request.formData()
   const action = formData.get("_action") as string
   const tutorId = formData.get("tutorId") as string
@@ -20,9 +23,12 @@ export async function POST(request: Request) {
   if (action === "advance" && tutorId) {
     const tutor = await prisma.tutor.findUnique({
       where: { id: tutorId },
-      include: { user: { select: { name: true, email: true } } },
+      include: { user: { select: { name: true, email: true, cityId: true } } },
     })
     if (!tutor) return NextResponse.json({ error: "Tutor not found" }, { status: 404 })
+
+    const scopeError = assertInScope(tutor.user.cityId, scope)
+    if (scopeError) return scopeError
 
     const currentStep = tutor.onboardingStep
 
@@ -64,6 +70,7 @@ export async function POST(request: Request) {
             gradeLevel,
             subjects: subjects || "",
             projectType: "STUDENT",
+            cityId: scope.kind === "single" ? scope.cityId : null,
           },
         })
         await prisma.projectTutor.create({ data: { projectId: project.id, tutorId } })
@@ -96,6 +103,11 @@ export async function POST(request: Request) {
   }
 
   if (action === "contract" && tutorId) {
+    const tutorCheck = await prisma.tutor.findUnique({ where: { id: tutorId }, select: { user: { select: { cityId: true } } } })
+    if (!tutorCheck) return NextResponse.json({ error: "Tutor not found" }, { status: 404 })
+    const scopeError = assertInScope(tutorCheck.user.cityId, scope)
+    if (scopeError) return scopeError
+
     const contractType = formData.get("contractType") as string
     const yearLevel = formData.get("yearLevel") as string
     const startDate = formData.get("startDate") as string
@@ -177,7 +189,7 @@ export async function POST(request: Request) {
     const tempPassword = crypto.randomBytes(8).toString("hex")
     const hashed = await bcrypt.hash(tempPassword, 12)
     const user = await prisma.user.create({
-      data: { name, email, password: hashed, role: "TUTOR" },
+      data: { name, email, password: hashed, role: "TUTOR", cityId: scope.kind === "single" ? scope.cityId : null },
     })
     const tutor = await prisma.tutor.create({
       data: { userId: user.id, tenure: yearLevel, gradeLevels: gradeLevels || templateGradeLevels, onboardingStep: 0 },

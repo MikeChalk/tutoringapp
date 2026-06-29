@@ -2,8 +2,12 @@ import { NextResponse } from "next/server"
 import speakeasy from "speakeasy"
 import { decode, encode } from "next-auth/jwt"
 import { prisma } from "@/lib/db"
+import { rateLimitByIp } from "@/lib/rate-limit"
 
 export async function POST(req: Request) {
+  const { allowed } = rateLimitByIp(req)
+  if (!allowed) return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 })
+
   try {
     const { tempToken, totpCode } = await req.json()
 

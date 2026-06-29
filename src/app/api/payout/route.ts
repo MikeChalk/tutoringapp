@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
-import { isAdmin } from "@/lib/auth-helpers"
+import { isAdmin, getCityAccessScope, assertInScope } from "@/lib/auth-helpers"
 import { stripe } from "@/lib/stripe"
 
 export async function POST(request: Request) {
@@ -9,6 +9,9 @@ export async function POST(request: Request) {
   if (!session?.user || !isAdmin(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
+
+  const scope = await getCityAccessScope(session.user.role, session.user.id)
+  if (scope.kind === "none") return NextResponse.json({ error: "No city access" }, { status: 403 })
 
   const formData = await request.formData()
   const tutorId = formData.get("tutorId") as string
@@ -18,10 +21,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing tutorId or amount" }, { status: 400 })
   }
 
-  const tutor = await prisma.tutor.findUnique({ where: { id: tutorId } })
+  const tutor = await prisma.tutor.findUnique({ where: { id: tutorId }, select: { stripeConnectId: true, user: { select: { cityId: true } } } })
   if (!tutor?.stripeConnectId) {
     return NextResponse.json({ error: "Tutor not connected to Stripe" }, { status: 400 })
   }
+
+  const scopeError = assertInScope(tutor.user.cityId, scope)
+  if (scopeError) return scopeError
 
   if (!stripe) return NextResponse.json({ error: "Stripe not configured" }, { status: 500 })
 
@@ -65,8 +71,8 @@ export async function POST(request: Request) {
       data: { receiptUrl: transferUrl },
     })
   } catch (e: unknown) {
-    const message = e instanceof Error ? e.message : "Payout failed"
-    return NextResponse.json({ error: message }, { status: 500 })
+    console.error("[payout]", e)
+    return NextResponse.json({ error: "Payout failed" }, { status: 500 })
   }
 
   return NextResponse.redirect(new URL("/dashboard/payments-admin", request.url), 303)

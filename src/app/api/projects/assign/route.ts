@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
-import { isAdmin } from "@/lib/auth-helpers"
+import { isAdmin, getCityAccessScope, assertInScope } from "@/lib/auth-helpers"
 import { logActivity } from "@/lib/activity"
 
 export async function POST(request: Request) {
@@ -9,6 +9,9 @@ export async function POST(request: Request) {
   if (!session?.user || !isAdmin(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
+
+  const scope = await getCityAccessScope(session.user.role, session.user.id)
+  if (scope.kind === "none") return NextResponse.json({ error: "No city access" }, { status: 403 })
 
   const formData = await request.formData()
   const projectId = formData.get("projectId") as string
@@ -29,6 +32,11 @@ export async function POST(request: Request) {
   ])
   if (!project) return NextResponse.json({ error: "Project not found" }, { status: 404 })
   if (!tutor) return NextResponse.json({ error: "Tutor not found" }, { status: 404 })
+
+  const projectScopeError = assertInScope(project.cityId, scope)
+  if (projectScopeError) return projectScopeError
+  const tutorScopeError = assertInScope(tutor.user.cityId, scope)
+  if (tutorScopeError) return tutorScopeError
 
   // Enforce city scoping if both project and tutor have city assignments
   if (project.cityId && tutor.user.cityId && project.cityId !== tutor.user.cityId) {

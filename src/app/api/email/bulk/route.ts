@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
-import { isAdmin } from "@/lib/auth-helpers"
+import { isAdmin, getCityFilter } from "@/lib/auth-helpers"
 import { Resend } from "resend"
 
 export async function GET(request: Request) {
@@ -10,9 +10,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const cityFilter = await getCityFilter(session.user.role, session.user.id)
+
   const { searchParams } = new URL(request.url)
   const group = searchParams.get("group") || "waitlist"
-  const emails = await getRecipients(group)
+  const emails = await getRecipients(group, cityFilter)
   return NextResponse.json({ count: emails.length })
 }
 
@@ -21,6 +23,8 @@ export async function POST(request: Request) {
   if (!session?.user || !isAdmin(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
+
+  const cityFilter = await getCityFilter(session.user.role, session.user.id)
 
   const formData = await request.formData()
   const action = formData.get("_action") as string
@@ -49,7 +53,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Subject and message required" }, { status: 400 })
   }
 
-  const recipients = await getRecipientsWithNames(group)
+  const recipients = await getRecipientsWithNames(group, cityFilter)
   if (recipients.length === 0) return NextResponse.json({ error: "No recipients found" }, { status: 400 })
 
   const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
@@ -66,7 +70,7 @@ export async function POST(request: Request) {
     if (ok) {
       sent++
       // Log each sent email
-      try { await prisma.emailLog.create({ data: { to: r.email, subject, trigger: "bulk_email" } }) } catch {}
+      try { await prisma.emailLog.create({ data: { to: r.email, subject, trigger: "bulk_email" } }) } catch (e) { console.error("[emailLog]", e) }
     } else {
       failed++
     }
@@ -97,15 +101,15 @@ async function sendOne(to: string, name: string, subject: string, html: string):
   }
 }
 
-async function getRecipients(group: string): Promise<string[]> {
-  const recipients = await getRecipientsWithNames(group)
+async function getRecipients(group: string, cityFilter: Record<string, unknown>): Promise<string[]> {
+  const recipients = await getRecipientsWithNames(group, cityFilter)
   return recipients.map(r => r.email)
 }
 
-async function getRecipientsWithNames(group: string): Promise<Array<{ email: string; name: string }>> {
+async function getRecipientsWithNames(group: string, cityFilter: Record<string, unknown>): Promise<Array<{ email: string; name: string }>> {
   if (group === "waitlist") {
     const tutors = await prisma.tutor.findMany({
-      where: { onboarded: false, isActive: true },
+      where: { onboarded: false, isActive: true, user: cityFilter },
       include: { user: { select: { email: true, name: true } } },
     })
     return tutors.map(t => ({ email: t.user.email, name: t.user.name }))
@@ -113,7 +117,7 @@ async function getRecipientsWithNames(group: string): Promise<Array<{ email: str
 
   if (group === "team") {
     const users = await prisma.user.findMany({
-      where: { role: { in: ["TUTOR", "ADMIN", "CITY_ADMIN"] } },
+      where: { role: { in: ["TUTOR", "ADMIN", "CITY_ADMIN"] }, ...cityFilter },
       select: { email: true, name: true },
     })
     return users.map(u => ({ email: u.email, name: u.name }))
@@ -121,7 +125,7 @@ async function getRecipientsWithNames(group: string): Promise<Array<{ email: str
 
   if (group === "tutors") {
     const users = await prisma.user.findMany({
-      where: { role: "TUTOR" },
+      where: { role: "TUTOR", ...cityFilter },
       select: { email: true, name: true },
     })
     return users.map(u => ({ email: u.email, name: u.name }))
@@ -129,7 +133,7 @@ async function getRecipientsWithNames(group: string): Promise<Array<{ email: str
 
   if (group === "supervisors") {
     const tutors = await prisma.tutor.findMany({
-      where: { contracts: { some: { type: "PROGRAM_SUPERVISOR", status: "ACTIVE" } } },
+      where: { contracts: { some: { type: "PROGRAM_SUPERVISOR", status: "ACTIVE" } }, user: cityFilter },
       include: { user: { select: { email: true, name: true } } },
     })
     return tutors.map(t => ({ email: t.user.email, name: t.user.name }))

@@ -26,7 +26,7 @@ export async function applyDiscountCode(code: string): Promise<DiscountValidatio
 }
 
 export function calculateDiscount(subtotal: number, discountPct: number, discountAmt: number): number {
-  if (discountPct > 0) return subtotal * (discountPct / 100)
-  if (discountAmt > 0) return discountAmt
+  if (discountPct > 0) return Math.round(subtotal * (discountPct / 100) * 100) / 100
+  if (discountAmt > 0) return Math.round(discountAmt * 100) / 100
   return 0
 }

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
-import { isAdmin } from "@/lib/auth-helpers"
+import { isAdmin, getCityAccessScope, assertInScope } from "@/lib/auth-helpers"
 import { sendClientInviteEmail } from "@/lib/email"
 import bcrypt from "bcryptjs"
 import crypto from "crypto"
@@ -12,14 +12,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const scope = await getCityAccessScope(session.user.role, session.user.id)
+  if (scope.kind === "none") return NextResponse.json({ error: "No city access" }, { status: 403 })
+
   const formData = await request.formData()
   const action = formData.get("_action") as string
 
   if (action === "delete") {
     const id = formData.get("id") as string
     if (id) {
-      const client = await prisma.client.findUnique({ where: { id }, select: { userId: true } })
+      const client = await prisma.client.findUnique({ where: { id }, select: { userId: true, user: { select: { cityId: true } } } })
       if (client) {
+        const scopeError = assertInScope(client.user.cityId, scope)
+        if (scopeError) return scopeError
         await prisma.$transaction([
           prisma.invoiceItem.deleteMany({ where: { invoice: { clientId: id } } }),
           prisma.invoice.deleteMany({ where: { clientId: id } }),
@@ -36,8 +41,11 @@ export async function POST(request: Request) {
   // Edit existing client
   const id = formData.get("id") as string
   if (id) {
-    const client = await prisma.client.findUnique({ where: { id } })
+    const client = await prisma.client.findUnique({ where: { id }, select: { userId: true, user: { select: { cityId: true } } } })
     if (client) {
+      const scopeError = assertInScope(client.user.cityId, scope)
+      if (scopeError) return scopeError
+
       const name = (formData.get("name") as string)?.trim()
       const email = (formData.get("email") as string)?.trim().toLowerCase()
       const clientType = (formData.get("clientType") as string) || "PARENT"
@@ -48,6 +56,13 @@ export async function POST(request: Request) {
       const country = (formData.get("country") as string)?.trim() || null
       const postalCode = (formData.get("postalCode") as string)?.trim() || null
       const notes = (formData.get("notes") as string)?.trim() || null
+
+      if (email) {
+        const emailExists = await prisma.user.findFirst({ where: { email, NOT: { id: client.userId } } })
+        if (emailExists) {
+          return NextResponse.json({ error: "Email already in use" }, { status: 409 })
+        }
+      }
 
       await prisma.user.update({
         where: { id: client.userId },
@@ -71,7 +86,8 @@ export async function POST(request: Request) {
   const country = (formData.get("country") as string)?.trim() || null
   const postalCode = (formData.get("postalCode") as string)?.trim() || null
   const notes = (formData.get("notes") as string)?.trim() || null
-  const cityId = (formData.get("cityId") as string) || null
+  const formCityId = (formData.get("cityId") as string) || null
+  const cityId = scope.kind === "single" ? scope.cityId : formCityId
 
   if (!name || !email) {
     return NextResponse.json({ error: "Name and email are required" }, { status: 400 })

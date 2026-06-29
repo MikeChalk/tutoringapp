@@ -92,7 +92,7 @@ export default async function ExpensesPage(props: { searchParams: Promise<{ city
   const cityName = selectedCity !== "all" ? cities.find((c) => c.id === selectedCity)?.name || selectedCity : "All Cities"
 
   const cityBreakdown = cities.map((city) => {
-    const cityInvoices = allInvoices.filter((i) => i.client.user.cityId === city.id)
+    const cityInvoices = allInvoices.filter((i) => i.client?.user.cityId === city.id)
     const cityExpenses = allExpenses.filter((e) => e.cityId === city.id)
     const billed = cityInvoices.reduce((s, i) => s + i.totalAmount, 0)
     const collected = cityInvoices.filter((i) => i.status === "PAID").reduce((s, i) => s + i.totalAmount, 0)

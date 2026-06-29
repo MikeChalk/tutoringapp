@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma, nextInvoiceNumber } from "@/lib/db"
-import { isAdmin } from "@/lib/auth-helpers"
+import { isAdmin, getCityAccessScope } from "@/lib/auth-helpers"
 import { GRADE_LABELS } from "@/lib/constants"
 import crypto from "crypto"
 import bcrypt from "bcryptjs"
@@ -52,6 +52,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const scope = await getCityAccessScope(session.user.role, session.user.id)
+  if (scope.kind === "none") return NextResponse.json({ error: "No city access" }, { status: 403 })
+  const forcedCityId = scope.kind === "single" ? scope.cityId : null
+
   const formData = await request.formData()
   const type = formData.get("type") as string
   const action = (formData.get("_action") as string) || "import"
@@ -60,7 +64,7 @@ export async function POST(request: Request) {
     return handlePreview(formData, type)
   }
 
-  return handleImport(formData, type, request)
+  return handleImport(formData, type, request, forcedCityId)
 }
 
 async function handlePreview(formData: FormData, type: string) {
@@ -209,7 +213,7 @@ async function handlePreview(formData: FormData, type: string) {
   return NextResponse.json({ preview, rowCount: rows.length })
 }
 
-async function handleImport(formData: FormData, type: string, request: Request) {
+async function handleImport(formData: FormData, type: string, request: Request, forcedCityId: string | null) {
   const file = formData.get("file") as File
   const fileContent = formData.get("fileContent") as string
   const rowsJson = formData.get("rows") as string
@@ -241,14 +245,9 @@ async function handleImport(formData: FormData, type: string, request: Request) 
         const existing = await prisma.user.findUnique({ where: { email } })
         if (existing) { results.errors.push(`${email} already exists`); results.skipped++; continue }
 
-        let cityId: string | null = null
-        if (row.city) {
-          const match = cities.find(c => c.name.toLowerCase() === row.city.toLowerCase()) || cities.find(c => c.name.toLowerCase().includes(row.city.toLowerCase()))
-          if (match) cityId = match.id
-        }
-
+        const cityId = forcedCityId
         const tenure = ["1ST_YEAR", "2ND_YEAR", "3RD_YEAR"].includes(row.tenure?.toUpperCase() || "") ? row.tenure!.toUpperCase() : "1ST_YEAR"
-        const role = ["TUTOR", "CITY_ADMIN"].includes(row.role?.toUpperCase() || "") ? row.role!.toUpperCase() : "TUTOR"
+        const role = forcedCityId ? "TUTOR" : (["TUTOR", "CITY_ADMIN"].includes(row.role?.toUpperCase() || "") ? row.role!.toUpperCase() : "TUTOR")
         const tempPassword = crypto.randomBytes(8).toString("base64url").slice(0, 12)
         const hashed = await bcrypt.hash(tempPassword, 12)
         const createdDate = row.created_at || row.created_date
@@ -283,11 +282,13 @@ async function handleImport(formData: FormData, type: string, request: Request) 
         const existing = await prisma.user.findUnique({ where: { email } })
         if (existing) { results.errors.push(`${email} already exists`); results.skipped++; continue }
 
-        let cityId: string | null = null
-        if (row.city) {
-          const match = cities.find(c => c.name.toLowerCase() === row.city.toLowerCase()) || cities.find(c => c.name.toLowerCase().includes(row.city.toLowerCase()))
-          if (match) cityId = match.id
-        }
+        const cityId = forcedCityId ?? (() => {
+          if (row.city) {
+            const match = cities.find(c => c.name.toLowerCase() === row.city.toLowerCase()) || cities.find(c => c.name.toLowerCase().includes(row.city.toLowerCase()))
+            if (match) return match.id
+          }
+          return null
+        })()
 
         const clientType = row.type?.toUpperCase() === "SCHOOL" ? "SCHOOL" : "PARENT"
         const tempPassword = crypto.randomBytes(8).toString("base64url").slice(0, 12)
@@ -322,11 +323,13 @@ async function handleImport(formData: FormData, type: string, request: Request) 
         const amount = parseFloat(row.amount)
         if (!description || isNaN(amount)) { results.errors.push(`Row: description and amount required`); results.skipped++; continue }
 
-        let cityId: string | null = null
-        if (row.city) {
-          const match = cities.find(c => c.name.toLowerCase() === row.city.toLowerCase()) || cities.find(c => c.name.toLowerCase().includes(row.city.toLowerCase()))
-          if (match) cityId = match.id
-        }
+        const cityId = forcedCityId ?? (() => {
+          if (row.city) {
+            const match = cities.find(c => c.name.toLowerCase() === row.city.toLowerCase()) || cities.find(c => c.name.toLowerCase().includes(row.city.toLowerCase()))
+            if (match) return match.id
+          }
+          return null
+        })()
 
         await prisma.expense.create({
           data: {
@@ -391,11 +394,13 @@ async function handleImport(formData: FormData, type: string, request: Request) 
         const client = await prisma.client.findUnique({ where: { userId: user.id } })
         if (!client) { results.errors.push(`Client record for ${clientEmail} not found`); results.skipped++; continue }
 
-        let cityId: string | null = null
-        if (row.city) {
-          const match = cities.find(c => c.name.toLowerCase() === row.city.toLowerCase()) || cities.find(c => c.name.toLowerCase().includes(row.city.toLowerCase()))
-          if (match) cityId = match.id
-        }
+        const cityId = forcedCityId ?? (() => {
+          if (row.city) {
+            const match = cities.find(c => c.name.toLowerCase() === row.city.toLowerCase()) || cities.find(c => c.name.toLowerCase().includes(row.city.toLowerCase()))
+            if (match) return match.id
+          }
+          return null
+        })()
 
         const projectType = normalizeProjectType(row.project_type)
         const gradeLevel = row.grade_level || "ELEMENTARY"

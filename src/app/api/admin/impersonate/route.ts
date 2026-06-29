@@ -35,10 +35,12 @@ export async function POST(request: Request) {
 
   logActivity(session.user.id, "impersonated", "User", target.id, `Impersonated ${target.name} (${target.email})`)
 
+  const isSecure = process.env.NODE_ENV === "production"
+  const cookiePrefix = isSecure ? "__Secure-" : ""
   const response = NextResponse.json({ success: true, redirect: "/dashboard" })
-  response.cookies.set("authjs.session-token", token, {
+  response.cookies.set(`${cookiePrefix}authjs.session-token`, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: isSecure,
     sameSite: "lax",
     path: "/",
     maxAge: 3600,

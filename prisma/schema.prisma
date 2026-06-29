@@ -31,6 +31,7 @@ totpEnabled       Boolean  @default(false)
   sessions Session[]
   city     City?    @relation(fields: [cityId], references: [id])
 
+  @@index([cityId])
   @@map("users")
 }
 
@@ -123,6 +124,9 @@ model Client {
   invoices         Invoice[]
   expenses         Expense[]
   tutoringRequests TutoringRequest[] @relation("RequestClient")
+  convertedLeads   Lead[]            @relation("LeadConversion")
+  schoolCycles     StudyHallCycle[]  @relation("CycleSchool")
+  registrations    Registration[]    @relation("RegistrationParent")
 
   @@map("clients")
 }
@@ -145,7 +149,10 @@ model Project {
   city          City?          @relation(fields: [cityId], references: [id])
   projectTutors ProjectTutor[]
   hourLogs      HourLog[]
+  studyHallCycle StudyHallCycle?
 
+  @@index([clientId])
+  @@index([cityId])
   @@map("projects")
 }
 
@@ -159,6 +166,7 @@ model ProjectTutor {
   tutor   Tutor   @relation(fields: [tutorId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, tutorId])
+  @@index([tutorId])
   @@map("project_tutors")
 }
 
@@ -182,13 +190,15 @@ model HourLog {
   invoiceItems InvoiceItem[]
   expense      Expense?
 
+  @@index([tutorId, date])
+  @@index([projectId, date])
   @@map("hour_logs")
 }
 
 model Invoice {
   id          String    @id @default(cuid())
   number      String    @unique
-  clientId    String
+  clientId    String?
   status      String    @default("DRAFT")
   totalAmount Float     @default(0)
   dueDate     DateTime
@@ -207,9 +217,11 @@ model Invoice {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  client  Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  client  Client?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
   items   InvoiceItem[]
+  registration Registration?
 
+  @@index([clientId, status])
   @@map("invoices")
 }
 
@@ -253,6 +265,9 @@ model TutoringRequest {
   client       Client? @relation("RequestClient", fields: [clientId], references: [id], onDelete: SetNull)
   city         City?   @relation(fields: [cityId], references: [id])
 
+  @@index([status, createdAt])
+  @@index([cityId])
+  @@index([matchedTutorId])
   @@map("tutoring_requests")
 }
 
@@ -336,6 +351,8 @@ model Expense {
   client  Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
   hourLog HourLog? @relation(fields: [hourLogId], references: [id], onDelete: SetNull)
 
+  @@index([clientId, date])
+  @@index([cityId, date])
   @@map("expenses")
 }
 
@@ -351,6 +368,7 @@ model City {
   expenses         Expense[]
   leads            Lead[]
   tutoringRequests TutoringRequest[]
+  studyHallCycles  StudyHallCycle[]
 
   @@map("cities")
 }
@@ -391,9 +409,15 @@ model DiscountCode {
   isActive    Boolean  @default(true)
   maxUses     Int      @default(0)
   usedCount   Int      @default(0)
+  cycleId     String?
+  validFrom   DateTime?
+  validUntil  DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  cycle StudyHallCycle? @relation(fields: [cycleId], references: [id], onDelete: SetNull)
+
+  @@index([cycleId])
   @@map("discount_codes")
 }
 
@@ -410,8 +434,11 @@ model Lead {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  city City? @relation(fields: [cityId], references: [id])
+  city               City?   @relation(fields: [cityId], references: [id])
+  convertedToClient  Client? @relation("LeadConversion", fields: [convertedToClientId], references: [id], onDelete: SetNull)
 
+  @@index([status, createdAt])
+  @@index([cityId])
   @@map("leads")
 }
 
@@ -435,6 +462,7 @@ model EmailLog {
   trigger   String
   createdAt DateTime @default(now())
 
+  @@index([createdAt])
   @@map("email_logs")
 }
 
@@ -447,5 +475,90 @@ model ActivityLog {
   details   String?
   createdAt DateTime @default(now())
 
+  @@index([userId, createdAt])
   @@map("activity_logs")
+}
+
+model StudyHallCycle {
+  id                    String    @id @default(cuid())
+  name                  String
+  slug                  String    @unique
+  schoolClientId        String?
+  projectId             String?   @unique
+  cityId                String?
+  yearLabel             String    @default("")
+  cycleNumber           Int       @default(1)
+  billingModel          String    @default("INDIVIDUAL")
+  startDate             DateTime
+  endDate               DateTime
+  registrationOpen      DateTime?
+  registrationClose     DateTime?
+  preregistrationDeadline DateTime?
+  preregistrationDiscount Float   @default(0)
+  earlyBirdEnabled       Boolean  @default(false)
+  earlyBirdPct           Float    @default(0)
+  earlyBirdDeadline      DateTime?
+  pricePerSession       Float     @default(0)
+  dayOptions            String    @default("[]")
+  gradeOptions          String    @default("[]")
+  formConfig            String    @default("{}")
+  introText             String    @default("")
+  scheduleText          String    @default("")
+  pricingText           String    @default("")
+  termsText             String    @default("")
+  photoReleaseText     String    @default("")
+  status                String    @default("DRAFT")
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  schoolClient  Client?          @relation("CycleSchool", fields: [schoolClientId], references: [id], onDelete: SetNull)
+  project       Project?         @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  city          City?            @relation(fields: [cityId], references: [id])
+  registrations Registration[]
+  discountCodes DiscountCode[]
+
+  @@index([schoolClientId])
+  @@index([cityId])
+  @@index([status])
+  @@map("study_hall_cycles")
+}
+
+model Registration {
+  id              String    @id @default(cuid())
+  cycleId         String
+  studentName     String
+  grade           String?
+  parentName      String
+  parentEmail     String
+  parentPhone     String
+  firstLanguage   String?
+  daySelections   String    @default("[]")
+  sessionsCount   Int       @default(0)
+  subtotal        Float     @default(0)
+  childNotes      String?
+  referrerName    String?
+  discountCode    String?
+  discountPct     Float     @default(0)
+  discountAmount  Float     @default(0)
+  preregDiscount  Float     @default(0)
+  totalAmount     Float     @default(0)
+  termsAccepted   Boolean   @default(false)
+  termsSignature  String?
+  photoRelease    String?
+  clientId        String?
+  invoiceId       String?   @unique
+  status          String    @default("PENDING")
+  confirmedAt     DateTime?
+  paidAt          DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  cycle   StudyHallCycle? @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  client  Client?         @relation("RegistrationParent", fields: [clientId], references: [id], onDelete: SetNull)
+  invoice Invoice?        @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+
+  @@index([cycleId, status])
+  @@index([clientId])
+  @@index([parentEmail])
+  @@map("registrations")
 }

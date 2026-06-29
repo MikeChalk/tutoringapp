@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
-import { isAdmin } from "@/lib/auth-helpers"
+import { isAdmin, getCityAccessScope, assertInScope } from "@/lib/auth-helpers"
 import { CONTRACT_TYPES, TENURE_VALUES } from "@/lib/constants"
 
 export async function POST(request: Request) {
@@ -9,6 +9,9 @@ export async function POST(request: Request) {
   if (!session?.user || !isAdmin(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
+
+  const scope = await getCityAccessScope(session.user.role, session.user.id)
+  if (scope.kind === "none") return NextResponse.json({ error: "No city access" }, { status: 403 })
 
   const formData = await request.formData()
   const tutorId = formData.get("tutorId") as string
@@ -28,6 +31,11 @@ export async function POST(request: Request) {
   if (!TENURE_VALUES.includes(yearLevel as typeof TENURE_VALUES[number])) {
     return NextResponse.json({ error: "Invalid year level" }, { status: 400 })
   }
+
+  const tutorCheck = await prisma.tutor.findUnique({ where: { id: tutorId }, select: { user: { select: { cityId: true } } } })
+  if (!tutorCheck) return NextResponse.json({ error: "Tutor not found" }, { status: 404 })
+  const scopeError = assertInScope(tutorCheck.user.cityId, scope)
+  if (scopeError) return scopeError
 
   const payScales = await prisma.payScale.findMany({ where: { tenure: yearLevel } })
   const ratesMap: Record<string, number> = {}

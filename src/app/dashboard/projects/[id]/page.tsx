@@ -1,11 +1,12 @@
 import { prisma } from "@/lib/db"
 import { requireAuth, isAdmin, isTutor, isClient, getClientId, getTutorId, isSuperAdmin, isCityAdmin, getCityAccessScope } from "@/lib/auth-helpers"
-import { GRADE_LABELS } from "@/lib/constants"
+import { GRADE_LABELS, REGISTRATION_STATUS_LABELS, REGISTRATION_STATUS_COLORS } from "@/lib/constants"
 import { notFound, redirect } from "next/navigation"
 import { EditProjectForm } from "@/components/edit-project-form"
 import { PageBreadcrumb } from "@/components/page-breadcrumb"
 import { DeleteHourButton } from "@/components/delete-hour-button"
 import { ModeBadge, StatusBadge } from "@/components/ui"
+import Link from "next/link"
 
 export const dynamic = "force-dynamic"
 
@@ -66,21 +67,37 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
 
   const totalHours = project.hourLogs.reduce((sum, h) => sum + h.hours, 0)
 
+  const linkedCycle = await prisma.studyHallCycle.findFirst({
+    where: { projectId: id },
+    select: {
+      id: true, name: true, status: true,
+      registrations: {
+        where: { status: { in: ["CONFIRMED", "PAID"] } },
+        select: { id: true, studentName: true, grade: true, parentName: true, daySelections: true, status: true },
+        orderBy: { studentName: "asc" },
+      },
+    },
+  })
+
   const availableTutors = admin ? await prisma.tutor.findMany({
     where: {
       onboarded: true,
       projectTutors: { none: { projectId: id } },
+      ...(cityAdminId ? { user: { cityId: cityAdminId } } : {}),
     },
     include: { user: { select: { name: true } } },
     orderBy: { user: { name: "asc" } },
   }) : []
 
   const allClients = admin ? await prisma.client.findMany({
+    where: cityAdminId ? { user: { cityId: cityAdminId } } : {},
     include: { user: { select: { name: true } } },
     orderBy: { user: { name: "asc" } },
   }) : []
 
-  const allCities = admin ? await prisma.city.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }) : []
+  const allCities = admin ? (cityAdminId
+    ? await prisma.city.findMany({ where: { id: cityAdminId }, select: { id: true, name: true }, orderBy: { name: "asc" } })
+    : await prisma.city.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } })) : []
 
   const subjectList = project.subjects ? project.subjects.split(",").map((s) => s.trim()).filter(Boolean) : []
 
@@ -148,6 +165,51 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
             </form>
           )}
         </div>
+
+        {linkedCycle && linkedCycle.registrations.length > 0 && (
+          <div className="lg:col-span-2 bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Registered Students ({linkedCycle.registrations.length})</h3>
+              {admin && (
+                <Link href={`/dashboard/study-hall/${linkedCycle.id}`} className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+                  View cycle →
+                </Link>
+              )}
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-zinc-200 dark:border-zinc-700">
+                    <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">Student</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">Grade</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">Parent</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">Days</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {linkedCycle.registrations.map((reg) => {
+                    let days: string[] = []
+                    try { days = JSON.parse(reg.daySelections) } catch { /* */ }
+                    return (
+                      <tr key={reg.id} className="text-sm border-b border-zinc-100 dark:border-zinc-700/50">
+                        <td className="px-4 py-3 text-zinc-900 dark:text-zinc-100">{reg.studentName}</td>
+                        <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{reg.grade || "-"}</td>
+                        <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{reg.parentName}</td>
+                        <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400 text-xs">{days.join(", ") || "-"}</td>
+                        <td className="px-4 py-3">
+                          <span className={`text-xs font-medium rounded-full px-2 py-0.5 ${REGISTRATION_STATUS_COLORS[reg.status] || ""}`}>
+                            {REGISTRATION_STATUS_LABELS[reg.status as keyof typeof REGISTRATION_STATUS_LABELS] || reg.status}
+                          </span>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         <div className="lg:col-span-2 bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Hours Log</h3>

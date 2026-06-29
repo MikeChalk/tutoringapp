@@ -461,10 +461,9 @@ export default function WorkflowsContent() {
                   <p className="text-xs font-medium text-zinc-500 uppercase mb-1">Subject Preview</p>
                   <p className="text-sm text-zinc-700 dark:text-zinc-300 mb-3">{tpl.subject}</p>
                   <p className="text-xs font-medium text-zinc-500 uppercase mb-1">Body Preview</p>
-                  <div
-                    className="prose prose-sm dark:prose-invert max-w-none text-sm text-zinc-600 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-700/50 rounded-lg p-3 max-h-48 overflow-y-auto"
-                    dangerouslySetInnerHTML={{ __html: tpl.htmlBody }}
-                  />
+                  <div className="prose prose-sm dark:prose-invert max-w-none text-sm text-zinc-600 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-700/50 rounded-lg p-3 max-h-48 overflow-y-auto">
+                    <pre className="whitespace-pre-wrap text-xs">{tpl.htmlBody}</pre>
+                  </div>
                 </div>
               )}
             </div>

@@ -15,7 +15,7 @@ export async function POST(request: Request) {
   const lastName = (formData.get("lastName") as string)?.trim()
   const email = (formData.get("email") as string)?.trim().toLowerCase()
   const phone = (formData.get("phone") as string)?.trim()
-  const cityId = (formData.get("cityId") as string) || null
+  const formCityId = (formData.get("cityId") as string) || null
   const borough = (formData.get("borough") as string)?.trim()
   const currentStudies = (formData.get("currentStudies") as string)?.trim()
   const highSchool = (formData.get("highSchool") as string)?.trim()
@@ -27,6 +27,15 @@ export async function POST(request: Request) {
 
   if (!firstName || !lastName || !email) {
     return NextResponse.json({ error: "First name, last name, and email are required." }, { status: 400 })
+  }
+
+  let cityId: string | null = null
+  if (formCityId) {
+    const city = await prisma.city.findUnique({ where: { id: formCityId } })
+    if (!city) {
+      return NextResponse.json({ error: "Invalid city selection." }, { status: 400 })
+    }
+    cityId = city.id
   }
 
   const existing = await prisma.user.findUnique({ where: { email } })

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { isAdmin } from "@/lib/auth-helpers"
+import { prisma } from "@/lib/db"
+import { isAdmin, getCityFilter } from "@/lib/auth-helpers"
 import { readFile } from "fs/promises"
 import { existsSync } from "fs"
 import path from "path"
@@ -22,6 +23,8 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const cityFilter = await getCityFilter(session.user.role, session.user.id)
+
   const { searchParams } = new URL(request.url)
   const filename = searchParams.get("file")
   if (!filename) return NextResponse.json({ error: "Missing file param" }, { status: 400 })
@@ -32,13 +35,11 @@ export async function GET(request: Request) {
   }
 
   const safeName = path.basename(filename)
-  const filePath = path.join(process.cwd(), "uploads", "expenses", safeName)
 
-  const resolved = path.resolve(filePath)
-  const uploadsDir = path.resolve(process.cwd(), "uploads", "expenses")
-  if (!resolved.startsWith(uploadsDir + path.sep) && resolved !== uploadsDir) {
-    return NextResponse.json({ error: "Invalid file path" }, { status: 400 })
-  }
+  const expense = await prisma.expense.findFirst({ where: { receiptFileName: safeName, ...cityFilter }, select: { id: true } })
+  if (!expense) return NextResponse.json({ error: "File not found" }, { status: 404 })
+
+  const filePath = path.join(process.cwd(), "uploads", "expenses", safeName)
 
   if (!existsSync(filePath)) return NextResponse.json({ error: "File not found" }, { status: 404 })
 
@@ -49,6 +50,7 @@ export async function GET(request: Request) {
     headers: {
       "Content-Type": contentType,
       "Content-Disposition": `inline; filename="${safeName}"`,
+      "X-Content-Type-Options": "nosniff",
     },
   })
 }

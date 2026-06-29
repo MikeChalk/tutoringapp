@@ -3,8 +3,12 @@ import bcrypt from "bcryptjs"
 import { encode } from "next-auth/jwt"
 import { prisma } from "@/lib/db"
 import { verifyRecaptcha } from "@/lib/recaptcha"
+import { rateLimitByIp } from "@/lib/rate-limit"
 
 export async function POST(req: Request) {
+  const { allowed } = rateLimitByIp(req)
+  if (!allowed) return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 })
+
   try {
     const { email, password, recaptchaToken, role } = await req.json()
 

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
-import { isAdmin } from "@/lib/auth-helpers"
+import { isAdmin, isSuperAdmin } from "@/lib/auth-helpers"
 
 export async function GET(request: Request) {
   const session = await auth()
@@ -39,7 +39,12 @@ export async function POST(request: Request) {
   const formData = await request.formData()
   const type = formData.get("type") as string
 
+  if (!type) return NextResponse.json({ error: "Missing type" }, { status: 400 })
+
   if (type === "city") {
+    if (!isSuperAdmin(session.user.role)) {
+      return NextResponse.json({ error: "Only super admins can create cities" }, { status: 403 })
+    }
     const name = (formData.get("name") as string)?.trim()
     const slug = (formData.get("slug") as string)?.trim().toLowerCase()
     const profitPct = parseFloat((formData.get("profitPct") as string) || "30")

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
-import { isAdmin, getClientId } from "@/lib/auth-helpers"
+import { isAdmin, getClientId, getCityAccessScope, assertInScope, escapeHtml } from "@/lib/auth-helpers"
 
 export async function GET(request: Request, props: { params: Promise<{ id: string }> }) {
   const session = await auth()
@@ -12,25 +12,32 @@ export async function GET(request: Request, props: { params: Promise<{ id: strin
   const invoice = await prisma.invoice.findUnique({
     where: { id },
     include: {
-      client: { include: { user: { select: { name: true, email: true } } } },
+      client: { include: { user: { select: { name: true, email: true, cityId: true } } } },
       items: true,
     },
   })
 
   if (!invoice) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
-const clientId = await getClientId(session.user.id, (session.user as { email?: string }).email || "")
-if (!isAdmin(session.user.role)) {
-  if (!clientId || clientId !== invoice.clientId || !["SENT", "OVERDUE", "PAID"].includes(invoice.status)) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 })
+  if (isAdmin(session.user.role)) {
+    const scope = await getCityAccessScope(session.user.role, session.user.id)
+    const scopeError = assertInScope(invoice.client?.user.cityId || null, scope)
+    if (scopeError) return scopeError
+  } else {
+    const clientId = await getClientId(session.user.id, session.user.email)
+    if (!clientId || clientId !== invoice.clientId || !["SENT", "OVERDUE", "PAID"].includes(invoice.status)) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 })
+    }
   }
-}
 
   const settings = await prisma.companySettings.findUnique({ where: { id: "main" } })
   const companyName = settings?.name || "J.A.S.S. Tutoring"
   const companyAddress = settings?.address || ""
   const companyEmail = settings?.email || ""
   const companyPhone = settings?.phone || ""
+
+  const clientName = invoice.client?.user.name || ""
+  const clientEmail = invoice.client?.user.email || ""
 
   const itemsHtml = invoice.items.map(item =>
     `<tr><td style="padding:4px 8px;border-bottom:1px solid #e5e5e5;text-align:left">${item.description}</td><td style="padding:4px 8px;border-bottom:1px solid #e5e5e5;text-align:right">${item.hours > 0 ? item.hours : ""}</td><td style="padding:4px 8px;border-bottom:1px solid #e5e5e5;text-align:right">${item.rate > 0 ? `$${item.rate.toFixed(2)}` : ""}</td><td style="padding:4px 8px;border-bottom:1px solid #e5e5e5;text-align:right">$${item.amount.toFixed(2)}</td></tr>`
@@ -52,8 +59,8 @@ table{width:100%;border-collapse:collapse;margin:16px 0}
 th{background:#f5f5f5;text-align:left;padding:8px;font-size:11px;text-transform:uppercase;color:#666}
 .total{font-weight:bold;font-size:14px}.footer{margin-top:32px;border-top:1px solid #e5e5e5;padding-top:12px;font-size:11px;color:#999}
 </style></head><body>
-<div class="header"><h1>${companyName}</h1><p>${companyAddress}</p><p>${companyEmail}${companyPhone ? " · " + companyPhone : ""}</p></div>
-<div class="client"><h2>Invoice ${invoice.number}</h2><p>Bill to: ${invoice.client.user.name} · ${invoice.client.user.email}</p><p>Date: ${new Date().toLocaleDateString()} · Due: ${new Date(invoice.dueDate).toLocaleDateString()}</p><p>Status: ${invoice.status}</p></div>
+<div class="header"><h1>${escapeHtml(companyName)}</h1><p>${escapeHtml(companyAddress)}</p><p>${escapeHtml(companyEmail)}${companyPhone ? " · " + escapeHtml(companyPhone) : ""}</p></div>
+<div class="client"><h2>Invoice ${invoice.number}</h2><p>Bill to: ${escapeHtml(clientName)} · ${escapeHtml(clientEmail)}</p><p>Date: ${new Date().toLocaleDateString()} · Due: ${new Date(invoice.dueDate).toLocaleDateString()}</p><p>Status: ${invoice.status}</p></div>
 <table><thead><tr><th>Description</th><th style="text-align:right">Hours</th><th style="text-align:right">Rate</th><th style="text-align:right">Amount</th></tr></thead><tbody>${itemsHtml}${taxRow}${discountRow}<tr class="total"><td colspan="3" style="padding:8px;text-align:right">Total</td><td style="padding:8px;text-align:right">$${invoice.totalAmount.toFixed(2)}</td></tr></tbody></table>
 <div class="footer"><p>${settings?.invoiceNotes || "Thank you for your business!"}</p>${settings?.taxNumber ? `<p>Tax ID: ${settings.taxNumber}</p>` : ""}</div>
 </body></html>`

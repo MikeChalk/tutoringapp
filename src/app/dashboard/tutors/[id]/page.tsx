@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db"
-import { requireAdmin, isSuperAdmin } from "@/lib/auth-helpers"
+import { requireAdmin, isSuperAdmin, isCityAdmin, getCityAccessScope } from "@/lib/auth-helpers"
 import { GRADE_LABELS, STUDENT_GRADES, SUPERVISOR_GRADES } from "@/lib/constants"
 import { notFound } from "next/navigation"
 import ImpersonateButton from "@/components/impersonate-button"
@@ -16,7 +16,7 @@ export default async function TutorDetailPage(props: { params: Promise<{ id: str
   const tutor = await prisma.tutor.findUnique({
     where: { id },
     include: {
-      user: { select: { id: true, name: true, email: true, signupToken: true, city: { select: { name: true } } } },
+      user: { select: { id: true, name: true, email: true, signupToken: true, cityId: true, city: { select: { name: true } } } },
       hourLogs: {
         include: { project: { select: { name: true, gradeLevel: true } } },
         orderBy: { date: "desc" },
@@ -29,6 +29,12 @@ export default async function TutorDetailPage(props: { params: Promise<{ id: str
   })
 
   if (!tutor) notFound()
+
+  if (isCityAdmin(session.user.role)) {
+    const scope = await getCityAccessScope(session.user.role, session.user.id)
+    if (scope.kind === "single" && tutor.user.cityId !== scope.cityId) notFound()
+    if (scope.kind === "none") notFound()
+  }
 
   const superAdmin = isSuperAdmin(session.user.role)
 

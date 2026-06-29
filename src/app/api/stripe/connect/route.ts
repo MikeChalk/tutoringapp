@@ -38,7 +38,7 @@ export async function POST() {
 
     return NextResponse.redirect(accountLink.url)
   } catch (e: unknown) {
-    const message = e instanceof Error ? e.message : "Connection failed"
-    return NextResponse.json({ error: message }, { status: 500 })
+    console.error("[stripe/connect]", e)
+    return NextResponse.json({ error: "Connection failed" }, { status: 500 })
   }
 }

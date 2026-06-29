@@ -1,14 +1,26 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
-import { isAdmin, isSuperAdmin, getTutorId } from "@/lib/auth-helpers"
+import { isAdmin, isSuperAdmin, getTutorId, getCityAccessScope, assertInScope, safeReferer } from "@/lib/auth-helpers"
 import { logActivity } from "@/lib/activity"
 
-async function canModify(session: { user?: { id: string; role: string } } | null, hourLogId: string): Promise<boolean> {
+async function canModify(session: { user?: { id: string; role: string; email: string } } | null, hourLogId: string): Promise<boolean> {
   if (!session?.user) return false
-  if (isAdmin(session.user.role)) return true
+  if (isSuperAdmin(session.user.role)) return true
 
-  const tutorId = await getTutorId(session.user.id, (session.user as { email?: string }).email || "")
+  if (isAdmin(session.user.role)) {
+    const scope = await getCityAccessScope(session.user.role, session.user.id)
+    if (scope.kind === "none") return false
+    if (scope.kind === "single") {
+      const log = await prisma.hourLog.findUnique({ where: { id: hourLogId }, select: { project: { select: { cityId: true } } } })
+      if (!log) return false
+      const err = assertInScope(log.project.cityId, scope)
+      return err === null
+    }
+    return true
+  }
+
+  const tutorId = await getTutorId(session.user.id, session.user.email)
   if (!tutorId) return false
 
   const log = await prisma.hourLog.findUnique({ where: { id: hourLogId }, select: { tutorId: true } })
@@ -35,7 +47,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       await prisma.hourLog.update({ where: { id }, data: { paidAt: new Date() } })
       await logActivity(session!.user!.id, "paid", "HourLog", id)
     }
-    const referer = request.headers.get("referer") || "/dashboard/expenses"
+    const referer = safeReferer(request.headers.get("referer"), "/dashboard/expenses")
     return NextResponse.redirect(new URL(referer, request.url), 303)
   }
 
@@ -101,7 +113,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       })
     }
 
-    const referer = request.headers.get("referer") || "/dashboard/hours"
+    const referer = safeReferer(request.headers.get("referer"), "/dashboard/hours")
     return NextResponse.redirect(new URL(referer, request.url), 303)
   }
 
@@ -124,11 +136,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     await prisma.expense.deleteMany({ where: { hourLogId: id } })
     await prisma.hourLog.delete({ where: { id } })
     await logActivity(session!.user!.id, "deleted", "HourLog", id)
-    const referer = request.headers.get("referer") || "/dashboard/hours"
+    const referer = safeReferer(request.headers.get("referer"), "/dashboard/hours")
     return NextResponse.redirect(new URL(referer, request.url), 303)
   }
 
   // Default: redirect back (no matching action)
-  const referer = request.headers.get("referer") || "/dashboard/hours"
+  const referer = safeReferer(request.headers.get("referer"), "/dashboard/hours")
   return NextResponse.redirect(new URL(referer, request.url), 303)
 }

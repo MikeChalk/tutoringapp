@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
-import { isAdmin } from "@/lib/auth-helpers"
+import { isAdmin, getCityFilter } from "@/lib/auth-helpers"
 
 export async function POST(request: Request) {
   const session = await auth()
@@ -9,8 +9,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const cityFilter = await getCityFilter(session.user.role, session.user.id)
+
   const drafts = await prisma.invoice.findMany({
-    where: { status: "DRAFT" },
+    where: { status: "DRAFT", client: { user: cityFilter } },
     select: { id: true },
   })
 

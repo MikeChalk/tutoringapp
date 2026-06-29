@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
-import { isAdmin, getTutorId } from "@/lib/auth-helpers"
+import { isAdmin, getTutorId, getCityAccessScope, assertInScope } from "@/lib/auth-helpers"
 import { logActivity } from "@/lib/activity"
 import { STUDENT_GRADES } from "@/lib/constants"
 
@@ -42,10 +42,16 @@ export async function POST(request: Request) {
   }
 
   const project = await prisma.project.findUnique({ where: { id: projectId } })
-  const tutor = await prisma.tutor.findUnique({ where: { id: tutorId }, include: { user: { select: { name: true } } } })
+  const tutor = await prisma.tutor.findUnique({ where: { id: tutorId }, include: { user: { select: { name: true, cityId: true } } } })
 
   if (!project || !tutor) {
     return NextResponse.json({ error: "Project or tutor not found" }, { status: 400 })
+  }
+
+  if (admin) {
+    const scope = await getCityAccessScope(session.user.role, session.user.id)
+    const scopeError = assertInScope(project.cityId, scope)
+    if (scopeError) return scopeError
   }
 
   let billingRate = 0

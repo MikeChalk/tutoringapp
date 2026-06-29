@@ -11,7 +11,7 @@ interface LineItem { description: string; hours: number; rate: number; amount: n
 interface InvoiceData {
   id: string
   number: string
-  clientId: string
+  clientId: string | null
   dueDate: string
   notes: string | null
   subtotal: number

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma, nextInvoiceNumber } from "@/lib/db"
-import { isAdmin } from "@/lib/auth-helpers"
+import { isAdmin, getCityFilter } from "@/lib/auth-helpers"
 import { sendClientInviteEmail } from "@/lib/email"
 
 // Called by cron or manual button
@@ -11,13 +11,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const cityFilter = await getCityFilter(session.user.role, session.user.id)
+
   const { searchParams } = new URL(request.url)
   const action = searchParams.get("action")
 
   if (action === "generate") {
-    // Find all unbilled hour logs grouped by client in a single query
+    // Find all unbilled hour logs grouped by client in a single query.
+    // Study Hall hour logs are excluded: study hall clients are invoiced
+    // through their registration cycles (Study Hall Cycles forms), not
+    // through the hourly "Generate Invoices" flow. The logs still accrue
+    // as expenses/tutor payouts and appear on project time logs.
     const logs = await prisma.hourLog.findMany({
-      where: { invoiceItems: { none: {} }, paidAt: null },
+      where: { invoiceItems: { none: {} }, paidAt: null, project: { ...cityFilter, projectType: "STUDENT" } },
       include: { project: { select: { clientId: true } } },
       orderBy: { date: "asc" },
     })
@@ -59,7 +65,7 @@ export async function POST(request: Request) {
   if (action === "remind") {
     const overdueDate = new Date(Date.now() - 7 * 86400000)
     const invoices = await prisma.invoice.findMany({
-      where: { status: { in: ["SENT", "OVERDUE"] }, dueDate: { lt: overdueDate } },
+      where: { status: { in: ["SENT", "OVERDUE"] }, dueDate: { lt: overdueDate }, client: { user: cityFilter } },
       include: { client: { include: { user: { select: { name: true, email: true } } } } },
     })
 

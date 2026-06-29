@@ -27,7 +27,7 @@ export async function POST(request: Request) {
   if (scope.kind === "none") {
     return NextResponse.json({ error: "No city assigned to your account" }, { status: 403 })
   }
-  const cityIdFinal = cityId || (scope.kind === "single" ? scope.cityId : await getActiveCityId(session.user.role, session.user.id)) || undefined
+  const cityIdFinal = scope.kind === "single" ? scope.cityId : (cityId || await getActiveCityId(session.user.role, session.user.id)) || undefined
 
   await prisma.project.create({
     data: {

@@ -2,9 +2,7 @@
 
 import { useState } from "react"
 import SearchableSelect from "@/components/searchable-select"
-import { GRADE_LABELS } from "@/lib/constants"
-
-const STATUS_OPTIONS = ["IN_PROGRESS", "ON_HOLD", "FINISHED", "CANCELLED"]
+import { GRADE_LABELS, PROJECT_STATUSES, STATUS_LABELS } from "@/lib/constants"
 
 interface Client { id: string; user: { name: string } }
 interface City { id: string; name: string }
@@ -46,7 +44,7 @@ export function EditProjectForm({ project, clients, cities }: {
           <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Status</label>
           <select name="status" defaultValue={project.status}
             className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
-            {STATUS_OPTIONS.map(s => (<option key={s} value={s}>{s.replace("_", " ")}</option>))}
+            {PROJECT_STATUSES.map(s => (<option key={s} value={s}>{STATUS_LABELS[s] || s}</option>))}
           </select>
         </div>
         <div>

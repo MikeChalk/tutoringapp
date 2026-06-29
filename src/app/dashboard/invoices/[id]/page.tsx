@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin, isTutor, isClient, getClientId } from "@/lib/auth-helpers"
+import { requireAuth, isAdmin, isTutor, isClient, getClientId, isCityAdmin, getCityAccessScope } from "@/lib/auth-helpers"
 import { redirect, notFound } from "next/navigation"
 import { PayNowButton } from "@/components/pay-now-button"
 import { PageBreadcrumb } from "@/components/page-breadcrumb"
@@ -10,6 +10,7 @@ export default async function InvoiceDetailPage(props: { params: Promise<{ id: s
   const admin = isAdmin(session.user.role)
   const tutor = isTutor(session.user.role)
   const client = isClient(session.user.role)
+  const cityAdmin = isCityAdmin(session.user.role)
 
   if (tutor) redirect("/dashboard")
 
@@ -19,7 +20,7 @@ export default async function InvoiceDetailPage(props: { params: Promise<{ id: s
   const invoice = await prisma.invoice.findUnique({
     where: { id },
     include: {
-      client: { include: { user: { select: { name: true, email: true, city: { select: { name: true } } } } } },
+      client: { include: { user: { select: { name: true, email: true, cityId: true, city: { select: { name: true } } } } } },
       items: {
         include: { hourLog: { select: { date: true, description: true, hours: true, tutor: { select: { user: { select: { name: true } } } }, project: { select: { name: true } } } } },
       },
@@ -27,6 +28,12 @@ export default async function InvoiceDetailPage(props: { params: Promise<{ id: s
   })
 
   if (!invoice) notFound()
+
+  if (cityAdmin) {
+    const scope = await getCityAccessScope(session.user.role, session.user.id)
+    if (scope.kind === "single" && invoice.client?.user.cityId !== scope.cityId) notFound()
+    if (scope.kind === "none") notFound()
+  }
 
   if (client) {
     const clientId = await getClientId(session.user.id, session.user.email)
@@ -51,8 +58,8 @@ export default async function InvoiceDetailPage(props: { params: Promise<{ id: s
             Invoice {invoice.number}
           </h2>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            {invoice.client.user.name} &middot; {invoice.client.user.email}
-            {invoice.client.user.city?.name && <span> &middot; {invoice.client.user.city.name}</span>}
+            {invoice.client?.user.name || "Unknown"} &middot; {invoice.client?.user.email || ""}
+            {invoice.client?.user.city?.name && <span> &middot; {invoice.client.user.city.name}</span>}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -212,7 +219,7 @@ export default async function InvoiceDetailPage(props: { params: Promise<{ id: s
             )}
             <div className="flex justify-between">
               <dt className="text-zinc-500">Client</dt>
-              <dd className="text-zinc-900 dark:text-zinc-100">{invoice.client.user.name}</dd>
+              <dd className="text-zinc-900 dark:text-zinc-100">{invoice.client?.user.name || "Unknown"}</dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-zinc-500">Due Date</dt>

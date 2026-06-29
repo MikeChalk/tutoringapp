@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db"
-import { requireAuth, isAdmin, isTutor, isClient, getClientId, getTutorId, isSuperAdmin } from "@/lib/auth-helpers"
+import { requireAuth, isAdmin, isTutor, isClient, getClientId, getTutorId, isSuperAdmin, isCityAdmin, getCityAccessScope } from "@/lib/auth-helpers"
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import { CLIENT_TYPE_LABELS } from "@/lib/constants"
@@ -15,12 +15,21 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
   const tutor = isTutor(session.user.role)
   const isClientRole = isClient(session.user.role)
   const superAdmin = isSuperAdmin(session.user.role)
+  const cityAdmin = isCityAdmin(session.user.role)
 
   const { id } = await props.params
 
   let hasAccess = true
   let projectFilter: Record<string, unknown> = {}
-  if (tutor) {
+  if (cityAdmin) {
+    const scope = await getCityAccessScope(session.user.role, session.user.id)
+    if (scope.kind === "single") {
+      const clientUser = await prisma.client.findUnique({ where: { id }, select: { user: { select: { cityId: true } } } })
+      hasAccess = !!clientUser && clientUser.user.cityId === scope.cityId
+    } else {
+      hasAccess = false
+    }
+  } else if (tutor) {
     const tutorId = await getTutorId(session.user.id, session.user.email)
     if (!tutorId) {
       hasAccess = false

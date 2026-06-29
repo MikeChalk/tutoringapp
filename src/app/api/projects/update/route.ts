@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
-import { isAdmin } from "@/lib/auth-helpers"
+import { isAdmin, getCityAccessScope, assertInScope } from "@/lib/auth-helpers"
 
 export async function POST(request: Request) {
   const session = await auth()
@@ -9,11 +9,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const scope = await getCityAccessScope(session.user.role, session.user.id)
+  if (scope.kind === "none") return NextResponse.json({ error: "No city access" }, { status: 403 })
+
   const formData = await request.formData()
   const projectId = formData.get("projectId") as string
   const action = formData.get("_action") as string
 
   if (!projectId) return NextResponse.json({ error: "Missing projectId" }, { status: 400 })
+
+  const existing = await prisma.project.findUnique({ where: { id: projectId }, select: { cityId: true } })
+  if (!existing) return NextResponse.json({ error: "Project not found" }, { status: 404 })
+
+  const scopeError = assertInScope(existing.cityId, scope)
+  if (scopeError) return scopeError
 
   if (action === "delete") {
     await prisma.project.delete({ where: { id: projectId } })
@@ -26,10 +35,13 @@ export async function POST(request: Request) {
   const school = formData.get("school") as string
   const subjects = formData.get("subjects") as string
   const description = formData.get("description") as string
-  const clientId = formData.get("clientId") as string
-  const cityId = formData.get("cityId") as string
+  const formClientId = formData.get("clientId") as string
+  const formCityId = formData.get("cityId") as string
 
   if (!name) return NextResponse.json({ error: "Missing name" }, { status: 400 })
+
+  const cityId = scope.kind === "single" ? scope.cityId : (formCityId || null)
+  const clientId = formClientId || null
 
   await prisma.project.update({
     where: { id: projectId },
@@ -40,8 +52,8 @@ export async function POST(request: Request) {
       school: school || "",
       subjects: subjects || "",
       description: description || null,
-      clientId: clientId || null,
-      cityId: cityId || null,
+      clientId,
+      cityId,
     },
   })
 

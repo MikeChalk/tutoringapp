@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { writeFile, mkdir } from "fs/promises"
 import { scanFile } from "@/lib/clamav"
+import { rateLimitByIp } from "@/lib/rate-limit"
 import path from "path"
 
 const ALLOWED_EXTENSIONS = ["pdf", "doc", "docx", "jpg", "jpeg", "png"]
@@ -12,6 +13,9 @@ function sanitizeName(name: string): string {
 }
 
 export async function POST(request: Request, { params }: { params: Promise<{ token: string }> }) {
+  const { allowed } = rateLimitByIp(request)
+  if (!allowed) return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 })
+
   const { token } = await params
 
   const tutor = await prisma.tutor.findUnique({

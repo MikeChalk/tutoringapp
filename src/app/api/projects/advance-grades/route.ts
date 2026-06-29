@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
-import { isAdmin } from "@/lib/auth-helpers"
+import { isAdmin, getCityFilter } from "@/lib/auth-helpers"
 import { STUDENT_GRADES, GRADE_LABELS, GRADE_ADVANCE } from "@/lib/constants"
 
 export async function POST(request: Request) {
@@ -10,13 +10,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const cityFilter = await getCityFilter(session.user.role, session.user.id)
+
   let advanced = 0
   for (const grade of STUDENT_GRADES) {
     const nextGrade = GRADE_ADVANCE[grade]
     if (!nextGrade) continue
 
     const projects = await prisma.project.findMany({
-      where: { gradeLevel: grade, projectType: "STUDENT", status: "IN_PROGRESS" },
+      where: { gradeLevel: grade, projectType: "STUDENT", status: "IN_PROGRESS", ...cityFilter },
     })
 
     for (const project of projects) {

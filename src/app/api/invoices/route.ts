@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma, nextInvoiceNumber } from "@/lib/db"
-import { isAdmin } from "@/lib/auth-helpers"
+import { isAdmin, getCityAccessScope, assertInScope } from "@/lib/auth-helpers"
 import { applyDiscountCode, calculateDiscount } from "@/lib/discounts"
 import { logActivity } from "@/lib/activity"
 
@@ -10,6 +10,9 @@ export async function POST(request: Request) {
   if (!session?.user || !isAdmin(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
+
+  const scope = await getCityAccessScope(session.user.role, session.user.id)
+  if (scope.kind === "none") return NextResponse.json({ error: "No city access" }, { status: 403 })
 
   const formData = await request.formData()
   const clientId = formData.get("clientId") as string
@@ -27,6 +30,11 @@ export async function POST(request: Request) {
   if (!clientId) {
     return NextResponse.json({ error: "Missing clientId" }, { status: 400 })
   }
+
+  const client = await prisma.client.findUnique({ where: { id: clientId }, select: { user: { select: { cityId: true } } } })
+  if (!client) return NextResponse.json({ error: "Client not found" }, { status: 404 })
+  const scopeError = assertInScope(client.user.cityId, scope)
+  if (scopeError) return scopeError
 
   // Multi-line invoice
   if (linesJson) {
@@ -92,11 +100,14 @@ export async function POST(request: Request) {
 
   // Legacy: auto invoice from hour logs
   const projectId = formData.get("projectId") as string
+  const cityFilter = scope.kind === "single" ? { cityId: scope.cityId } : {}
+  // Study Hall hour logs are excluded — study hall clients are invoiced via
+  // their registration cycle forms, not hourly auto-invoice generation.
   const logs = await prisma.hourLog.findMany({
     where: {
       invoiceItems: { none: {} },
       ...(projectId ? { projectId } : {}),
-      project: { clientId },
+      project: { clientId, ...cityFilter, projectType: "STUDENT" },
     },
     include: { project: true },
   })

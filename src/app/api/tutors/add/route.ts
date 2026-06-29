@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
-import { isAdmin } from "@/lib/auth-helpers"
+import { isAdmin, isSuperAdmin, getCityAccessScope } from "@/lib/auth-helpers"
 import bcrypt from "bcryptjs"
 import crypto from "crypto"
 
@@ -13,11 +13,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const scope = await getCityAccessScope(session.user.role, session.user.id)
+  if (scope.kind === "none") return NextResponse.json({ error: "No city access" }, { status: 403 })
+
   const formData = await request.formData()
   const name = (formData.get("name") as string)?.trim()
   const email = (formData.get("email") as string)?.trim().toLowerCase()
   const phone = (formData.get("phone") as string)?.trim() || null
-  const cityId = (formData.get("cityId") as string) || null
+  const formCityId = (formData.get("cityId") as string) || null
   const tenure = (formData.get("tenure") as string) || "1ST_YEAR"
   const rawRole = (formData.get("role") as string) || "TUTOR"
   const role = ALLOWED_TUTOR_ROLES.includes(rawRole as typeof ALLOWED_TUTOR_ROLES[number]) ? rawRole : "TUTOR"
@@ -27,6 +30,12 @@ export async function POST(request: Request) {
   if (!name || !email) {
     return NextResponse.json({ error: "Name and email required" }, { status: 400 })
   }
+
+  if (role === "CITY_ADMIN" && !isSuperAdmin(session.user.role)) {
+    return NextResponse.json({ error: "Only super admins can create city admin accounts" }, { status: 403 })
+  }
+
+  const cityId = scope.kind === "single" ? scope.cityId : formCityId
 
   const existing = await prisma.user.findUnique({ where: { email } })
   if (existing) {

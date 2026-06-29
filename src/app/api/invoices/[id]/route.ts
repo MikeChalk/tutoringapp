@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
-import { isAdmin } from "@/lib/auth-helpers"
+import { isAdmin, getCityAccessScope, assertInScope } from "@/lib/auth-helpers"
 import { sendClientInviteEmail } from "@/lib/email"
 import { logActivity } from "@/lib/activity"
 
@@ -11,7 +11,17 @@ export async function POST(request: Request, props: { params: Promise<{ id: stri
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const scope = await getCityAccessScope(session.user.role, session.user.id)
+  if (scope.kind === "none") return NextResponse.json({ error: "No city access" }, { status: 403 })
+
   const { id } = await props.params
+
+  const existing = await prisma.invoice.findUnique({ where: { id }, select: { client: { select: { user: { select: { cityId: true } } } } } })
+  if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+  const scopeError = assertInScope(existing.client?.user.cityId || null, scope)
+  if (scopeError) return scopeError
+
   const formData = await request.formData()
   const action = formData.get("_action") as string
   const redirectTo = (formData.get("redirectTo") as string) || `/dashboard/invoices/${id}`

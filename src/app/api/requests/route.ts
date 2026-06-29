@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { isAdmin } from "@/lib/auth-helpers"
+import { isAdmin, getCityAccessScope } from "@/lib/auth-helpers"
 import { prisma } from "@/lib/db"
 
 export async function POST(request: Request) {
@@ -12,6 +12,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
+  const scope = await getCityAccessScope(session.user.role, session.user.id)
+  if (scope.kind === "none") return NextResponse.json({ error: "No city access" }, { status: 403 })
+
   const formData = await request.formData()
   const name = formData.get("name") as string
   const email = formData.get("email") as string
@@ -20,7 +23,9 @@ export async function POST(request: Request) {
   const description = formData.get("description") as string
   const preferredSchedule = formData.get("preferredSchedule") as string
   const matchedTutorId = formData.get("matchedTutorId") as string
-  const cityId = (formData.get("cityId") as string)?.trim() || null
+  const formCityId = (formData.get("cityId") as string)?.trim() || null
+
+  const cityId = scope.kind === "single" ? scope.cityId : formCityId
 
   if (!name || !email || !subject) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 })
@@ -44,7 +49,7 @@ export async function POST(request: Request) {
   const existingLead = await prisma.lead.findFirst({ where: { email: email.toLowerCase() } })
   if (!existingLead) {
     await prisma.lead.create({
-      data: { name, email: email.toLowerCase(), phone: phone || null, subject, notes: description || null, status: "NEW" },
+      data: { name, email: email.toLowerCase(), phone: phone || null, subject, notes: description || null, status: "NEW", cityId: cityId || null },
     })
   }
 

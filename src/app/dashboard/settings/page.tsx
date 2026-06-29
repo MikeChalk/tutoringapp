@@ -1,11 +1,13 @@
 import { prisma } from "@/lib/db"
-import { requireAdmin } from "@/lib/auth-helpers"
+import { requireAuth, isSuperAdmin } from "@/lib/auth-helpers"
+import { redirect } from "next/navigation"
 import Link from "next/link"
 import { getAdminFlatLinks, TUTOR_NAV_LINKS, CLIENT_NAV_LINKS, TOP_LEVEL_LINKS } from "@/lib/constants"
 import Manage2FA from "@/components/manage-2fa"
 
 export default async function SettingsPage(props: { searchParams: Promise<{ saved?: string }> }) {
-  const session = await requireAdmin()
+  const session = await requireAuth()
+  if (!isSuperAdmin(session.user.role)) redirect("/dashboard")
 
   const { saved } = await props.searchParams
 

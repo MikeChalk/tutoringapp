@@ -27,6 +27,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (!isValid) return null
 
+        if (user.totpEnabled) return null
+
         return {
           id: user.id,
           email: user.email,

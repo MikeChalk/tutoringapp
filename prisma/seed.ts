@@ -575,17 +575,10 @@ async function main() {
     },
   })
 
-  const sh3 = await prisma.project.create({
-    data: {
-      name: "Montreal Program Supervisors",
-      description: "Program supervisor team",
-      subjects: "All subjects",
-      projectType: "STUDY_HALL",
-      gradeLevel: "PROGRAM_SUPERVISOR",
-      clientId: client3.id,
-      cityId: montreal.id,
-    },
-  })
+  // Program supervisors log their hours directly to the relevant school's
+  // Study Hall project (projectType STUDY_HALL), so no separate supervisor
+  // project is needed. Their management grade categories (SUPERVISION,
+  // IN_PERSON_MGMT, etc.) are resolved against the study hall project.
 
   // Invoices for Robert Dupont (client1) — one SENT (unpaid), one PAID
   const inv1 = await prisma.invoice.create({

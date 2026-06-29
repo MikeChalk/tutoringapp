@@ -10,6 +10,8 @@ export const GRADE_LABELS: Record<string, string> = {
   ONLINE_MGMT: "Online Mgmt",
   SUPERVISION: "Supervision",
   MARKETING: "Marketing",
+  STUDY_HALL: "Study Hall",
+  PROGRAM_SUPERVISOR: "Program Supervisor",
 }
 
 // Category sets for the Log Hours form
@@ -134,6 +136,95 @@ export type ProjectStatus = (typeof PROJECT_STATUSES)[number]
 
 export const CLIENT_TYPES = ["PARENT", "SCHOOL"] as const
 export type ClientType = (typeof CLIENT_TYPES)[number]
+
+export const FORM_TYPES = ["REQUEST_TUTOR", "CAREERS"] as const
+export type FormType = (typeof FORM_TYPES)[number]
+
+export const FORM_TYPE_LABELS: Record<FormType, string> = {
+  REQUEST_TUTOR: "Request a Tutor",
+  CAREERS: "Careers Application",
+}
+
+export const STUDY_HALL_BILLING_MODELS = ["LUMP_SUM", "LUMP_SUM_ROSTER", "INDIVIDUAL"] as const
+export type StudyHallBillingModel = (typeof STUDY_HALL_BILLING_MODELS)[number]
+
+export const STUDY_HALL_GRADE_OPTIONS = [
+  "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6",
+  "Secondary 1", "Secondary 2", "Secondary 3", "Secondary 4", "Secondary 5",
+] as const
+
+export const DEFAULT_STUDY_HALL_INTRO = `The Study Hall after-school program provides academic support to students on a weekly basis. Every Study Hall session will have tutors available for general assistance in every subject matter.
+
+Students will simultaneously be taught strategic skills in order to empower them to achieve their maximum potential. Skills and strategies will be taught across four main domains:
+
+1. PLANNING
+2. EMOTIONS
+3. CONFIDENCE
+4. INDEPENDENCE`
+
+export const STUDY_HALL_BILLING_MODEL_LABELS: Record<StudyHallBillingModel, string> = {
+  LUMP_SUM: "Lump Sum (no registration)",
+  LUMP_SUM_ROSTER: "Lump Sum + Roster (school sends list, one invoice)",
+  INDIVIDUAL: "Individual (we register & invoice each parent)",
+}
+
+export const STUDY_HALL_CYCLE_STATUSES = ["DRAFT", "OPEN", "CLOSED"] as const
+export type StudyHallCycleStatus = (typeof STUDY_HALL_CYCLE_STATUSES)[number]
+
+export const STUDY_HALL_CYCLE_STATUS_LABELS: Record<StudyHallCycleStatus, string> = {
+  DRAFT: "Draft",
+  OPEN: "Open",
+  CLOSED: "Closed",
+}
+
+export const STUDY_HALL_CYCLE_STATUS_COLORS: Record<string, string> = {
+  DRAFT: "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400",
+  OPEN: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  CLOSED: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+}
+
+export const REGISTRATION_STATUSES = ["PENDING", "CONFIRMED", "PAID", "CANCELLED"] as const
+export type RegistrationStatus = (typeof REGISTRATION_STATUSES)[number]
+
+export const REGISTRATION_STATUS_LABELS: Record<RegistrationStatus, string> = {
+  PENDING: "Pending",
+  CONFIRMED: "Confirmed",
+  PAID: "Paid",
+  CANCELLED: "Cancelled",
+}
+
+export const REGISTRATION_STATUS_COLORS: Record<string, string> = {
+  PENDING: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+  CONFIRMED: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  PAID: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  CANCELLED: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+}
+
+export const DEFAULT_STUDY_HALL_TERMS = `I, the undersigned, will pay J.A.S.S. the listed registration cost prior to the first session, as a base registration cost before discounts.
+
+Although J.A.S.S. provides me with tutors, I understand that there is no warranty or guarantee associated with the services. I acknowledge that J.A.S.S. is not responsible for any problems or liabilities that may arise from working with the tutors provided.
+
+I understand that refunds are only available if I cancel the entire cycle at least 24 hours prior to the next scheduled session. I acknowledge that there is no refund available for cancelling individual sessions.
+
+I accept that J.A.S.S. reserves the right to terminate a portion or all of the services at any time. If services are terminated, J.A.S.S. will provide a full refund for any cancelled sessions.
+
+I understand that J.A.S.S. also reserves the right to refuse to provide a portion or all of the services if deemed necessary. In such cases, J.A.S.S. will provide a full refund for any services that are refused.
+
+I acknowledge that verbal, physical, written, or any other form of abuse toward any member of J.A.S.S. will result in immediate termination of services.
+
+I understand that J.A.S.S. does not guarantee that (i) the services provided will meet my specific expectations or requirements, (ii) the services provided will be uninterrupted, timely, secure, or error-free, and (iii) the results that might be obtained from the services provided will be reliable or accurate.
+
+By agreeing to these terms, I accept the conditions under which J.A.S.S. operates and acknowledge my responsibilities as a client.
+
+I hereby acknowledge that I have read and fully understand the Terms of Service in their entirety, and I accept all outlined conditions and permissions`
+
+export const DEFAULT_PHOTO_RELEASE_TEXT = `I, the undersigned, hereby grant J.A.S.S. the irrevocable right and permission to use photographs and/or video recordings of my child taken during Study Hall for promotional purposes, including but not limited to websites, social media platforms, printed materials, and other publications.
+
+I understand and agree that these materials will become the property of J.A.S.S. and will not be returned. I hereby waive any right to inspect or approve the finished product, including written copy, wherein the likeness of my child appears.
+
+Furthermore, I release J.A.S.S. from any liability, claims, demands, or causes of action arising out of or related to the use of my child's image, including any claims for defamation or invasion of privacy.
+
+I understand that no compensation will be provided for the use of these materials, and I confirm that participation is voluntary.`
 
 export const ONBOARDING_STEPS = [
   "Email sent to tutor",
@@ -337,6 +428,7 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
     label: "Productivity",
     links: [
       { href: "/dashboard/projects", label: "Projects" },
+      { href: "/dashboard/study-hall", label: "Study Hall Cycles" },
       { href: "/dashboard/hours", label: "Log Hours" },
       { href: "/dashboard/requests", label: "Tutoring Requests" },
     ],
@@ -373,6 +465,7 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
       { href: "/dashboard/email-log", label: "Email Log" },
       { href: "/dashboard/activity", label: "Activity Log" },
       { href: "/dashboard/data-health", label: "Data Health" },
+      { href: "/dashboard/form-submissions", label: "Form Submissions" },
     ],
   },
   {

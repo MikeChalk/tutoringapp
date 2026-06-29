@@ -9,14 +9,26 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { secret, code } = await req.json()
+  let body: { code?: string }
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 })
+  }
 
-  if (!secret || !code) {
-    return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+  const { code } = body
+
+  if (!code) {
+    return NextResponse.json({ error: "Missing verification code" }, { status: 400 })
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { totpSecret: true } })
+  if (!user?.totpSecret) {
+    return NextResponse.json({ error: "No 2FA secret found. Please generate a new one." }, { status: 400 })
   }
 
   const valid = speakeasy.totp.verify({
-    secret,
+    secret: user.totpSecret,
     encoding: "base32",
     token: code,
     window: 1,
@@ -28,7 +40,7 @@ export async function POST(req: Request) {
 
   await prisma.user.update({
     where: { id: session.user.id },
-    data: { totpSecret: secret, totpEnabled: true },
+    data: { totpEnabled: true },
   })
 
   return NextResponse.json({ success: true })

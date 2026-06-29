@@ -294,10 +294,10 @@ if (localDateRange) {
                   </Link>
                 </td>
                 <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
-                  {invoice.client.user.name}
+                  {invoice.client?.user.name || "Unknown"}
                 </td>
                 <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
-                  {invoice.client.user.city?.name || "-"}
+                  {invoice.client?.user.city?.name || "-"}
                 </td>
                 <td className="px-4 py-3 text-sm text-zinc-900 dark:text-zinc-100">
                   ${invoice.totalAmount.toFixed(2)}

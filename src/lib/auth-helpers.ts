@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { cookies } from "next/headers"
+import { NextResponse } from "next/server"
 
 const ADMIN = "ADMIN" as const
 const CITY_ADMIN = "CITY_ADMIN" as const
@@ -91,4 +92,29 @@ export async function getCityFilter(userRole: string, userId: string): Promise<R
   if (scope.kind === "single") return { cityId: scope.cityId }
   if (scope.kind === "none") return { cityId: { in: [] as string[] } }
   return {}
+}
+
+export function assertInScope(
+  resourceCityId: string | null | undefined,
+  scope: CityAccessScope
+): NextResponse | null {
+  if (scope.kind === "all") return null
+  if (scope.kind === "none") return NextResponse.json({ error: "No city access" }, { status: 403 })
+  if (resourceCityId !== scope.cityId) return NextResponse.json({ error: "Out of city scope" }, { status: 403 })
+  return null
+}
+
+export function safeReferer(referer: string | null, fallback: string): string {
+  if (!referer) return fallback
+  if (referer.startsWith("/")) return referer
+  return fallback
+}
+
+export function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
 }

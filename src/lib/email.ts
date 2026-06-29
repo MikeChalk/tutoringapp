@@ -1,5 +1,6 @@
 import { Resend } from "resend"
 import { prisma } from "@/lib/db"
+import { escapeHtml } from "@/lib/auth-helpers"
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 
@@ -40,7 +41,8 @@ async function getTemplate(trigger: string) {
 function render(html: string, vars: Record<string, string>): string {
   let result = html
   for (const [key, value] of Object.entries(vars)) {
-    result = result.replace(new RegExp(`\\{\\{${key}\\}\\}`, "g"), value)
+    const escaped = key === "message" ? value : escapeHtml(value)
+    result = result.replace(new RegExp(`\\{\\{${key}\\}\\}`, "g"), escaped)
   }
   return result
 }

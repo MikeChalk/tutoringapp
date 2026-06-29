@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { isAdmin, getTutorId, getCityAccessScope, assertInScope } from "@/lib/auth-helpers"
 import { generateContractPDF } from "@/lib/contract-pdf"
 
 export async function GET(
@@ -17,12 +18,23 @@ export async function GET(
   const contract = await prisma.contract.findUnique({
     where: { id },
     include: {
-      tutor: { include: { user: { select: { name: true, email: true } } } },
+      tutor: { include: { user: { select: { name: true, email: true, cityId: true } } } },
     },
   })
 
   if (!contract) {
     return NextResponse.json({ error: "Not found" }, { status: 404 })
+  }
+
+  if (isAdmin(session.user.role)) {
+    const scope = await getCityAccessScope(session.user.role, session.user.id)
+    const scopeError = assertInScope(contract.tutor.user.cityId, scope)
+    if (scopeError) return scopeError
+  } else {
+    const tutorId = await getTutorId(session.user.id, session.user.email)
+    if (!tutorId || contract.tutorId !== tutorId) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 })
+    }
   }
 
   const settings = await prisma.companySettings.findUnique({ where: { id: "main" } })

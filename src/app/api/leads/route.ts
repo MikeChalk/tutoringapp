@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
-import { isAdmin } from "@/lib/auth-helpers"
+import { isAdmin, getCityAccessScope, assertInScope } from "@/lib/auth-helpers"
 import bcrypt from "bcryptjs"
 import crypto from "crypto"
 
@@ -11,12 +11,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const scope = await getCityAccessScope(session.user.role, session.user.id)
+  if (scope.kind === "none") return NextResponse.json({ error: "No city access" }, { status: 403 })
+
   const formData = await request.formData()
   const leadId = formData.get("leadId") as string
   const action = formData.get("_action") as string
 
   const lead = await prisma.lead.findUnique({ where: { id: leadId } })
   if (!lead) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+  const scopeError = assertInScope(lead.cityId, scope)
+  if (scopeError) return scopeError
 
   if (action === "contacted") {
     await prisma.lead.update({ where: { id: leadId }, data: { status: "CONTACTED" } })
