@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { isSuperAdmin } from "@/lib/auth-helpers"
+import { invalidateEmailTransport } from "@/lib/email"
+import { encryptSecret } from "@/lib/secret"
 
 export async function POST(request: Request) {
   const session = await auth()
@@ -25,12 +27,13 @@ export async function POST(request: Request) {
     openaiKey: getString("openaiKey"),
     stripeKey: getString("stripeKey"),
     resendKey: getString("resendKey"),
+    smtpPassword: getString("smtpPassword"),
   }
 
   const processedSecrets: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(secretFields)) {
     if (value !== undefined && value !== "") {
-      processedSecrets[key] = value
+      processedSecrets[key] = encryptSecret(value)
     }
   }
 
@@ -46,6 +49,9 @@ export async function POST(request: Request) {
     defaultTaxRate,
     stripeEnabled, smsEnabled, openaiEnabled, emailEnabled,
     twilioFrom: getString("twilioFrom"),
+    smtpHost: getString("smtpHost"),
+    smtpPort: (() => { const p = parseInt((formData.get("smtpPort") as string) || "587", 10); return p >= 1 && p <= 65535 ? p : 587 })(),
+    smtpUser: getString("smtpUser"),
     ...processedSecrets,
   }
 
@@ -63,15 +69,21 @@ export async function POST(request: Request) {
       invoiceNotes: getString("invoiceNotes") || "",
       defaultTaxRate,
       stripeEnabled, smsEnabled, openaiEnabled, emailEnabled,
-      twilioSid: secretFields.twilioSid || "",
-      twilioToken: secretFields.twilioToken || "",
+      twilioSid: encryptSecret(secretFields.twilioSid || ""),
+      twilioToken: encryptSecret(secretFields.twilioToken || ""),
       twilioFrom: getString("twilioFrom") || "",
-      openaiKey: secretFields.openaiKey || "",
-      stripeKey: secretFields.stripeKey || "",
-      resendKey: secretFields.resendKey || "",
+      openaiKey: encryptSecret(secretFields.openaiKey || ""),
+      stripeKey: encryptSecret(secretFields.stripeKey || ""),
+      resendKey: encryptSecret(secretFields.resendKey || ""),
+      smtpHost: getString("smtpHost") || "",
+      smtpPort: (() => { const p = parseInt((formData.get("smtpPort") as string) || "587", 10); return p >= 1 && p <= 65535 ? p : 587 })(),
+      smtpUser: getString("smtpUser") || "",
+      smtpPassword: encryptSecret(secretFields.smtpPassword || ""),
     },
     update: updateData,
   })
+
+  invalidateEmailTransport()
 
   return NextResponse.redirect(new URL("/dashboard/settings?saved=1", request.url), 303)
 }

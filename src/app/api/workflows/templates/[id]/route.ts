@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { isAdmin } from "@/lib/auth-helpers"
-import { Resend } from "resend"
+import { sendEmail, hasEmailTransport } from "@/lib/email"
 
 export async function PUT(
   request: Request,
@@ -66,13 +66,11 @@ export async function POST(
     return NextResponse.json({ error: "Template not found" }, { status: 404 })
   }
 
-  if (!process.env.RESEND_API_KEY) {
-    return NextResponse.json({ error: "RESEND_API_KEY not configured" }, { status: 500 })
+  if (!(await hasEmailTransport())) {
+    return NextResponse.json({ error: "Email not configured — set up SMTP or Resend in Settings" }, { status: 500 })
   }
 
   try {
-    const resend = new Resend(process.env.RESEND_API_KEY)
-
     const html = template.htmlBody
       .replace(/\{\{name\}\}/g, "Test User")
       .replace(/\{\{parentName\}\}/g, "Test Parent")
@@ -81,7 +79,7 @@ export async function POST(
       .replace(/\{\{uploadUrl\}\}/g, "https://example.com/upload/test")
       .replace(/\{\{inviteUrl\}\}/g, "https://example.com/invite/test")
 
-    await resend.emails.send({
+    await sendEmail({
       from: "J.A.S.S. Tutors <info@jasstutors.com>",
       to: testEmail,
       subject: `[TEST] ${template.subject}`,
@@ -90,7 +88,8 @@ export async function POST(
 
     return NextResponse.json({ success: true })
   } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err)
     console.error("[workflows/test]", err)
-    return NextResponse.json({ error: "Failed to send test email" }, { status: 500 })
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }

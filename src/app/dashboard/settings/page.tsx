@@ -55,18 +55,14 @@ export default async function SettingsPage(props: { searchParams: Promise<{ save
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Integrations</h3>
           <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
               <div>
                 <label className="block text-xs text-zinc-500 mb-1">Stripe Secret Key</label>
-                <input type="password" name="stripeKey" defaultValue={""} placeholder={process.env.STRIPE_SECRET_KEY ? "••••••••" : "sk_live_..."} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input type="password" name="stripeKey" defaultValue={""} placeholder={settings.stripeKey || process.env.STRIPE_SECRET_KEY ? "••••••••" : "sk_live_..."} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
                 <label className="block text-xs text-zinc-500 mb-1">OpenAI API Key</label>
                 <input type="password" name="openaiKey" defaultValue={""} placeholder={settings.openaiKey || process.env.OPENAI_API_KEY ? "••••••••" : "sk-..."} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              </div>
-              <div>
-                <label className="block text-xs text-zinc-500 mb-1">Resend API Key</label>
-                <input type="password" name="resendKey" defaultValue={""} placeholder={process.env.RESEND_API_KEY ? "••••••••" : "re_..."} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
@@ -74,6 +70,25 @@ export default async function SettingsPage(props: { searchParams: Promise<{ save
               <div><label className="block text-xs text-zinc-500 mb-1">Twilio Auth Token</label><input type="password" name="twilioToken" defaultValue="" placeholder={settings.twilioToken ? "••••••••" : "Enter auth token"} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
               <div><label className="block text-xs text-zinc-500 mb-1">Twilio Phone Number</label><input type="text" name="twilioFrom" defaultValue={settings.twilioFrom} placeholder="+1234567890" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
             </div>
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
+              <div>
+                <label className="block text-xs text-zinc-500 mb-1">SMTP Host</label>
+                <input type="text" name="smtpHost" defaultValue={settings.smtpHost} placeholder="smtp.gmail.com" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs text-zinc-500 mb-1">SMTP Port</label>
+                <input type="number" name="smtpPort" defaultValue={settings.smtpPort} placeholder="587" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs text-zinc-500 mb-1">SMTP User</label>
+                <input type="text" name="smtpUser" defaultValue={settings.smtpUser} placeholder="info@jasstutors.com" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs text-zinc-500 mb-1">SMTP Password</label>
+                <input type="password" name="smtpPassword" defaultValue={""} placeholder={settings.smtpPassword ? "••••••••" : "App password"} className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+            </div>
+            <p className="text-xs text-zinc-500">SMTP is used for all outgoing emails (registration confirmations, invoices, password resets, etc.).</p>
             <div className="flex flex-wrap gap-4 pt-2">
               <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="stripeEnabled" defaultChecked={settings.stripeEnabled} className="rounded" /> Enable Stripe payments</label>
               <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="smsEnabled" defaultChecked={settings.smsEnabled} className="rounded" /> Enable SMS alerts</label>

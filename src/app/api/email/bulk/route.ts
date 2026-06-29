@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { isAdmin, getCityFilter } from "@/lib/auth-helpers"
-import { Resend } from "resend"
+import { sendEmail, hasEmailTransport } from "@/lib/email"
 
 export async function GET(request: Request) {
   const session = await auth()
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     }
 
     const sent = await sendOne(to, "Test User", subject, message)
-    if (!sent) return NextResponse.json({ error: "Resend not configured" }, { status: 500 })
+    if (!sent) return NextResponse.json({ error: "Email not configured — set up SMTP or Resend in Settings" }, { status: 500 })
     return NextResponse.json({ success: true })
   }
 
@@ -56,10 +56,9 @@ export async function POST(request: Request) {
   const recipients = await getRecipientsWithNames(group, cityFilter)
   if (recipients.length === 0) return NextResponse.json({ error: "No recipients found" }, { status: 400 })
 
-  const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
-  if (!resend) {
+  if (!(await hasEmailTransport())) {
     console.log(`[BULK EMAIL SKIPPED] Group: ${group}, ${recipients.length} recipients, Subject: ${subject}`)
-    return NextResponse.json({ sent: recipients.length, note: "Resend not configured — emails logged only" })
+    return NextResponse.json({ sent: recipients.length, note: "Email not configured — emails logged only" })
   }
 
   let sent = 0
@@ -80,8 +79,7 @@ export async function POST(request: Request) {
 }
 
 async function sendOne(to: string, name: string, subject: string, html: string): Promise<boolean> {
-  const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
-  if (!resend) return false
+  if (!(await hasEmailTransport())) return false
 
   const settings = await prisma.companySettings.findUnique({ where: { id: "main" } })
   const companyName = settings?.name || "J.A.S.S. Tutors"
@@ -89,7 +87,7 @@ async function sendOne(to: string, name: string, subject: string, html: string):
   const personalized = html.replace(/\{\{name\}\}/g, name)
 
   try {
-    await resend.emails.send({
+    await sendEmail({
       from: `${companyName} <info@jasstutors.com>`,
       to,
       subject,

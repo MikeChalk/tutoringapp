@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
-import { sendOnboardingEmail } from "@/lib/email"
+import { sendOnboardingEmail, sendEmail, hasEmailTransport } from "@/lib/email"
 import { generateContractPDF } from "@/lib/contract-pdf"
 
 export async function POST(request: Request) {
@@ -92,10 +92,7 @@ async function generateAndSendPdf(
 
   try {
     const companySettings = await prisma.companySettings.findUnique({ where: { id: "main" }, select: { emailEnabled: true } })
-    if (companySettings?.emailEnabled !== false && process.env.RESEND_API_KEY) {
-      const { Resend } = await import("resend")
-      const resend = new Resend(process.env.RESEND_API_KEY)
-
+    if (companySettings?.emailEnabled !== false && (await hasEmailTransport())) {
       const template = await prisma.emailTemplate.findFirst({
         where: { trigger: "contract_signed" },
       })
@@ -106,7 +103,7 @@ async function generateAndSendPdf(
 
       const pdfBase64 = pdfBuffer.toString("base64")
 
-      await resend.emails.send({
+      await sendEmail({
         from: "J.A.S.S. Tutors <info@jasstutors.com>",
         to: tutor.user.email,
         subject,
@@ -114,6 +111,7 @@ async function generateAndSendPdf(
         attachments: [{
           filename: `Contract-${tutor.user.name.replace(/\s/g, "-")}.pdf`,
           content: pdfBase64,
+          encoding: "base64",
         }],
       })
 

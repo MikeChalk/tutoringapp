@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { rateLimitByIp } from "@/lib/rate-limit"
+import { sendEmail, hasEmailTransport } from "@/lib/email"
 import crypto from "crypto"
 
 const RESET_TOKEN_EXPIRY_MS = 1000 * 60 * 30 // 30 minutes
@@ -34,10 +35,8 @@ export async function POST(request: Request) {
 
   try {
     const settings = await prisma.companySettings.findUnique({ where: { id: "main" }, select: { emailEnabled: true } })
-    if (settings?.emailEnabled !== false && process.env.RESEND_API_KEY) {
-      const { Resend } = await import("resend")
-      const resend = new Resend(process.env.RESEND_API_KEY)
-      await resend.emails.send({
+    if (settings?.emailEnabled !== false && (await hasEmailTransport())) {
+      await sendEmail({
         from: "J.A.S.S. <info@jasstutors.com>",
         to: user.email,
         subject: "Reset Your Password — J.A.S.S.",

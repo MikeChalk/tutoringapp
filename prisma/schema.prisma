@@ -396,6 +396,10 @@ model CompanySettings {
   openaiKey       String  @default("")
   stripeKey       String  @default("")
   resendKey       String  @default("")
+  smtpHost        String  @default("")
+  smtpPort        Int     @default(587)
+  smtpUser        String  @default("")
+  smtpPassword    String  @default("")
 
   @@map("company_settings")
 }

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { isAdmin, getCityAccessScope, assertInScope } from "@/lib/auth-helpers"
-import { sendOnboardingEmail, sendParentNotificationEmail } from "@/lib/email"
+import { sendOnboardingEmail, sendParentNotificationEmail, sendEmail, hasEmailTransport } from "@/lib/email"
 import { CONTRACT_TYPES, TENURE_VALUES } from "@/lib/constants"
 import bcrypt from "bcryptjs"
 import crypto from "crypto"
@@ -198,17 +198,17 @@ export async function POST(request: Request) {
     // Send password via email (respects global email toggle)
     try {
       const settings = await prisma.companySettings.findUnique({ where: { id: "main" }, select: { emailEnabled: true } })
-      if (settings?.emailEnabled !== false && process.env.RESEND_API_KEY) {
-        const { Resend } = await import("resend")
-        const resend = new Resend(process.env.RESEND_API_KEY)
-        await resend.emails.send({
+      if (settings?.emailEnabled !== false && (await hasEmailTransport())) {
+        await sendEmail({
           from: "J.A.S.S. <info@jasstutors.com>",
           to: email,
           subject: "Your Tutor Account",
           text: `Welcome ${name}! Your account has been created. Please log in with your email and this temporary password: ${tempPassword}\n\nChange your password after logging in.`,
         })
       }
-    } catch { /* fallthrough — password shown in console */ }
+    } catch (e) {
+      console.error("[onboarding] temp password email failed for", email, e instanceof Error ? e.message : e)
+    }
 
     return NextResponse.redirect(
       new URL(`/dashboard/onboarding?created=${encodeURIComponent(email)}`, request.url),
